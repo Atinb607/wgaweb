@@ -14,27 +14,27 @@ export async function GET(request: NextRequest) {
     let products;
     if (goal && goal !== 'all' && goal !== 'all-trays') {
       products = await sql`
-        SELECT id, slug, name, categories, health_goals, badge_label, highlight_1, highlight_2, description, nutrition_notes,
+        SELECT id, slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, nutrition_notes,
                thumbnail_url, thumbnail_alt_text, tags, is_bundle, is_active, created_at, pairs_well_with
         FROM products
         WHERE is_active = true AND ${goal} = ANY(health_goals)
-        ORDER BY created_at DESC
+        ORDER BY display_order ASC, created_at DESC
       `;
     } else if (category) {
       products = await sql`
-        SELECT id, slug, name, categories, health_goals, badge_label, highlight_1, highlight_2, description, nutrition_notes,
+        SELECT id, slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, nutrition_notes,
                thumbnail_url, thumbnail_alt_text, tags, is_bundle, is_active, created_at, pairs_well_with
         FROM products
         WHERE is_active = true AND ${category} = ANY(categories)
-        ORDER BY created_at DESC
+        ORDER BY COALESCE((category_orders->>${category})::int, display_order, 9999) ASC, created_at DESC
       `;
     } else {
       products = await sql`
-        SELECT id, slug, name, categories, health_goals, badge_label, highlight_1, highlight_2, description, nutrition_notes,
+        SELECT id, slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, nutrition_notes,
                thumbnail_url, thumbnail_alt_text, tags, is_bundle, is_active, created_at, pairs_well_with
         FROM products
         WHERE is_active = true
-        ORDER BY created_at DESC
+        ORDER BY display_order ASC, created_at DESC
       `;
     }
 

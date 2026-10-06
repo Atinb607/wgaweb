@@ -1,7 +1,22 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import AdminLayoutClient from './AdminLayoutClient';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Wild About Greens Admin Panel',
+  description: 'Wild About Greens Admin Panel',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+};
 
 export default function DynamicPanelLayout({
   children,

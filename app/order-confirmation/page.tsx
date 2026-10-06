@@ -21,6 +21,8 @@ interface StoredOrder {
   customerPhone: string;
   deliveryAddress: string;
   deliveryPincode: string;
+  subtotalPaise?: number;
+  deliveryFeePaise?: number;
   totalPaise: number;
   purchaseType?: string;
   subscriptionFrequency?: string | null;
@@ -71,23 +73,30 @@ function ConfirmationContent() {
   );
 
   return (
-    <main className="min-h-screen bg-[#FAF7EE] py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#FAF7EE] pt-28 pb-12 sm:pt-36 sm:pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Celebration / Thank You Header */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 text-emerald-700 text-3xl shadow-sm border border-emerald-200 animate-bounce-once">
-            🌱
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white shadow-sm border border-[#E8E2D2] p-3.5">
+            <Image
+              src="/favicon.png"
+              alt="Wild About Greens Logo"
+              width={52}
+              height={52}
+              className="object-contain"
+              priority
+            />
           </div>
 
           <div className="space-y-2">
             <span className="font-mono text-xs uppercase tracking-[0.2em] font-semibold text-[#5C6B60] block">
-              Order Confirmed & Harvest Scheduled
+              Order Confirmed &amp; Payment Received
             </span>
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium text-[#151F19] leading-tight">
               Thank You for Your Order{customerName ? `, ${customerName}` : ''}!
             </h1>
             <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto leading-relaxed">
-              We&apos;ve received your order and payment. Our urban farm team will harvest, carefully inspect, and pack your fresh greens for peak vitality.
+              We&apos;ve received your order and payment successfully. Thank you for shopping with us! We are preparing your order and will share tracking updates shortly.
             </p>
           </div>
         </div>
@@ -200,12 +209,26 @@ function ConfirmationContent() {
             {/* Price Calculations */}
             <div className="pt-4 border-t border-gray-100 space-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>{totalAmountFormatted}</span>
+                <span>Items Subtotal</span>
+                <span>
+                  {storedOrder.subtotalPaise !== undefined
+                    ? `₹${(storedOrder.subtotalPaise / 100).toFixed(2)}`
+                    : totalAmountFormatted}
+                </span>
               </div>
-              <div className="flex justify-between text-emerald-700 font-medium">
+              <div className="flex justify-between font-medium">
                 <span>Direct Urban Farm Delivery</span>
-                <span>Free</span>
+                <span
+                  className={
+                    storedOrder.deliveryFeePaise && storedOrder.deliveryFeePaise > 0
+                      ? 'text-gray-900 font-semibold'
+                      : 'text-emerald-700 font-semibold'
+                  }
+                >
+                  {storedOrder.deliveryFeePaise && storedOrder.deliveryFeePaise > 0
+                    ? `₹${(storedOrder.deliveryFeePaise / 100).toFixed(2)}`
+                    : 'Free'}
+                </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-gray-200 text-base sm:text-lg font-bold text-[#151F19]">
                 <span>Total Paid</span>

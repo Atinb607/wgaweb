@@ -24,6 +24,8 @@ interface OrderForEmail {
   customer_email: string | null;
   customer_phone: string;
   delivery_address: string;
+  subtotal_paise?: number;
+  delivery_fee_paise?: number;
   total_paise: number;
   purchase_type: string;
   subscription_frequency: string | null;
@@ -54,8 +56,8 @@ export async function sendOrderConfirmation(
       AND confirmation_email_sent = false
       AND payment_status = 'paid'
     RETURNING id, order_number, customer_name, customer_email, customer_phone,
-              delivery_address, delivery_pincode, total_paise, purchase_type,
-              subscription_frequency, created_at
+              delivery_address, delivery_pincode, subtotal_paise, delivery_fee_paise,
+              total_paise, purchase_type, subscription_frequency, created_at
   `;
 
   if (updated.length === 0) {
@@ -240,6 +242,22 @@ export async function sendOrderConfirmation(
               </thead>
               <tbody>
                 ${itemRowsHtml}
+                <tr style="border-top: 1px solid #E8E2D2;">
+                  <td colspan="3" style="padding: 10px 8px 4px; font-size: 13px; color: #5C6B60;">
+                    Items Subtotal
+                  </td>
+                  <td style="padding: 10px 8px 4px; font-size: 13px; font-weight: 600; color: #151F19; text-align: right;">
+                    ₹${(((order.subtotal_paise ?? (order.total_paise - (order.delivery_fee_paise ?? 0)))) / 100).toFixed(2)}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="3" style="padding: 4px 8px 8px; font-size: 13px; color: #5C6B60;">
+                    Farm Direct Delivery
+                  </td>
+                  <td style="padding: 4px 8px 8px; font-size: 13px; font-weight: 600; color: ${(order.delivery_fee_paise ?? 0) > 0 ? '#151F19' : '#166534'}; text-align: right;">
+                    ${(order.delivery_fee_paise ?? 0) > 0 ? `₹${((order.delivery_fee_paise ?? 0) / 100).toFixed(2)}` : 'FREE'}
+                  </td>
+                </tr>
                 <tr style="border-top: 2px solid #1C3F2D;">
                   <td colspan="3" style="padding: 14px 8px 4px; font-size: 15px; font-weight: 700; color: #151F19;">
                     Total Paid

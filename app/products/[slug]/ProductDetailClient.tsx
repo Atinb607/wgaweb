@@ -1228,34 +1228,39 @@ export default function ProductDetailClient({
       </section>
 
       {/* ================= SECTION 3: REVIEWS ("STRAIGHT FROM THE GUT") ================= */}
-      <section className="bg-[#E4DDC8] pt-[36px] pb-[80px]">
+      <section className="bg-[#E4DDC8] pt-6 sm:pt-[36px] pb-8 sm:pb-[80px]">
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8">
-          <div className="mb-8">
-            <h2 className="font-serif font-medium text-[clamp(28px,4vw,40px)] text-[#151F19] leading-tight">
-              {content.reviews_title || 'Straight from the gut.'}
-            </h2>
-            {content.reviews_subtitle && (
-              <p className="font-mono text-xs uppercase tracking-wider text-[#5C6B60] mt-1">
-                {content.reviews_subtitle}
-              </p>
-            )}
+          <div className="flex items-end justify-between mb-4 sm:mb-8">
+            <div>
+              <h2 className="font-serif font-medium text-[22px] min-[380px]:text-[24px] sm:text-[clamp(28px,4vw,40px)] text-[#151F19] leading-tight">
+                {content.reviews_title || 'Straight from the gut.'}
+              </h2>
+              {content.reviews_subtitle && (
+                <p className="font-mono text-[10px] sm:text-xs uppercase tracking-wider text-[#5C6B60] mt-1">
+                  {content.reviews_subtitle}
+                </p>
+              )}
+            </div>
+            <span className="text-[11px] text-[#5C6B60] font-mono tracking-wider sm:hidden pb-0.5">
+              Swipe &rarr;
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 min-[560px]:grid-cols-2 min-[900px]:grid-cols-4 gap-[22px]">
+          <div className="grid grid-rows-2 grid-flow-col auto-cols-[80vw] min-[380px]:auto-cols-[78vw] gap-2.5 overflow-x-auto scrollbar-none snap-x snap-mandatory -mx-4 px-4 pb-2 sm:grid-rows-none sm:grid-flow-row sm:auto-cols-auto sm:grid-cols-2 lg:grid-cols-4 sm:gap-[22px] sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible">
             {effectiveReviews.map((rev, i) => (
               <div
                 key={rev.id || i}
-                className="bg-[#FFFDF8] rounded-[10px] pt-[22px] px-[24px] pb-[6px] h-[150px] flex flex-col justify-between shadow-sm"
+                className="bg-[#FFFDF8] rounded-[10px] pt-3.5 sm:pt-[22px] px-3.5 sm:px-[24px] pb-2 sm:pb-[6px] w-[80vw] min-[380px]:w-[78vw] max-w-[310px] sm:w-auto shrink-0 sm:shrink snap-start h-[126px] sm:h-[150px] flex flex-col justify-between shadow-xs border border-[#E4DDC8]/60"
               >
                 <div
-                  className="font-sans text-[9px] leading-[1.53] text-[#151F19] line-clamp-5"
+                  className="font-sans text-[10.5px] sm:text-[9px] leading-[1.4] sm:leading-[1.53] text-[#151F19] line-clamp-3 sm:line-clamp-5"
                   dangerouslySetInnerHTML={{ __html: rev.review_text }}
                 />
-                <div className="border-t border-[#E4DDC8] mt-[14px] mb-[4px] pt-1 flex items-center justify-between">
+                <div className="border-t border-[#E4DDC8] mt-1.5 sm:mt-[14px] mb-0 sm:mb-[4px] pt-1.5 sm:pt-1 flex items-center justify-between">
                   <span className="font-sans font-bold text-[11px] text-[#151F19] truncate pr-2">
                     {rev.reviewer_name}
                   </span>
-                  <span className="text-[10px] tracking-[3px] flex-shrink-0">
+                  <span className="text-[10px] tracking-[1.5px] sm:tracking-[3px] flex-shrink-0">
                     <span className="text-[#FF9F5A]">{'★'.repeat(rev.rating || 5)}</span>
                     <span className="text-[#D1D5DB]">
                       {'★'.repeat(Math.max(0, 5 - (rev.rating || 5)))}
@@ -1466,10 +1471,10 @@ export default function ProductDetailClient({
       )}
 
       {/* ================= SECTION 5a: WHY IS THIS THE RIGHT CHOICE (4 COLOR BLOCKS) ================= */}
-      <section className="bg-[#FFFDF8] py-16">
+      <section className="bg-[#FFFDF8] py-8 sm:py-12 lg:py-16">
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8">
-          <div className="mb-8">
-            <h2 className="font-serif font-medium text-[clamp(26px,3.5vw,36px)] text-[#151F19] leading-snug">
+          <div className="mb-4 sm:mb-8">
+            <h2 className="font-serif font-medium text-[22px] min-[380px]:text-[25px] sm:text-[clamp(26px,3.5vw,36px)] text-[#151F19] leading-snug">
               {content.why_choose_title ? (
                 content.why_choose_title.includes('right choice') ? (
                   <>
@@ -1494,7 +1499,7 @@ export default function ProductDetailClient({
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 min-[900px]:grid-cols-4 gap-[17px]">
+          <div className="grid grid-cols-2 min-[900px]:grid-cols-4 gap-2.5 sm:gap-[17px]">
             {[0, 1, 2, 3].map((idx) => {
               const defaultBlock = DEFAULT_WHY_CHOOSE_BLOCKS[idx];
               const pin = whyChoosePins[idx];
@@ -1508,14 +1513,14 @@ export default function ProductDetailClient({
               const cardContent = imageUrl ? (
                 <div
                   style={{ backgroundColor: bgColor }}
-                  className="aspect-[1/1.32] rounded-none border-0 flex flex-col justify-between overflow-hidden transition-transform duration-300 hover:-translate-y-1 relative"
+                  className="aspect-[1/1.22] sm:aspect-[1/1.32] rounded-xl sm:rounded-none border-0 flex flex-col justify-between overflow-hidden transition-transform duration-300 hover:-translate-y-1 relative"
                 >
-                  <div className="p-[22px] pb-0 relative z-10">
-                    <h3 className="font-sans font-extrabold text-[20px] sm:text-[22px] lg:text-[24px] leading-tight tracking-[-0.01em] text-[#151F19] whitespace-pre-line">
+                  <div className="p-3.5 sm:p-[22px] pb-0 relative z-10">
+                    <h3 className="font-sans font-extrabold text-[15px] min-[380px]:text-[16px] sm:text-[22px] lg:text-[24px] leading-[1.15] sm:leading-tight tracking-[-0.01em] text-[#151F19] whitespace-pre-line">
                       {title}
                     </h3>
                     {description && (
-                      <p className="font-mono text-[10px] text-[#5C6B60] tracking-[0.03em] mt-2">
+                      <p className="font-mono text-[9px] min-[380px]:text-[10px] text-[#5C6B60] tracking-[0.02em] sm:tracking-[0.03em] mt-1 sm:mt-2">
                         {description}
                       </p>
                     )}
@@ -1539,13 +1544,13 @@ export default function ProductDetailClient({
               ) : (
                 <div
                   style={{ backgroundColor: bgColor }}
-                  className="aspect-[1/1.32] p-[22px] rounded-none border-0 flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1"
+                  className="aspect-[1/1.22] sm:aspect-[1/1.32] p-3.5 sm:p-[22px] rounded-xl sm:rounded-none border-0 flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1"
                 >
-                  <h3 className="font-sans font-extrabold text-[20px] sm:text-[22px] lg:text-[24px] leading-tight tracking-[-0.01em] text-[#151F19] whitespace-pre-line">
+                  <h3 className="font-sans font-extrabold text-[15px] min-[380px]:text-[16px] sm:text-[22px] lg:text-[24px] leading-[1.15] sm:leading-tight tracking-[-0.01em] text-[#151F19] whitespace-pre-line">
                     {title}
                   </h3>
                   {description && (
-                    <p className="font-mono text-[10px] text-[#5C6B60] tracking-[0.03em]">
+                    <p className="font-mono text-[9px] min-[380px]:text-[10px] text-[#5C6B60] tracking-[0.02em] sm:tracking-[0.03em] mt-1 sm:mt-2">
                       {description}
                     </p>
                   )}

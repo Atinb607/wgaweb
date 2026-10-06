@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           razorpay_payment_id = ${razorpay_payment_id}
       WHERE razorpay_order_id = ${razorpay_order_id}
         AND payment_status = 'pending'
-      RETURNING id, order_number, customer_name, customer_email, customer_phone, total_paise
+      RETURNING id, order_number, customer_name, customer_email, customer_phone, subtotal_paise, delivery_fee_paise, total_paise
     `;
 
     let orderId: string;
@@ -66,11 +66,13 @@ export async function POST(request: NextRequest) {
     let customerEmail: string | null = null;
     let customerName: string = '';
     let totalPaise: number = 0;
+    let subtotalPaise: number = 0;
+    let deliveryFeePaise: number = 0;
 
     if (result.length === 0) {
       // Check if already processed (e.g. webhook race or client retry)
       const existing = await sql`
-        SELECT id, order_number, customer_name, customer_email, customer_phone, total_paise
+        SELECT id, order_number, customer_name, customer_email, customer_phone, subtotal_paise, delivery_fee_paise, total_paise
         FROM orders
         WHERE razorpay_order_id = ${razorpay_order_id}
           AND payment_status = 'paid'
@@ -81,6 +83,8 @@ export async function POST(request: NextRequest) {
         customerEmail = existing[0].customer_email as string | null;
         customerName = existing[0].customer_name as string;
         totalPaise = existing[0].total_paise as number;
+        subtotalPaise = (existing[0].subtotal_paise as number) || 0;
+        deliveryFeePaise = (existing[0].delivery_fee_paise as number) || 0;
       } else {
         return NextResponse.json(
           { error: 'Order not found or already processed' },
@@ -93,6 +97,8 @@ export async function POST(request: NextRequest) {
       customerEmail = result[0].customer_email as string | null;
       customerName = result[0].customer_name as string;
       totalPaise = result[0].total_paise as number;
+      subtotalPaise = (result[0].subtotal_paise as number) || 0;
+      deliveryFeePaise = (result[0].delivery_fee_paise as number) || 0;
 
       // Decrement stock for ordered variants (dedup-guarded via stock_decremented flag)
       decrementStock(orderId).catch((err) =>
@@ -113,6 +119,8 @@ export async function POST(request: NextRequest) {
       orderNumber,
       customerEmail,
       customerName,
+      subtotalPaise,
+      deliveryFeePaise,
       totalPaise,
     });
   } catch (error: unknown) {

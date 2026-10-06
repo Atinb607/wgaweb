@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
+import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import type { SamplerVariantData } from './page';
 
 export default function OurStoryClient({
@@ -575,14 +576,7 @@ export default function OurStoryClient({
               variants={fadeInUp}
             >
               <h2 className="font-serif text-3xl sm:text-4xl font-medium leading-[1.15] mb-3">
-                {content.newsletter_title ? (
-                  content.newsletter_title
-                ) : (
-                  <>
-                    Want 15% off and<br />
-                    the <em className="italic text-[#CFFA57] font-normal">inside scoop?</em>
-                  </>
-                )}
+                {renderNewsletterTitle(content.newsletter_title)}
               </h2>
               <p className="text-[#FFFDF8]/65 text-sm sm:text-base max-w-md">
                 {content.newsletter_subtitle ||
@@ -601,7 +595,7 @@ export default function OurStoryClient({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
+                  placeholder={content.newsletter_placeholder || 'your@email.com'}
                   required
                   disabled={status === 'loading'}
                   className="flex-1 min-w-[200px] bg-[#FFFDF8]/10 border border-[#FFFDF8]/25 rounded-full px-5 py-3.5 text-[#FFFDF8] text-sm outline-none placeholder:text-[#FFFDF8]/45 focus:border-[#CFFA57] transition-colors"
@@ -611,7 +605,7 @@ export default function OurStoryClient({
                   disabled={status === 'loading'}
                   className="bg-[#CFFA57] text-[#122A1F] font-bold text-sm px-7 py-3.5 rounded-full whitespace-nowrap hover:-translate-y-0.5 transition-transform disabled:opacity-50"
                 >
-                  {status === 'loading' ? 'Signing Up...' : 'Sign Up'}
+                  {status === 'loading' ? 'Signing Up...' : (content.newsletter_button_text || 'Sign Up')}
                 </button>
               </form>
               {/* Invisible Turnstile container positioned off-screen to preserve exact layout */}
@@ -630,7 +624,7 @@ export default function OurStoryClient({
                 </p>
               )}
               <p className="text-[11px] text-[#FFFDF8]/40 mt-2.5">
-                No spam. Unsubscribe anytime.
+                {content.newsletter_disclaimer || 'No spam. Unsubscribe anytime.'}
               </p>
             </motion.div>
           </div>

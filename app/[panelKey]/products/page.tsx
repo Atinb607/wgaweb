@@ -108,6 +108,8 @@ interface Product {
   slug: string;
   name: string;
   categories: string[];
+  category_orders?: Record<string, number> | null;
+  display_order?: number;
   health_goals?: string[];
   description: string;
   description_lead?: string | null;
@@ -133,6 +135,8 @@ const emptyProduct = {
   name: '',
   slug: '',
   categories: [] as string[],
+  category_orders: {} as Record<string, number>,
+  display_order: 0,
   health_goals: [] as string[],
   description: '',
   description_lead: '',
@@ -279,6 +283,49 @@ export default function AdminProductsPage() {
       .catch(() => {});
   }, []);
 
+  const handleAddCategory = (rawCat: string) => {
+    const val = rawCat.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!val) return;
+    if (!form.categories.includes(val)) {
+      const existingOrders = Object.values(form.category_orders || {}).filter((n) => typeof n === 'number' && n > 0) as number[];
+      const nextOrder = existingOrders.length > 0 ? Math.max(...existingOrders) + 1 : 1;
+      setForm((prev) => ({
+        ...prev,
+        categories: [...prev.categories, val],
+        category_orders: {
+          ...(prev.category_orders || {}),
+          [val]: nextOrder,
+        },
+        display_order: prev.categories.length === 0 ? nextOrder : prev.display_order,
+      }));
+    }
+  };
+
+  const handleRemoveCategory = (catToRemove: string) => {
+    setForm((prev) => {
+      const nextOrders = { ...(prev.category_orders || {}) };
+      delete nextOrders[catToRemove];
+      return {
+        ...prev,
+        categories: prev.categories.filter((c) => c !== catToRemove),
+        category_orders: nextOrders,
+      };
+    });
+  };
+
+  const handleCategoryOrderChange = (cat: string, value: string) => {
+    const num = value === '' ? 0 : parseInt(value, 10);
+    const validNum = isNaN(num) || num < 0 ? 0 : num;
+    setForm((prev) => ({
+      ...prev,
+      category_orders: {
+        ...(prev.category_orders || {}),
+        [cat]: validNum,
+      },
+      display_order: prev.categories[0] === cat ? validNum : prev.display_order,
+    }));
+  };
+
   const loadProduct = async (id: string) => {
     const res = await adminFetch(`/api/admin/products/${id}`);
     if (res.ok) {
@@ -288,6 +335,8 @@ export default function AdminProductsPage() {
         name: data.name || '',
         slug: data.slug || '',
         categories: Array.isArray(data.categories) ? data.categories : (data.category ? [data.category] : []),
+        category_orders: (data.category_orders && typeof data.category_orders === 'object' && !Array.isArray(data.category_orders)) ? data.category_orders : {},
+        display_order: typeof data.display_order === 'number' ? data.display_order : 0,
         health_goals: Array.isArray(data.health_goals) ? data.health_goals : [],
         description: data.description || '',
         description_lead: data.description_lead || '',
@@ -455,15 +504,48 @@ export default function AdminProductsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Categories</label>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {form.categories.map((cat) => (
-                  <span key={cat} className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full border border-emerald-200">
-                    {cat.replace(/-/g, ' ')}
-                    <button type="button" onClick={() => setForm(prev => ({ ...prev, categories: prev.categories.filter(c => c !== cat) }))} className="text-emerald-500 hover:text-red-500 ml-0.5">&times;</button>
-                  </span>
-                ))}
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">Categories &amp; Category Order</label>
+                <span className="text-[11px] text-gray-400">Order # in category</span>
               </div>
+              {form.categories.length > 0 && (
+                <div className="space-y-1.5 mb-2.5">
+                  {form.categories.map((cat) => (
+                    <div
+                      key={cat}
+                      className="flex items-center justify-between gap-2 bg-gray-50/80 border border-gray-200 rounded-lg px-3 py-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-semibold text-gray-800 capitalize truncate">
+                          {cat.replace(/-/g, ' ')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCategory(cat)}
+                          className="text-gray-400 hover:text-red-500 font-bold ml-1 text-base leading-none"
+                          title="Remove category"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <label className="text-[11px] text-gray-500 whitespace-nowrap font-medium">
+                          Order #:
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={form.category_orders?.[cat] || ''}
+                          onChange={(e) => handleCategoryOrderChange(cat, e.target.value)}
+                          placeholder="1"
+                          className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-xs font-mono font-bold text-emerald-800 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="relative">
                 <input
                   value={catInput}
@@ -473,10 +555,7 @@ export default function AdminProductsPage() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && catInput.trim()) {
                       e.preventDefault();
-                      const val = catInput.trim().toLowerCase().replace(/\s+/g, '-');
-                      if (!form.categories.includes(val)) {
-                        setForm(prev => ({ ...prev, categories: [...prev.categories, val] }));
-                      }
+                      handleAddCategory(catInput);
                       setCatInput('');
                       setShowCatDropdown(false);
                     }
@@ -494,7 +573,7 @@ export default function AdminProductsPage() {
                           type="button"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            setForm(prev => ({ ...prev, categories: [...prev.categories, cat] }));
+                            handleAddCategory(cat);
                             setCatInput('');
                             setShowCatDropdown(false);
                           }}
@@ -508,10 +587,7 @@ export default function AdminProductsPage() {
                         type="button"
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          const val = catInput.trim().toLowerCase().replace(/\s+/g, '-');
-                          if (!form.categories.includes(val)) {
-                            setForm(prev => ({ ...prev, categories: [...prev.categories, val] }));
-                          }
+                          handleAddCategory(catInput);
                           setCatInput('');
                           setShowCatDropdown(false);
                         }}
@@ -1339,7 +1415,7 @@ export default function AdminProductsPage() {
             <tr className="text-left text-gray-500 border-b bg-gray-50">
               <th className="px-4 py-3">Thumbnail</th>
               <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Category</th>
+              <th className="px-4 py-3">Category &amp; Order</th>
               <th className="px-4 py-3">Health Goals</th>
               <th className="px-4 py-3">Tags</th>
               <th className="px-4 py-3">Status</th>
@@ -1363,8 +1439,20 @@ export default function AdminProductsPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                <td className="px-4 py-3 text-gray-500 capitalize">
-                  {(p.categories || []).map(c => c.replace(/-/g, ' ')).join(', ')}
+                <td className="px-4 py-3 text-gray-700">
+                  <div className="flex flex-col gap-1">
+                    {(p.categories || []).map((c) => {
+                      const ord = p.category_orders?.[c];
+                      return (
+                        <div key={c} className="flex items-center gap-1.5 text-xs">
+                          <span className="capitalize font-medium">{c.replace(/-/g, ' ')}</span>
+                          <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded border border-emerald-200" title={`Order ${ord} in ${c}`}>
+                            #{ord !== undefined && ord !== null ? ord : '—'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1 max-w-[200px]">

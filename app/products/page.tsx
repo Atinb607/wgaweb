@@ -41,6 +41,8 @@ export interface Product {
   slug: string;
   name: string;
   categories: string[];
+  category_orders?: Record<string, number> | null;
+  display_order?: number;
   description: string;
   nutrition_notes: string | null;
   thumbnail_url: string | null;
@@ -59,6 +61,8 @@ interface ProductRow {
   slug: string;
   name: string;
   categories: string[];
+  category_orders?: Record<string, number> | null;
+  display_order?: number;
   description: string;
   nutrition_notes: string | null;
   thumbnail_url: string | null;
@@ -78,11 +82,11 @@ async function getProducts(): Promise<Product[]> {
   try {
     const sql = getSQL();
     const products = await sql`
-      SELECT id, slug, name, categories, description, nutrition_notes,
+      SELECT id, slug, name, categories, category_orders, display_order, description, nutrition_notes,
              thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, is_bundle
       FROM products
       WHERE is_active = true
-      ORDER BY is_bundle ASC, created_at ASC
+      ORDER BY display_order ASC, is_bundle ASC, created_at ASC
     `;
     const productList = products as unknown as ProductRow[];
     if (productList.length === 0) return [];

@@ -7,6 +7,7 @@ import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
 import type { Product } from '@/app/products/page';
+import { LeafFavicon } from '@/components/icons';
 
 interface HealthGoalModalProps {
   isOpen: boolean;
@@ -296,9 +297,9 @@ export default function HealthGoalModal({
                                 backgroundColor: meta.badge.bg,
                                 color: meta.badge.color,
                               }}
-                              className="absolute top-2.5 left-2.5 z-20 font-mono text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1"
+                              className="absolute top-2.5 left-2.5 z-20 font-mono text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1.5"
                             >
-                              <span>🌱</span>
+                              <LeafFavicon className="w-3 h-3" />
                               <span>{product.badge_label || meta.badge.text}</span>
                             </span>
 

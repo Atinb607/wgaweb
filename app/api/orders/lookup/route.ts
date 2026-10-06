@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     // Query: order_number, phone, AND email must all match, AND payment_status = 'paid'
     const orders = await sql`
       SELECT id, order_number, customer_name, customer_phone, customer_email, delivery_address, delivery_pincode,
-             subtotal_paise, total_paise, purchase_type, subscription_frequency, payment_status, fulfillment_status, created_at
+             subtotal_paise, delivery_fee_paise, total_paise, purchase_type, subscription_frequency, payment_status, fulfillment_status, created_at
       FROM orders
       WHERE UPPER(TRIM(order_number)) = ${orderNumber.toUpperCase()}
         AND RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10) = ${last10Digits}

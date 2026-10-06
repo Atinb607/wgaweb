@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import { useAdminAuth } from '@/lib/adminAuth';
+import { LeafFavicon } from '@/components/icons';
 
 export default function AdminLayoutClient({
   children,
@@ -16,6 +19,20 @@ export default function AdminLayoutClient({
   const params = useParams();
   const currentKey = (params?.panelKey as string) || panelKey || 'admin';
   const { isAuthed, loading } = useAdminAuth(currentKey);
+
+  useEffect(() => {
+    document.title = 'Wild About Greens Admin Panel';
+    const updateFavicon = () => {
+      let link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = '/favicon.ico';
+    };
+    updateFavicon();
+  }, []);
 
   const navItems = [
     { href: `/${currentKey}`, label: 'Dashboard', icon: '📊' },
@@ -56,9 +73,22 @@ export default function AdminLayoutClient({
     <div className="min-h-screen flex bg-gray-50 admin-panel-root">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
-        <div className="p-4 border-b border-gray-700">
-          <Link href={`/${currentKey}`} className="text-lg font-bold">
-            🌱 WGA Admin
+        <div className="p-4 border-b border-gray-800 bg-gray-950/40">
+          <Link href={`/${currentKey}`} className="flex flex-col gap-1.5 group block" title="Wild About Greens Admin Panel">
+            <Image
+              src="/logo-picture-bg.png"
+              alt="Wild About Greens"
+              width={160}
+              height={36}
+              className="h-8 w-auto object-contain brightness-105"
+              priority
+            />
+            <div className="flex items-center gap-1.5 pl-0.5">
+              <LeafFavicon className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-semibold text-emerald-400 tracking-wider uppercase">
+                Admin Panel
+              </span>
+            </div>
           </Link>
         </div>
         <nav className="flex-1 p-3 space-y-1">

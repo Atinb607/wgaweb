@@ -48,6 +48,7 @@ interface Order {
   delivery_address: string;
   delivery_pincode: string;
   subtotal_paise: number;
+  delivery_fee_paise?: number;
   total_paise: number;
   purchase_type: string;
   subscription_frequency: string | null;
@@ -654,6 +655,34 @@ function TrackOrderContent() {
                                 </p>
                               </div>
                             ))}
+                          </div>
+
+                          {/* Price Breakdown */}
+                          <div className="mt-4 pt-4 border-t border-[#E4DDC8]/60 space-y-2 text-xs sm:text-sm">
+                            <div className="flex justify-between text-[#151F19]/70">
+                              <span>Items Subtotal</span>
+                              <span className="font-medium text-[#151F19]">
+                                {formatPrice(order.subtotal_paise ?? (order.total_paise - (order.delivery_fee_paise || 0)))}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[#151F19]/70">
+                              <span>Farm Direct Delivery</span>
+                              <span
+                                className={
+                                  order.delivery_fee_paise && order.delivery_fee_paise > 0
+                                    ? 'font-medium text-[#151F19]'
+                                    : 'font-semibold text-emerald-700'
+                                }
+                              >
+                                {order.delivery_fee_paise && order.delivery_fee_paise > 0
+                                  ? formatPrice(order.delivery_fee_paise)
+                                  : 'Free'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm sm:text-base font-bold text-[#122A1F] pt-2 border-t border-[#E4DDC8]/60">
+                              <span>Total Paid</span>
+                              <span className="text-[#1C3F2D]">{formatPrice(order.total_paise)}</span>
+                            </div>
                           </div>
 
                           {/* Farm Support Assistance Callout */}

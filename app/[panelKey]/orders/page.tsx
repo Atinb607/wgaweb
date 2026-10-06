@@ -29,6 +29,8 @@ interface OrderItem {
 interface OrderDetail extends Order {
   delivery_address: string;
   delivery_pincode: string;
+  subtotal_paise?: number;
+  delivery_fee_paise?: number;
   razorpay_order_id: string | null;
   razorpay_payment_id: string | null;
   items: OrderItem[];
@@ -148,6 +150,20 @@ export default function AdminOrdersPage() {
               <span className="ml-2">{detail.customer_email || 'N/A'}</span>
             </div>
             <div>
+              <span className="text-gray-500">Subtotal:</span>
+              <span className="ml-2 font-medium">
+                {formatPrice(detail.subtotal_paise ?? (detail.total_paise - (detail.delivery_fee_paise || 0)))}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">Delivery Fee:</span>
+              <span className="ml-2 font-medium">
+                {detail.delivery_fee_paise && detail.delivery_fee_paise > 0
+                  ? formatPrice(detail.delivery_fee_paise)
+                  : 'Free'}
+              </span>
+            </div>
+            <div>
               <span className="text-gray-500">Total:</span>
               <span className="ml-2 font-bold text-green-700">
                 {formatPrice(detail.total_paise)}
@@ -250,6 +266,7 @@ export default function AdminOrdersPage() {
 
   const handleExportCSV = () => {
     const headers = [
+      'S. no.',
       'Order Number',
       'Customer Name',
       'Customer Phone',
@@ -260,7 +277,8 @@ export default function AdminOrdersPage() {
       'Created At',
     ];
 
-    const rows = filteredOrders.map((o) => [
+    const rows = filteredOrders.map((o, idx) => [
+      idx + 1,
       o.order_number || '',
       o.customer_name,
       o.customer_phone,
@@ -353,6 +371,7 @@ export default function AdminOrdersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b bg-gray-50/80">
+              <th className="px-3 py-3 w-14 text-center">S. no.</th>
               <th className="px-4 py-3">Order #</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Phone</th>
@@ -364,12 +383,15 @@ export default function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredOrders.map((o) => (
+            {filteredOrders.map((o, idx) => (
               <tr
                 key={o.id}
                 className="border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => openDetail(o.id)}
               >
+                <td className="px-3 py-3 text-center font-mono text-xs text-gray-500 font-medium">
+                  {idx + 1}
+                </td>
                 <td className="px-4 py-3 font-mono font-bold text-xs text-emerald-800">
                   {o.order_number || <span className="text-gray-400 font-sans font-normal">—</span>}
                 </td>

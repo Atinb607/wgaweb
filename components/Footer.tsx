@@ -164,9 +164,6 @@ export default function Footer() {
               <Link href="/products?category=bundle" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
                 Subscriptions &amp; Bundles
               </Link>
-              <Link href="/recipes" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
-                Recipe Khazana
-              </Link>
               <Link href="/cart" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
                 Your Cart
               </Link>
@@ -180,14 +177,11 @@ export default function Footer() {
               <Link href="/our-story" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
                 Our Story
               </Link>
-              <Link href="/#why" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
-                Why Microgreens
-              </Link>
               <Link href="/pathshala" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
                 Pathshala
               </Link>
-              <Link href="/track-order" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
-                Track Order
+              <Link href="/recipes" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
+                Recipe Khazana
               </Link>
             </div>
 

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
+import { LeafFavicon } from '@/components/icons';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -11,6 +13,20 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Wild About Greens Admin Panel';
+    const updateFavicon = () => {
+      let link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = '/favicon.ico';
+    };
+    updateFavicon();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +57,20 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-sm bg-white rounded-xl shadow-md p-8">
-        <div className="text-center mb-6">
-          <span className="text-4xl">🌱</span>
-          <h1 className="text-xl font-bold text-gray-900 mt-2">WGA Admin</h1>
-          <p className="text-sm text-gray-500">Enter your admin password</p>
+        <div className="text-center mb-6 flex flex-col items-center">
+          <Image
+            src="/logo-white-bg.png"
+            alt="Wild About Greens"
+            width={180}
+            height={42}
+            className="h-10 w-auto object-contain mb-3"
+            priority
+          />
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <LeafFavicon className="w-4 h-4" />
+            <h1 className="text-lg font-bold text-gray-900">Wild About Greens Admin Panel</h1>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">Enter your admin password</p>
         </div>
 
         {error && (

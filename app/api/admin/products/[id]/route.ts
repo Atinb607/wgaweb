@@ -53,7 +53,7 @@ export async function PUT(
     const { id } = params;
     const body = await request.json();
 
-    const { slug, name, categories, health_goals, badge_label, highlight_1, highlight_2, description, description_lead, description_highlight, nutrition_notes, is_bundle, is_active, thumbnail_url, thumbnail_alt_text, tags, detail_highlight_badges, faqs, detail_accordions, pairs_well_with } = body;
+    const { slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, description_lead, description_highlight, nutrition_notes, is_bundle, is_active, thumbnail_url, thumbnail_alt_text, tags, detail_highlight_badges, faqs, detail_accordions, pairs_well_with } = body;
 
     const formattedTags = tags !== undefined ? (Array.isArray(tags) ? tags : []) : null;
     const formattedHealthGoals = health_goals !== undefined ? (Array.isArray(health_goals) ? health_goals : []) : null;
@@ -61,6 +61,7 @@ export async function PUT(
     const faqsJson = faqs !== undefined && faqs !== null ? JSON.stringify(faqs) : null;
     const accordionsJson = detail_accordions !== undefined && detail_accordions !== null ? JSON.stringify(detail_accordions) : null;
     const pairsJson = pairs_well_with !== undefined && pairs_well_with !== null ? JSON.stringify(pairs_well_with) : null;
+    const categoryOrdersJson = category_orders !== undefined && category_orders !== null ? JSON.stringify(category_orders) : null;
 
     const result = await sql`
       UPDATE products
@@ -68,6 +69,8 @@ export async function PUT(
         slug            = COALESCE(${slug ?? null}, slug),
         name            = COALESCE(${name ?? null}, name),
         categories      = CASE WHEN ${categories !== undefined} THEN ${categories} ELSE categories END,
+        category_orders = CASE WHEN ${category_orders !== undefined} THEN ${categoryOrdersJson}::jsonb ELSE category_orders END,
+        display_order   = CASE WHEN ${display_order !== undefined} THEN ${typeof display_order === 'number' ? display_order : 0} ELSE display_order END,
         health_goals    = CASE WHEN ${health_goals !== undefined} THEN ${formattedHealthGoals} ELSE health_goals END,
         badge_label     = CASE WHEN ${badge_label !== undefined} THEN ${badge_label ?? null} ELSE badge_label END,
         highlight_1     = CASE WHEN ${highlight_1 !== undefined} THEN ${highlight_1 ?? null} ELSE highlight_1 END,

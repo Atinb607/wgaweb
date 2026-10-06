@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const sql = getSQL();
     const body = await request.json();
 
-    const { slug, name, categories, health_goals, badge_label, highlight_1, highlight_2, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, detail_highlight_badges, faqs, detail_accordions, pairs_well_with } = body;
+    const { slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, detail_highlight_badges, faqs, detail_accordions, pairs_well_with } = body;
 
     if (!slug || !name || !categories || !Array.isArray(categories) || categories.length === 0) {
       return NextResponse.json(
@@ -66,6 +66,15 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const formattedCategoryOrders = category_orders && typeof category_orders === 'object'
+      ? JSON.stringify(category_orders)
+      : JSON.stringify({});
+    const resolvedDisplayOrder = typeof display_order === 'number'
+      ? display_order
+      : (category_orders && categories[0] && typeof category_orders[categories[0]] === 'number'
+          ? category_orders[categories[0]]
+          : 0);
 
     const formattedHealthGoals = Array.isArray(health_goals) ? health_goals : [];
     const formattedTags = Array.isArray(tags) ? tags : [];
@@ -82,8 +91,8 @@ export async function POST(request: NextRequest) {
     const formattedPairs = Array.isArray(pairs_well_with) ? JSON.stringify(pairs_well_with) : JSON.stringify([]);
 
     const result = await sql`
-      INSERT INTO products (slug, name, categories, health_goals, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, detail_highlight_badges, faqs, detail_accordions, pairs_well_with)
-      VALUES (${slug}, ${name}, ${categories}, ${formattedHealthGoals}, ${description || null}, ${description_lead || null}, ${description_highlight || null}, ${nutrition_notes || null}, ${is_bundle || false}, ${thumbnail_url || null}, ${thumbnail_alt_text || null}, ${formattedTags}, ${badge_label || null}, ${highlight_1 || null}, ${highlight_2 || null}, ${formattedBadges}::jsonb, ${formattedFaqs}::jsonb, ${formattedAccordions}::jsonb, ${formattedPairs}::jsonb)
+      INSERT INTO products (slug, name, categories, category_orders, display_order, health_goals, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, detail_highlight_badges, faqs, detail_accordions, pairs_well_with)
+      VALUES (${slug}, ${name}, ${categories}, ${formattedCategoryOrders}::jsonb, ${resolvedDisplayOrder}, ${formattedHealthGoals}, ${description || null}, ${description_lead || null}, ${description_highlight || null}, ${nutrition_notes || null}, ${is_bundle || false}, ${thumbnail_url || null}, ${thumbnail_alt_text || null}, ${formattedTags}, ${badge_label || null}, ${highlight_1 || null}, ${highlight_2 || null}, ${formattedBadges}::jsonb, ${formattedFaqs}::jsonb, ${formattedAccordions}::jsonb, ${formattedPairs}::jsonb)
       RETURNING *
     `;
 

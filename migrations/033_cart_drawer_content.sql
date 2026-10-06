@@ -6,7 +6,7 @@ VALUES ('cart-drawer', 'cart_empty_title', 'text', 'This cart is empty inside!',
 ON CONFLICT (page, key) DO UPDATE SET value_type = EXCLUDED.value_type;
 
 INSERT INTO content_blocks (page, key, value_type, value, updated_at)
-VALUES ('cart-drawer', 'cart_empty_subtitle', 'textarea', 'Fill it with living greens, before this poor cart decides to compost itself out of pure loneliness.', now())
+VALUES ('cart-drawer', 'cart_empty_subtitle', 'textarea', 'Fill it with fresh greens, before this poor cart decides to compost itself out of pure loneliness.', now())
 ON CONFLICT (page, key) DO UPDATE SET value_type = EXCLUDED.value_type;
 
 INSERT INTO content_blocks (page, key, value_type, value, updated_at)

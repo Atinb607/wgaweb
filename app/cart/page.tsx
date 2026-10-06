@@ -1,141 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore, getProductThumbnail } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
-import { Plus, Minus } from '@/components/icons';
+import { Plus, Minus, Scissors, Droplet, Zap, Truck } from '@/components/icons';
 import CartMascot from '@/components/CartMascot';
-
-interface AddonProduct {
-  id: string;
-  slug: string;
-  name: string;
-  variantId: string;
-  variantLabel: string;
-  pricePaise: number;
-  mrpPaise: number;
-  discountOff: string;
-  badge: string;
-  photo: string;
-  maxStock: number;
-}
-
-const DEFAULT_ADDONS: AddonProduct[] = [
-  {
-    id: 'broccoli-microgreens',
-    slug: 'broccoli-microgreens',
-    name: 'Broccoli Microgreens',
-    variantId: 'var-broccoli-50g',
-    variantLabel: '50g tray',
-    pricePaise: 9900,
-    mrpPaise: 12000,
-    discountOff: '₹21 OFF',
-    badge: '★ BESTSELLER',
-    photo: 'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=80&w=800&auto=format&fit=crop',
-    maxStock: 25,
-  },
-  {
-    id: 'sunflower-microgreens',
-    slug: 'sunflower-microgreens',
-    name: 'Sunflower Microgreens',
-    variantId: 'var-sunflower-50g',
-    variantLabel: '50g tray',
-    pricePaise: 8900,
-    mrpPaise: 11000,
-    discountOff: '₹21 OFF',
-    badge: '☀ FAVORITE',
-    photo: 'https://images.unsplash.com/photo-1613769049987-b31b641f25b1?fm=jpg&q=80&w=800&auto=format&fit=crop',
-    maxStock: 30,
-  },
-  {
-    id: 'radish-microgreens',
-    slug: 'radish-microgreens',
-    name: 'Radish Microgreens',
-    variantId: 'var-radish-50g',
-    variantLabel: '50g tray',
-    pricePaise: 7900,
-    mrpPaise: 9900,
-    discountOff: '₹20 OFF',
-    badge: '🌱 PEAK FLAVOUR',
-    photo: 'https://images.unsplash.com/photo-1647613233075-e0d5546b0f22?fm=jpg&q=80&w=800&auto=format&fit=crop',
-    maxStock: 35,
-  },
-  {
-    id: 'classic-trio-bundle',
-    slug: 'classic-trio-bundle',
-    name: 'Classic Trio Bundle',
-    variantId: 'var-trio-bundle',
-    variantLabel: '3 trays bundle',
-    pricePaise: 24900,
-    mrpPaise: 29900,
-    discountOff: '₹50 OFF',
-    badge: '✦ VALUE PACK',
-    photo: 'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=jpg&q=80&w=800&auto=format&fit=crop',
-    maxStock: 15,
-  },
-];
+import {
+  CartRecommendationProduct,
+  CartProductItem,
+  DEFAULT_BESTSELLERS,
+  mapBestsellersFromContent,
+  getPairedUpsellProducts,
+} from '@/lib/cartRecommendations';
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
   const { items, removeItem, updateQuantity, totalPaise, addItem } = useCartStore();
-  const [addons, setAddons] = useState<AddonProduct[]>(DEFAULT_ADDONS);
-  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
   const [cartContent, setCartContent] = useState<Record<string, string>>({
     cart_empty_title: 'This cart is empty inside!',
     cart_empty_subtitle:
       'Fill it with fresh greens, before this poor cart decides to compost itself out of pure loneliness.',
     cart_mascot_variant: 'pleading',
   });
+  const [allProducts, setAllProducts] = useState<CartProductItem[]>([]);
+  const [bestsellers, setBestsellers] = useState<CartRecommendationProduct[]>(DEFAULT_BESTSELLERS);
+  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    fetch('/api/content/cart-drawer')
-      .then((res) => (res.ok ? res.json() : {}))
-      .then((data) => {
-        if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-          setCartContent((prev) => ({ ...prev, ...data }));
+    Promise.all([
+      fetch('/api/content/cart-drawer')
+        .then((res) => (res.ok ? res.json() : {}))
+        .catch(() => ({})),
+      fetch('/api/products')
+        .then((res) => (res.ok ? res.json() : []))
+        .catch(() => []),
+    ]).then(([rawContent, rawProducts]) => {
+      const contentData = (rawContent || {}) as Record<string, string>;
+      const productsData = (rawProducts || []) as CartProductItem[];
+
+      if (contentData && typeof contentData === 'object' && Object.keys(contentData).length > 0) {
+        setCartContent((prev) => ({ ...prev, ...contentData }));
+      }
+
+      if (Array.isArray(productsData) && productsData.length > 0) {
+        setAllProducts(productsData);
+        const mapped = mapBestsellersFromContent(productsData, contentData);
+        if (mapped.length > 0) {
+          setBestsellers(mapped);
         }
-      })
-      .catch(() => {});
+      }
+    });
   }, []);
 
-  // Fetch live variants and prices for recommendations
-  useEffect(() => {
-    fetch('/api/products')
-      .then((res) => res.json())
-      .then((data) => {
-        if (!Array.isArray(data) || data.length === 0) return;
-        setAddons((prev) =>
-          prev.map((item) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const found = data.find((p: any) => p.slug === item.slug);
-            if (found && found.variants && found.variants.length > 0) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const activeVar = found.variants.find((v: any) => v.is_active) || found.variants[0];
-              const price = activeVar.price_paise;
-              const approxMrp = Math.round(price * 1.25);
-              return {
-                ...item,
-                variantId: activeVar.id,
-                variantLabel: activeVar.label || item.variantLabel,
-                pricePaise: price,
-                mrpPaise: approxMrp,
-                discountOff: `₹${Math.round((approxMrp - price) / 100)} OFF`,
-                maxStock: activeVar.stock_qty || item.maxStock,
-                photo: found.thumbnail_url || found.images?.[0]?.image_url || item.photo,
-              };
-            }
-            return item;
-          })
-        );
-      })
-      .catch(() => {});
-  }, []);
+  // Dynamic companion products based on admin panel's "Pairs Well With" setting for items in cart
+  const pairedUpsellProducts = useMemo(() => {
+    return getPairedUpsellProducts(items, allProducts, bestsellers, 6);
+  }, [items, allProducts, bestsellers]);
+
+  const handleScroll = (dir: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const scrollAmount = 300;
+    scrollRef.current.scrollBy({
+      left: dir === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   const total = totalPaise();
 
-  const handleAddAddon = (prod: AddonProduct) => {
+  const handleAddAddon = (prod: CartRecommendationProduct) => {
     addItem({
       variantId: prod.variantId,
       productSlug: prod.slug,
@@ -193,8 +129,6 @@ export default function CartPage() {
     );
   }
 
-  const unaddedAddons = addons.filter((a) => !items.some((i) => i.productSlug === a.slug));
-
   return (
     <div className="relative bg-[#F3EEE0] text-[#151F19] min-h-screen pt-28 pb-24 overflow-hidden">
       <main className="max-w-3xl mx-auto px-4 sm:px-6 relative z-10">
@@ -212,19 +146,13 @@ export default function CartPage() {
         </nav>
 
         {/* Heading & Harvest Reassurance */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#151F19] tracking-tight">
-              Shopping Cart
-            </h1>
-            <p className="font-mono text-xs text-[#5C6B60] uppercase tracking-wider mt-1">
-              Fresh Harvest · Delivered to Your Doorstep
-            </p>
-          </div>
-
-          <span className="self-start sm:self-auto font-mono text-xs font-bold text-[#1C3F2D] bg-[#EBF5EE] border border-[#C5DEC9] px-3 py-1 rounded-full">
-            {items.reduce((sum, i) => sum + i.quantity, 0)} trays in box
-          </span>
+        <div className="mb-6">
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#151F19] tracking-tight">
+            Shopping Cart
+          </h1>
+          <p className="font-mono text-xs text-[#5C6B60] uppercase tracking-wider mt-1">
+            Fresh Greens · Delivered to Your Doorstep
+          </p>
         </div>
 
         {/* Item List */}
@@ -332,27 +260,56 @@ export default function CartPage() {
         })}
         </div>
 
-        {/* ================= CROSS-SELL RECOMMENDATIONS ================= */}
-        {unaddedAddons.length > 0 && (
+        {/* ================= CROSS-SELL / PAIRS WELL RECOMMENDATIONS ================= */}
+        {pairedUpsellProducts.length > 0 && (
           <div className="mt-8 pt-6 border-t border-[#E4DDC8]">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3.5">
               <div>
                 <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#5C6B60] block">
-                  Frequently Added Together
+                  PAIR WITH YOUR ORDER
                 </span>
                 <h3 className="font-serif font-bold text-xl text-[#151F19]">
-                  Add bestsellers to your box
+                  Pairs Well With
                 </h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-[10.5px] text-[#2D7A4D] font-bold">
+                  Zero pesticides
+                </span>
+                {pairedUpsellProducts.length > 2 && (
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleScroll('left')}
+                      className="w-7 h-7 rounded-full border border-[#E4DDC8] bg-[#FFFDF8] hover:bg-[#E4DDC8]/60 flex items-center justify-center text-xs text-[#151F19] transition-colors cursor-pointer"
+                      aria-label="Scroll left"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleScroll('right')}
+                      className="w-7 h-7 rounded-full border border-[#E4DDC8] bg-[#FFFDF8] hover:bg-[#E4DDC8]/60 flex items-center justify-center text-xs text-[#151F19] transition-colors cursor-pointer"
+                      aria-label="Scroll right"
+                    >
+                      →
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {unaddedAddons.slice(0, 2).map((addon) => {
+            <div
+              ref={scrollRef}
+              className="flex gap-3 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-2 pt-0.5 scroll-smooth"
+            >
+              {pairedUpsellProducts.map((addon) => {
                 const isAdded = !!addedIds[addon.id];
+                const badgeText = addon.badge?.text || '★ POPULAR';
                 return (
                   <div
                     key={addon.id}
-                    className="flex items-center justify-between gap-3 p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl shadow-xs hover:border-[#1C3F2D]/40 transition-all"
+                    className="w-[280px] sm:w-[320px] shrink-0 flex items-center justify-between gap-3 p-3 sm:p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl shadow-xs hover:border-[#1C3F2D]/40 transition-all"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#E4DDC8] bg-[#F3EEE0]">
@@ -364,12 +321,15 @@ export default function CartPage() {
                         />
                       </div>
                       <div className="min-w-0">
-                        <span className="font-mono text-[9px] font-bold text-[#1C3F2D] uppercase tracking-wider block">
-                          {addon.badge}
+                        <span className="font-mono text-[9px] font-bold text-[#1C3F2D] uppercase tracking-wider block truncate">
+                          {badgeText}
                         </span>
-                        <p className="font-serif font-bold text-sm text-[#151F19] truncate">
+                        <Link
+                          href={`/products/${addon.slug}`}
+                          className="font-serif font-bold text-sm text-[#151F19] truncate block hover:text-[#1C3F2D] transition-colors"
+                        >
                           {addon.name}
-                        </p>
+                        </Link>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="font-mono font-bold text-xs text-[#1C3F2D]">
                             {formatPrice(addon.pricePaise)}
@@ -384,7 +344,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       onClick={() => handleAddAddon(addon)}
-                      className={`font-mono text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-xl shrink-0 transition-all shadow-2xs ${
+                      className={`font-mono text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-xl shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95 ${
                         isAdded
                           ? 'bg-[#2D7A4D] text-[#FFFDF8]'
                           : 'bg-[#1C3F2D] hover:bg-[#122A1F] text-[#FFFDF8]'
@@ -401,17 +361,11 @@ export default function CartPage() {
 
         {/* ================= ORDER SUMMARY CARD ================= */}
         <div className="mt-8 p-6 sm:p-7 bg-[#FFFDF8] border border-[#E4DDC8] rounded-3xl shadow-sm">
-          <div className="space-y-3 pb-5 border-b border-[#E4DDC8]">
+          <div className="pb-4 border-b border-[#E4DDC8]">
             <div className="flex justify-between text-sm text-[#5C6B60]">
               <span>Subtotal</span>
               <span className="font-mono font-semibold text-[#151F19]">
                 {formatPrice(total)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm text-[#5C6B60]">
-              <span>Delivery</span>
-              <span className="font-mono text-xs text-[#5C6B60]">
-                Calculated at checkout
               </span>
             </div>
           </div>
@@ -452,22 +406,30 @@ export default function CartPage() {
         {/* ================= TRUST / BRAND PILLARS ================= */}
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl text-center">
-            <span className="text-xl block mb-1">🌱</span>
+            <div className="w-8 h-8 rounded-full bg-[#EBF5EE] text-[#1C3F2D] flex items-center justify-center mx-auto mb-2">
+              <Scissors className="w-4 h-4" />
+            </div>
             <p className="font-serif font-bold text-xs text-[#151F19]">Cut to Order</p>
             <p className="font-mono text-[10px] text-[#5C6B60] mt-0.5">Never cold stored</p>
           </div>
           <div className="p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl text-center">
-            <span className="text-xl block mb-1">💧</span>
+            <div className="w-8 h-8 rounded-full bg-[#EBF5EE] text-[#1C3F2D] flex items-center justify-center mx-auto mb-2">
+              <Droplet className="w-4 h-4" />
+            </div>
             <p className="font-serif font-bold text-xs text-[#151F19]">Pure Mineral Water</p>
             <p className="font-mono text-[10px] text-[#5C6B60] mt-0.5">Zero pesticides</p>
           </div>
           <div className="p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl text-center">
-            <span className="text-xl block mb-1">⚡</span>
+            <div className="w-8 h-8 rounded-full bg-[#EBF5EE] text-[#1C3F2D] flex items-center justify-center mx-auto mb-2">
+              <Zap className="w-4 h-4" />
+            </div>
             <p className="font-serif font-bold text-xs text-[#151F19]">40x Density</p>
             <p className="font-mono text-[10px] text-[#5C6B60] mt-0.5">Peak micronutrients</p>
           </div>
           <div className="p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl text-center">
-            <span className="text-xl block mb-1">🚚</span>
+            <div className="w-8 h-8 rounded-full bg-[#EBF5EE] text-[#1C3F2D] flex items-center justify-center mx-auto mb-2">
+              <Truck className="w-4 h-4" />
+            </div>
             <p className="font-serif font-bold text-xs text-[#151F19]">Fast Delivery</p>
             <p className="font-mono text-[10px] text-[#5C6B60] mt-0.5">Fresh to your door</p>
           </div>

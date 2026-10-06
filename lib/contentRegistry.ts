@@ -416,16 +416,38 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
     },
     {
       key: 'newsletter_title',
-      label: 'Newsletter Title',
+      label: 'Newsletter Banner Title / Headline',
       type: 'text',
       defaultValue: 'Want 15% off and the inside scoop?',
+      description: 'Main headline. Tip: wrap words in *asterisks* (e.g. *inside scoop?*) to highlight them in lime green italics.',
     },
     {
       key: 'newsletter_subtitle',
-      label: 'Newsletter Subtitle',
+      label: 'Newsletter Banner Subtitle / Description',
       type: 'textarea',
       defaultValue:
         'Get 15% off your first order, plus early access to new varieties, growing tips and exclusive seasonal drops.',
+    },
+    {
+      key: 'newsletter_button_text',
+      label: 'Newsletter Button Label',
+      type: 'text',
+      defaultValue: 'Sign Up',
+      description: 'Call-to-action text on the subscribe button.',
+    },
+    {
+      key: 'newsletter_placeholder',
+      label: 'Newsletter Email Placeholder',
+      type: 'text',
+      defaultValue: 'your@email.com',
+      description: 'Placeholder text shown inside the email input field.',
+    },
+    {
+      key: 'newsletter_disclaimer',
+      label: 'Newsletter Disclaimer Note',
+      type: 'text',
+      defaultValue: 'No spam. Unsubscribe anytime.',
+      description: 'Reassurance note displayed underneath the form.',
     },
   ],
 
@@ -670,16 +692,38 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
     },
     {
       key: 'newsletter_title',
-      label: 'Newsletter Section Title',
+      label: 'Newsletter Section Title / Headline',
       type: 'text',
       defaultValue: 'Want 15% off and the inside scoop?',
+      description: 'Main headline. Tip: wrap words in *asterisks* (e.g. *inside scoop?*) to highlight them in lime green italics.',
     },
     {
       key: 'newsletter_subtitle',
-      label: 'Newsletter Section Subtitle',
+      label: 'Newsletter Section Subtitle / Description',
       type: 'textarea',
       defaultValue:
         'Get 15% off your first order, plus early access to new varieties, growing tips and exclusive seasonal drops.',
+    },
+    {
+      key: 'newsletter_button_text',
+      label: 'Newsletter Button Label',
+      type: 'text',
+      defaultValue: 'Sign Up',
+      description: 'Call-to-action text on the subscribe button.',
+    },
+    {
+      key: 'newsletter_placeholder',
+      label: 'Newsletter Email Placeholder',
+      type: 'text',
+      defaultValue: 'your@email.com',
+      description: 'Placeholder text shown inside the email input field.',
+    },
+    {
+      key: 'newsletter_disclaimer',
+      label: 'Newsletter Disclaimer Note',
+      type: 'text',
+      defaultValue: 'No spam. Unsubscribe anytime.',
+      description: 'Reassurance note displayed underneath the form.',
     },
   ],
   'emails': [

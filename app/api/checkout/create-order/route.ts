@@ -4,6 +4,7 @@ import { getSQL } from '@/lib/db';
 import { getRazorpay } from '@/lib/razorpay';
 import { isServiceable } from '@/lib/pincodes';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { calculateDeliveryFee } from '@/lib/delivery';
 
 // Characters excluding easily confused ones: 0/O, 1/I/L
 const ORDER_NUM_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // 30 chars
@@ -185,7 +186,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const totalPaise = Math.round(subtotalPaise); // Ensure integer paise
+    subtotalPaise = Math.round(subtotalPaise); // Ensure integer paise
+
+    // ── Delivery fee calculation (Warehouse: 140306) ──
+    const deliveryCalc = calculateDeliveryFee(deliveryPincode, subtotalPaise);
+    const deliveryFeePaise = deliveryCalc.deliveryFeePaise;
+    const totalPaise = Math.round(subtotalPaise + deliveryFeePaise);
 
     // ── Create Razorpay order ──
     let razorpayOrder;
@@ -236,14 +242,14 @@ export async function POST(request: NextRequest) {
             customer_name, customer_phone, customer_email,
             delivery_address, delivery_pincode,
             purchase_type, subscription_frequency,
-            subtotal_paise, total_paise,
+            subtotal_paise, delivery_fee_paise, total_paise,
             razorpay_order_id, payment_status
           ) VALUES (
             ${orderNumber},
             ${customerName}, ${customerPhone}, ${customerEmail || null},
             ${deliveryAddress}, ${deliveryPincode},
             ${purchaseType}, ${subscriptionFrequency || null},
-            ${subtotalPaise}, ${totalPaise},
+            ${subtotalPaise}, ${deliveryFeePaise}, ${totalPaise},
             ${razorpayOrder.id}, 'pending'
           )
           RETURNING id
@@ -285,6 +291,9 @@ export async function POST(request: NextRequest) {
       order_number: orderNumber!,
       razorpayOrderId: razorpayOrder.id,
       razorpay_order_id: razorpayOrder.id,
+      subtotalPaise,
+      deliveryFeePaise,
+      deliveryCalc,
       amount: totalPaise,
       currency: 'INR',
     });
