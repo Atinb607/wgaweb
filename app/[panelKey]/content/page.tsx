@@ -6,6 +6,7 @@ import ImageField from '@/components/admin/ImageField';
 import CartMascot from '@/components/CartMascot';
 import { formatPrice } from '@/lib/format';
 import { CONTENT_REGISTRY } from '@/lib/contentRegistry';
+import { ShoppingBag, FileText, Sprout } from '@/components/icons';
 
 interface ContentBlock {
   id: string;
@@ -203,7 +204,7 @@ export default function AdminContentPage() {
       {/* Cart Drawer Banner if active */}
       {activePage === 'cart-drawer' && (
         <div className="bg-[#FAF8F2] border border-[#E4DDC8] rounded-xl p-4 mb-6 flex items-start gap-3 shadow-xs">
-          <span className="text-2xl">🛒</span>
+          <ShoppingBag className="w-6 h-6 text-[#1C3F2D] shrink-0 mt-0.5" />
           <div>
             <h4 className="font-serif font-bold text-sm text-[#1C3F2D]">
               Cart Slider &amp; Recommendation Management
@@ -219,7 +220,7 @@ export default function AdminContentPage() {
       {['terms-and-conditions', 'privacy-policy', 'shipping-and-returns'].includes(activePage) && (
         <div className="bg-[#FAF8F2] border border-[#E4DDC8] rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">📜</span>
+            <FileText className="w-6 h-6 text-[#1C3F2D] shrink-0 mt-0.5" />
             <div>
               <h4 className="font-serif font-bold text-sm text-[#1C3F2D]">
                 Legal Policy Editor
@@ -308,7 +309,9 @@ export default function AdminContentPage() {
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={thumb} alt={selectedProd.name} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">🌱</div>
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Sprout className="w-8 h-8 text-emerald-600" />
+                            </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -351,9 +354,9 @@ export default function AdminContentPage() {
                         }
                         className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-700/20 focus:border-green-700 outline-none font-medium"
                       >
-                        <option value="pleading">🥺 Variation 1: Pleading Sprout (Hungry, puppy-dog eyes, clutching tummy)</option>
-                        <option value="dramatic">🎭 Variation 2: Melodramatic Sprout (Fainting, dramatic composting sigh)</option>
-                        <option value="angry">⚡ Variation 3: Frantic Stress Cart (Classic original with lightning bolts)</option>
+                        <option value="pleading">Variation 1: Pleading Sprout (Hungry, puppy-dog eyes, clutching tummy)</option>
+                        <option value="dramatic">Variation 2: Melodramatic Sprout (Fainting, dramatic composting sigh)</option>
+                        <option value="angry">Variation 3: Frantic Stress Cart (Classic original with lightning bolts)</option>
                       </select>
                       <p className="text-xs text-gray-500">
                         Select which cartoon character personality greets customers when their cart slider is empty.

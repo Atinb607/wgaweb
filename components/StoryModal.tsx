@@ -49,7 +49,7 @@ export default function StoryModal() {
           {/* Close button */}
           <button
             onClick={() => setIsOpen(false)}
-            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-[#F3EEE0] hover:bg-[#CFFA57] flex items-center justify-center text-base transition-colors duration-200 z-10"
+            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 hover:bg-[#CFFA57] flex items-center justify-center text-base transition-colors duration-200 z-10"
             aria-label="Close dialog"
           >
             ✕

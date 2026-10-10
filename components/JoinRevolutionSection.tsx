@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Instagram, ShoppingBag, Subscription } from '@/components/icons';
+import { Instagram, ShoppingBag, PackageBox } from '@/components/icons';
 
 interface JoinRevolutionSectionProps {
   title?: string;
@@ -29,7 +29,7 @@ export default function JoinRevolutionSection({
         </p>
         <div className="flex justify-center gap-3.5 flex-wrap">
           <a
-            href="https://instagram.com"
+            href="https://www.instagram.com/wild.about.greens/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 border border-[#FFFDF8]/30 px-5 py-3 rounded-full text-sm font-semibold text-white hover:bg-[#CFFA57] hover:border-[#CFFA57] hover:text-[#151F19] hover:-translate-y-0.5 transition-all duration-200"
@@ -45,11 +45,11 @@ export default function JoinRevolutionSection({
             <span>Shop Products</span>
           </Link>
           <Link
-            href="/products?category=bundle"
+            href="/bulk-order"
             className="inline-flex items-center gap-2 border border-[#FFFDF8]/30 px-5 py-3 rounded-full text-sm font-semibold text-white hover:bg-[#CFFA57] hover:border-[#CFFA57] hover:text-[#151F19] hover:-translate-y-0.5 transition-all duration-200"
           >
-            <Subscription className="w-4 h-4 shrink-0" />
-            <span>Subscriptions</span>
+            <PackageBox className="w-4 h-4 shrink-0" />
+            <span>Bulk Order</span>
           </Link>
         </div>
       </div>

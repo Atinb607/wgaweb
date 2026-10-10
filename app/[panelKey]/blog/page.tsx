@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import ImageField from '@/components/admin/ImageField';
+import { Utensils, Pin } from '@/components/icons';
 
 interface Post {
   id: string;
@@ -419,7 +420,8 @@ export default function AdminBlogPage() {
           {form.post_type === 'recipe' && (
             <div className="border-t pt-6 mt-6 space-y-6">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <span>🍳</span> Recipe Cooking Details
+                <Utensils className="w-5 h-5 text-emerald-800" />
+                <span>Recipe Cooking Details</span>
               </h2>
 
               {/* Prep / Cook / Difficulty / Serves */}
@@ -627,7 +629,7 @@ export default function AdminBlogPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl">📌</span>
+              <Pin className="w-5 h-5 text-emerald-800 shrink-0" />
               <h2 className="text-base sm:text-lg font-bold text-gray-900">
                 Homepage Featured Recipes (Recipe Khazana)
               </h2>
@@ -780,13 +782,15 @@ export default function AdminBlogPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-gray-900">{p.title}</span>
                     {p.slug === pinned1 && (
-                      <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300 shrink-0">
-                        📌 Recipe 01 / 02
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-300 shrink-0">
+                        <Pin className="w-3 h-3" />
+                        <span>Recipe 01 / 02</span>
                       </span>
                     )}
                     {p.slug === pinned2 && (
-                      <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300 shrink-0">
-                        📌 Recipe 02 / 02
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-300 shrink-0">
+                        <Pin className="w-3 h-3" />
+                        <span>Recipe 02 / 02</span>
                       </span>
                     )}
                   </div>
@@ -811,7 +815,7 @@ export default function AdminBlogPage() {
                         : 'bg-blue-50 text-blue-700'
                     }`}
                   >
-                    {p.post_type === 'recipe' ? '🍳 Recipe' : '📰 Article'}
+                    {p.post_type === 'recipe' ? 'Recipe' : 'Article'}
                   </span>
                 </td>
                 <td className="px-4 py-3">

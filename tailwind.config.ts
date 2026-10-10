@@ -10,8 +10,8 @@ const config: Config = {
     extend: {
       colors: {
         ink: '#151F19',
-        cream: '#F3EEE0',
-        stone: '#E4DDC8',
+        cream: '#FFFFFF',
+        stone: '#F1EDE3',
         forest: '#1C3F2D',
         'forest-dk': '#122A1F',
         sprout: '#CFFA57',

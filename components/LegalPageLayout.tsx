@@ -104,7 +104,7 @@ export default function LegalPageLayout({
   }, [content, isHtml]);
 
   return (
-    <div className="bg-[#F3EEE0] min-h-screen text-[#151F19] font-sans">
+    <div className="bg-white min-h-screen text-[#151F19] font-sans">
       <main className="max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-28 sm:pt-36 pb-20 sm:pb-28">
         {/* Page Title: Top Left, Simple Bold Sans-Serif */}
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#151F19] mb-8 sm:mb-10 font-sans">

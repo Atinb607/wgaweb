@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
-import { LeafFavicon } from '@/components/icons';
+import { LeafFavicon, Sprout, Zap } from '@/components/icons';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
+import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 import { Product, WhyChoosePin, Review, SamplerVariantData } from './page';
 
 interface ProductMeta {
@@ -60,7 +60,7 @@ const DEFAULT_REVIEWS: Review[] = [
     reviewer_name: 'Avi Dayal',
     reviewer_location: null,
     review_text:
-      '<strong>Clean and easy on gut.</strong> I love you guys added dates and monk fruit for sweetness and also it <strong>felt light</strong> after consuming it. There were no burps and protein farts 🤙',
+      '<strong>Clean and easy on gut.</strong> I love you guys added dates and monk fruit for sweetness and also it <strong>felt light</strong> after consuming it. There were no burps and protein farts.',
     rating: 5,
     display_order: 2,
     is_active: true,
@@ -226,80 +226,47 @@ export default function ProductListClient({
   const [whyChoosePins, setWhyChoosePins] = useState<WhyChoosePin[]>(initialWhyChoosePins);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterHoneypot, setNewsletterHoneypot] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [newsletterMessage, setNewsletterMessage] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const turnstileWidgetId = useRef<string | null>(null);
-  const turnstileContainerRef = useRef<HTMLDivElement>(null);
   const carouselRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-
-  const handleTurnstileScriptReady = useCallback(() => {
-    setTurnstileReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.turnstile) {
-      setTurnstileReady(true);
-      return;
-    }
-    const interval = setInterval(() => {
-      if (window.turnstile) {
-        setTurnstileReady(true);
-        clearInterval(interval);
-      }
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  const renderTurnstile = useCallback(() => {
-    if (!turnstileReady || !siteKey || !window.turnstile || !turnstileContainerRef.current) return;
-    if (turnstileWidgetId.current) {
-      try { window.turnstile.remove(turnstileWidgetId.current); } catch { /* ignore */ }
-    }
-    turnstileContainerRef.current.innerHTML = '';
-    turnstileWidgetId.current = window.turnstile.render(turnstileContainerRef.current, {
-      sitekey: siteKey,
-      callback: (token: string) => setTurnstileToken(token),
-      'expired-callback': () => setTurnstileToken(null),
-      'error-callback': () => setTurnstileToken(null),
-      theme: 'dark',
-    });
-  }, [turnstileReady, siteKey]);
-
-  useEffect(() => {
-    renderTurnstile();
-  }, [renderTurnstile]);
+  const {
+    containerRef: newsletterCaptchaRef,
+    getTokenBeforeSubmit: getNewsletterCaptchaToken,
+    reset: resetNewsletterCaptcha,
+  } = useInvisibleTurnstile();
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail.trim()) return;
 
-    if (!turnstileToken) {
-      setNewsletterStatus('error');
-      setNewsletterMessage('Security check in progress. Please try again in a moment.');
-      return;
-    }
-
     setNewsletterStatus('loading');
     setNewsletterMessage('');
     try {
+      // 1. Obtain invisible captcha token before sending request to backend
+      const captchaToken = await getNewsletterCaptchaToken();
+      if (!captchaToken) {
+        setNewsletterStatus('error');
+        setNewsletterMessage('Security check in progress. Please try again in a moment.');
+        return;
+      }
+
+      // 2. Send request to backend
       const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: newsletterEmail.trim(),
           source: 'product_listing',
-          turnstileToken,
+          turnstileToken: captchaToken,
+          website: newsletterHoneypot,
         }),
       });
       const data = await res.json();
       if (res.ok) {
         setNewsletterStatus('success');
-        setNewsletterMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code. 🌱');
+        setNewsletterMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code.');
         setNewsletterEmail('');
       } else {
         setNewsletterStatus('error');
@@ -310,8 +277,7 @@ export default function ProductListClient({
       setNewsletterMessage('Failed to connect. Please check your internet connection.');
     } finally {
       // Reset Turnstile for next submission
-      setTurnstileToken(null);
-      renderTurnstile();
+      resetNewsletterCaptcha();
     }
   };
 
@@ -425,21 +391,13 @@ export default function ProductListClient({
   };
 
   return (
-    <>
-      {siteKey && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          strategy="afterInteractive"
-          onReady={handleTurnstileScriptReady}
-        />
-      )}
-      <div className="bg-[#F3EEE0] text-[#151F19] min-h-screen">
+    <div className="bg-white text-[#151F19] min-h-screen">
       {/* ================= SECTION 1: PLP HERO ================= */}
       <section className="grid grid-cols-1 md:grid-cols-2 min-h-[82vh]">
         {/* Left Column: Forest Copy */}
         <div className="bg-[#1C3F2D] text-[#FFFDF8] flex flex-col justify-center pt-36 pb-20 px-8 sm:px-14 lg:px-20">
           <div className="font-mono text-[11.5px] tracking-[0.14em] uppercase text-[#B7E23F] mb-5 font-semibold">
-            {content.hero_eyebrow || '🌱 FRESH HARVEST · HARVESTED TO ORDER'}
+            {content.hero_eyebrow ? content.hero_eyebrow.replace(/^[^\w\s]+\s*/, '') : 'FRESH HARVEST · HARVESTED TO ORDER'}
           </div>
 
           <h1 className="font-serif font-medium text-4xl sm:text-5xl lg:text-6xl leading-[1.06] tracking-tight max-w-lg mb-6">
@@ -603,7 +561,7 @@ export default function ProductListClient({
                               />
                             ) : (
                               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#E6EBE4] to-[#D5DDD2] flex flex-col items-center justify-center p-4">
-                                <span className="text-4xl opacity-50 mb-1">🌿</span>
+                                <Sprout className="w-10 h-10 text-emerald-800/40 mb-1" />
                                 <span className="font-mono text-[9px] uppercase tracking-wider text-[#5C6B60] opacity-75">Fresh Greens</span>
                               </div>
                             )}
@@ -625,8 +583,8 @@ export default function ProductListClient({
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-sm opacity-50">
-                                    🌿
+                                  <div className="w-full h-full flex items-center justify-center text-sm opacity-50 text-emerald-800">
+                                    <Sprout className="w-4 h-4" />
                                   </div>
                                 )}
                               </div>
@@ -668,11 +626,11 @@ export default function ProductListClient({
                           {/* Info Rows */}
                           <div className="border-t border-b border-[#E4DDC8] py-2.5 mb-3 space-y-1.5 text-xs text-[#5C6B60]">
                             <div className="flex items-center gap-2">
-                              <span className="text-[#1C3F2D] text-xs">⚡</span>
+                              <Zap className="w-3.5 h-3.5 text-[#1C3F2D] shrink-0" />
                               <span className="truncate">{product.highlight_1 || meta.benefit}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-[#3E8F52] text-xs">🌿</span>
+                              <Sprout className="w-3.5 h-3.5 text-[#3E8F52] shrink-0" />
                               <span>{product.highlight_2 || (isBundle ? 'Bundle · 7 to 10 days fresh' : 'Fresh tray · 7 to 10 days fresh')}</span>
                             </div>
                           </div>
@@ -924,7 +882,7 @@ export default function ProductListClient({
       </section>
 
       {/* ================= SECTION 7: REVIEWS ("STRAIGHT FROM THE GUT") ================= */}
-      <section className="bg-[#E4DDC8] pt-6 sm:pt-[36px] pb-8 sm:pb-[80px]">
+      <section className="bg-[#F1EDE3] pt-6 sm:pt-[36px] pb-8 sm:pb-[80px]">
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8">
           <div className="flex items-end justify-between mb-4 sm:mb-8">
             <div>
@@ -965,7 +923,7 @@ export default function ProductListClient({
       </section>
 
       {/* ================= SECTION 7b: NEW TO MICROGREENS? (MID-CTA BANNER) ================= */}
-      <section className="bg-[#E4DDC8] p-0 overflow-hidden">
+      <section className="bg-[#F1EDE3] p-0 overflow-hidden">
         <div className="mband">
           <div className="row">
             <div className="slice">
@@ -1063,7 +1021,7 @@ export default function ProductListClient({
       </section>
 
       {/* ================= SECTION 8: FAQ ACCORDION ================= */}
-      <section className="bg-[#F3EEE0] py-20 sm:py-24">
+      <section className="bg-white py-20 sm:py-24">
         <div className="max-w-[940px] mx-auto px-4 sm:px-8">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -1162,6 +1120,16 @@ export default function ProductListClient({
                 disabled={newsletterStatus === 'loading'}
                 className="flex-1 min-w-[200px] bg-[#FFFDF8]/10 border border-[#FFFDF8]/25 rounded-full px-5 py-3.5 text-[#FFFDF8] text-sm outline-none placeholder:text-[#FFFDF8]/45 focus:border-[#CFFA57] transition-colors"
               />
+              <input
+                type="text"
+                name="website"
+                value={newsletterHoneypot}
+                onChange={(e) => setNewsletterHoneypot(e.target.value)}
+                style={{ display: 'none' }}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
               <button
                 type="submit"
                 disabled={newsletterStatus === 'loading'}
@@ -1172,10 +1140,17 @@ export default function ProductListClient({
                   : (content.newsletter_button_text || 'Sign Up')}
               </button>
             </form>
-            {/* Invisible Turnstile container positioned off-screen to preserve exact layout */}
+            {/* Invisible Captcha container — zero visual footprint to preserve exact design */}
             <div
-              ref={turnstileContainerRef}
-              style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
+              ref={newsletterCaptchaRef}
+              style={{
+                position: 'absolute',
+                width: 0,
+                height: 0,
+                overflow: 'hidden',
+                opacity: 0,
+                pointerEvents: 'none',
+              }}
               aria-hidden="true"
             />
             {newsletterMessage && (
@@ -1194,6 +1169,5 @@ export default function ProductListClient({
         </div>
       </section>
     </div>
-    </>
   );
 }

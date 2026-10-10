@@ -54,7 +54,7 @@ export async function sendOrderConfirmation(
     SET confirmation_email_sent = true
     WHERE id = ${orderId}
       AND confirmation_email_sent = false
-      AND payment_status = 'paid'
+      AND payment_status IN ('paid', 'cod_pending')
     RETURNING id, order_number, customer_name, customer_email, customer_phone,
               delivery_address, delivery_pincode, subtotal_paise, delivery_fee_paise,
               total_paise, purchase_type, subscription_frequency, created_at
@@ -93,7 +93,7 @@ export async function sendOrderConfirmation(
     emailConfig[b.key] = b.value;
   }
 
-  const rawSubject = emailConfig.order_confirmation_subject || 'Wild About Greens: Order #{order_number} Confirmed! 🌱';
+  const rawSubject = emailConfig.order_confirmation_subject || 'Wild About Greens: Order #{order_number} Confirmed!';
   const rawHeading = emailConfig.order_confirmation_heading || 'Thanks for your order, {customer_name}!';
   const rawIntro = emailConfig.order_confirmation_intro || "We've received your order and payment. Our urban farm team will harvest and prepare your microgreens fresh for delivery.";
   const rawFooter = emailConfig.order_confirmation_footer || "Questions about your delivery? Reply directly to this email or reach us on WhatsApp. Thank you for supporting sustainable urban farming!";
@@ -142,7 +142,7 @@ export async function sendOrderConfirmation(
   const itemRowsHtml = items
     .map(
       (item) => `
-        <tr style="border-bottom: 1px solid #F3EEE0;">
+        <tr style="border-bottom: 1px solid #EEEEEE;">
           <td style="padding: 12px 8px; vertical-align: top;">
             <strong style="color: #151F19; font-size: 14px;">${item.product_name}</strong>
           </td>
@@ -160,7 +160,7 @@ export async function sendOrderConfirmation(
     )
     .join('');
 
-  const fromEmail = process.env.FROM_EMAIL || 'orders@wildaboutgreens.com';
+  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
 
   const resend = getResend();
   if (!resend) {
@@ -180,7 +180,7 @@ export async function sendOrderConfirmation(
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${subject}</title>
     </head>
-    <body style="margin: 0; padding: 24px 12px; background-color: #F8F6F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+    <body style="margin: 0; padding: 24px 12px; background-color: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
       <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E8E2D2; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
         <!-- Brand Header -->
         <tr>
@@ -206,7 +206,7 @@ export async function sendOrderConfirmation(
             </div>
 
             <!-- Order Number Banner -->
-            <div style="background-color: #FAF7EE; border: 1.5px solid #E4DDC8; border-radius: 12px; padding: 18px 20px; margin-bottom: 28px;">
+            <div style="background-color: #F9FAFB; border: 1.5px solid #E5E7EB; border-radius: 12px; padding: 18px 20px; margin-bottom: 28px;">
               <table width="100%" border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="vertical-align: middle;">
@@ -219,7 +219,7 @@ export async function sendOrderConfirmation(
                   </td>
                   <td style="text-align: right; vertical-align: middle;">
                     <span style="display: inline-block; background-color: #DCFCE7; color: #166534; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 9999px; border: 1px solid #86EFAC;">
-                      PAID ✅
+                      PAID
                     </span>
                     ${subscriptionNote ? `<div style="margin-top: 4px;">${subscriptionNote}</div>` : ''}
                   </td>
@@ -333,6 +333,21 @@ interface InquiryForEmail {
   message: string | null;
 }
 
+export interface BulkOrderForEmail {
+  id: string;
+  ticket_number: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  trays_count: number;
+  products: string;
+  business_name?: string | null;
+  delivery_address?: string | null;
+  delivery_pincode?: string | null;
+  frequency?: string | null;
+  notes?: string | null;
+}
+
 /**
  * Send a notification email to the business owner when a new
  * restaurant/bulk inquiry is submitted.
@@ -340,9 +355,9 @@ interface InquiryForEmail {
 export async function sendInquiryNotification(
   inquiry: InquiryForEmail
 ): Promise<boolean> {
-  const fromEmail = process.env.FROM_EMAIL || 'orders@wildaboutgreens.com';
+  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
   // Send to the business owner's email (FROM_EMAIL doubles as the admin inbox for MVP)
-  const toEmail = process.env.FROM_EMAIL || 'orders@wildaboutgreens.com';
+  const toEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
 
   const resend = getResend();
   if (!resend) {
@@ -354,7 +369,7 @@ export async function sendInquiryNotification(
     await resend.emails.send({
       from: fromEmail,
       to: toEmail,
-      subject: `🏢 New Bulk Inquiry: ${inquiry.business_name}`,
+      subject: `New Bulk Inquiry: ${inquiry.business_name}`,
       html: `
         <h2>New Restaurant / Bulk Inquiry</h2>
         <table style="border-collapse: collapse;">
@@ -377,6 +392,55 @@ export async function sendInquiryNotification(
   }
 }
 
+/**
+ * Send a notification email to the admin/team when a new
+ * bulk order request is submitted.
+ */
+export async function sendBulkOrderNotification(
+  req: BulkOrderForEmail
+): Promise<boolean> {
+  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
+  const toEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
+
+  const resend = getResend();
+  if (!resend) {
+    console.warn(`Bulk Order ${req.ticket_number}: RESEND_API_KEY not configured, skipping notification email`);
+    return false;
+  }
+
+  try {
+    await resend.emails.send({
+      from: fromEmail,
+      to: toEmail,
+      subject: `New Bulk Order Request: ${req.ticket_number} (${req.trays_count} Trays)`,
+      html: `
+        <h2>New Bulk Order Request: ${req.ticket_number}</h2>
+        <table style="border-collapse: collapse; font-family: sans-serif; font-size: 14px;">
+          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Ticket Number</td><td><strong>${req.ticket_number}</strong></td></tr>
+          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Customer Name</td><td>${req.customer_name}</td></tr>
+          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Phone</td><td>${req.customer_phone}</td></tr>
+          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Email</td><td>${req.customer_email}</td></tr>
+          ${req.business_name ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Business Name</td><td>${req.business_name}</td></tr>` : ''}
+          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Trays Count</td><td><strong>${req.trays_count} trays</strong></td></tr>
+          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Products Requested</td><td>${req.products}</td></tr>
+          ${req.frequency ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Order Frequency</td><td>${req.frequency}</td></tr>` : ''}
+          ${req.delivery_address ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Delivery Address</td><td>${req.delivery_address}</td></tr>` : ''}
+          ${req.delivery_pincode ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Pincode</td><td>${req.delivery_pincode}</td></tr>` : ''}
+        </table>
+        ${req.notes ? `<h3>Special Notes / Instructions</h3><p style="background: #f7f7f7; padding: 12px; border-radius: 8px;">${req.notes}</p>` : ''}
+        <hr />
+        <p style="color: #888; font-size: 12px;">Submitted via Wild About Greens Bulk Order portal.</p>
+      `,
+    });
+
+    console.log(`Bulk Order ${req.ticket_number}: notification email sent`);
+    return true;
+  } catch (error) {
+    console.error(`Bulk Order ${req.ticket_number}: failed to send notification`, error);
+    return false;
+  }
+}
+
 // ─── Newsletter Welcome Email ────────────────────────────────────────────────
 
 /**
@@ -393,7 +457,7 @@ export async function sendNewsletterWelcome(
     return false;
   }
 
-  const fromEmail = process.env.FROM_EMAIL || 'orders@wildaboutgreens.com';
+  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
 
   try {
     const sql = getSQL();
@@ -408,9 +472,9 @@ export async function sendNewsletterWelcome(
       contentMap[b.key] = b.value;
     }
 
-    const subject = contentMap.newsletter_thankyou_subject || 'Welcome to Wild About Greens! 🌱';
+    const subject = contentMap.newsletter_thankyou_subject || 'Welcome to Wild About Greens!';
     const heading = contentMap.newsletter_thankyou_heading || 'Welcome to the Wild About Greens Family!';
-    const bodyText = contentMap.newsletter_thankyou_body || "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us. 🌱\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team";
+    const bodyText = contentMap.newsletter_thankyou_body || "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us.\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team";
     const footerText = contentMap.newsletter_thankyou_footer || 'Fresh harvest delivered straight from our indoor farm to your doorstep.';
 
     // Convert plain text body to simple HTML paragraphs
@@ -427,7 +491,7 @@ export async function sendNewsletterWelcome(
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${subject}</title>
       </head>
-      <body style="margin: 0; padding: 24px 12px; background-color: #F8F6F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+      <body style="margin: 0; padding: 24px 12px; background-color: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
         <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E8E2D2; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
           <!-- Header -->
           <tr>

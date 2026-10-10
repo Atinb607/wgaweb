@@ -6,7 +6,7 @@ import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import StoryModal from '@/components/StoryModal';
 import WhyMicrogreensChart from '@/components/WhyMicrogreensChart';
 import HealthGoalModal from '@/components/HealthGoalModal';
-import { Instagram, ShoppingBag, Subscription } from '@/components/icons';
+import { Instagram, ShoppingBag, PackageBox, Sprout, Flask, Target, Utensils } from '@/components/icons';
 import { HEALTH_GOALS } from '@/lib/healthGoals';
 import { getOptimizedLogoUrl } from '@/lib/format';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
@@ -361,7 +361,7 @@ export default function HomePageClient({
             variants={heroItemVariants}
             className="inline-flex items-center gap-2 font-mono text-[11.5px] tracking-[0.14em] uppercase text-[#FFFDF8] border border-[#FFFDF8]/40 px-4 py-2 rounded-full mb-7 backdrop-blur-sm shadow-sm"
           >
-            <span>🌱</span>
+            <Sprout className="w-3.5 h-3.5 text-[#CFFA57]" />
             <span>
               {content.hero_eyebrow || 'Grown Locally · Delivered Fresh Daily'}
             </span>
@@ -442,7 +442,7 @@ export default function HomePageClient({
       </section>
 
       {/* ================= ICON STRIP (Scroll-triggered) ================= */}
-      <section className="relative bg-[#F3EEE0] py-10 border-b border-[#E4DDC8]/60 overflow-hidden">
+      <section className="relative bg-white py-10 border-b border-[#E4DDC8]/60 overflow-hidden">
         <div className="wrap">
           <motion.div
             variants={scrollContainerVariants(0.06)}
@@ -458,7 +458,13 @@ export default function HomePageClient({
                     variants={scrollItemVariants}
                     className="flex flex-col items-center gap-2.5 text-center w-28 group hover:-translate-y-1 transition-transform duration-300"
                   >
-                    <span className="text-2xl">{pin.icon || '🌱'}</span>
+                    <span className="text-2xl flex items-center justify-center">
+                      {pin.icon && !/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(pin.icon) ? (
+                        pin.icon
+                      ) : (
+                        <Sprout className="w-6 h-6 text-[#1C3F2D]" />
+                      )}
+                    </span>
                     <span className="font-mono text-[9.5px] tracking-[0.06em] uppercase leading-tight text-[#122A1F] font-semibold">
                       {pin.title}
                     </span>
@@ -492,8 +498,9 @@ export default function HomePageClient({
             viewport={{ once: true, amount: 0.2 }}
             className="max-w-xl mb-10"
           >
-            <span className="font-mono text-[11.5px] tracking-[0.12em] uppercase text-[#5C6B60] inline-flex items-center gap-2 bg-[#E4DDC8] px-3.5 py-1.5 rounded-full mb-3">
-              {content.why_badge || '🔬 The Actual Data'}
+            <span className="font-mono text-[11.5px] tracking-[0.12em] uppercase text-[#5C6B60] inline-flex items-center gap-2 bg-[#F1EDE3] px-3.5 py-1.5 rounded-full mb-3">
+              <Flask className="w-3.5 h-3.5 text-[#1C3F2D]" />
+              <span>{content.why_badge ? content.why_badge.replace(/^[^\w\s]+\s*/, '') : 'The Actual Data'}</span>
             </span>
             <h2 className="font-serif text-4xl sm:text-5xl font-medium text-[#151F19] leading-tight">
               {content.why_title || (
@@ -581,7 +588,7 @@ export default function HomePageClient({
       </section>
 
       {/* ================= SHOP BY HEALTH GOAL (Scroll-triggered) ================= */}
-      <section className="relative bg-[#E4DDC8] py-14 sm:py-18 md:py-20 overflow-hidden scroll-mt-14" id="goals">
+      <section className="relative bg-[#F1EDE3] py-14 sm:py-18 md:py-20 overflow-hidden scroll-mt-14" id="goals">
         <div className="wrap">
           <motion.div
             variants={scrollItemVariants}
@@ -591,7 +598,8 @@ export default function HomePageClient({
             className="max-w-xl mb-7 sm:mb-10"
           >
             <span className="font-mono text-[10.5px] sm:text-[11.5px] tracking-[0.12em] uppercase text-[#5C6B60] inline-flex items-center gap-2 bg-[#FFFDF8]/70 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full mb-2.5 sm:mb-3">
-              {content.goals_badge || '🎯 Find Your Fit'}
+              <Target className="w-3.5 h-3.5 text-[#1C3F2D]" />
+              <span>{content.goals_badge ? content.goals_badge.replace(/^[^\w\s]+\s*/, '') : 'Find Your Fit'}</span>
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium text-[#151F19] leading-tight">
               {content.goals_title || (
@@ -620,33 +628,45 @@ export default function HomePageClient({
                     className="group block w-full text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C3F2D] rounded-xl sm:rounded-2xl"
                   >
                     <div
-                      className={`relative rounded-xl sm:rounded-2xl overflow-hidden aspect-square flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-1.5 group-hover:shadow-xl ${bgColor}`}
+                      className={`relative rounded-xl sm:rounded-2xl overflow-hidden aspect-square flex items-center justify-center border-2 border-[#D0C7B4] group-hover:border-[#1C3F2D] transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:-translate-y-2 group-hover:shadow-[0_20px_35px_-8px_rgba(28,63,45,0.26)] ${bgColor}`}
                     >
-                      {goal.tag && (
-                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-[#FFFDF8]/95 text-[#122A1F] font-mono text-[8px] sm:text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-sm">
-                          {goal.tag}
+                      {/* Light sheen swipe on hover */}
+                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-1000 ease-in-out pointer-events-none z-20" />
+
+                      {/* Dark gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none" />
+
+                      {/* Floating Explore pill that slides up on hover */}
+                      <div className="absolute inset-x-0 bottom-2.5 sm:bottom-3.5 z-20 flex justify-center pointer-events-none px-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-white/95 backdrop-blur-md text-[#122A1F] font-mono text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider shadow-lg transform translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out border border-white/50">
+                          <span>Explore Trays</span>
+                          <span className="text-[#1C3F2D] text-xs">↗</span>
                         </span>
-                      )}
+                      </div>
+
                       {goal.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={goal.image_url}
                           alt={goal.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover"
                         />
+                      ) : goal.icon && !/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(goal.icon) ? (
+                        <span className="text-3xl sm:text-4xl">{goal.icon}</span>
                       ) : (
-                        <span className="text-3xl sm:text-4xl">{goal.icon || '🌱'}</span>
+                        <Sprout className="w-10 h-10 text-[#1C3F2D]/60" />
                       )}
                     </div>
                     <div className="pt-2.5 sm:pt-3.5 px-0.5 sm:px-1">
-                      <h4 className="font-serif text-sm sm:text-base font-semibold text-[#122A1F] mb-0.5 sm:mb-1 line-clamp-1">
+                      <h4 className="font-serif text-sm sm:text-base font-semibold text-[#122A1F] group-hover:text-[#1C3F2D] mb-0.5 sm:mb-1 line-clamp-1 transition-colors">
                         {goal.title}
                       </h4>
                       {goal.subtitle && (
                         <p className="text-[11px] sm:text-xs text-[#5C6B60] line-clamp-2 leading-tight min-h-[26px] sm:min-h-[32px]">{goal.subtitle}</p>
                       )}
-                      <span className="inline-flex items-center gap-1 sm:gap-1.5 mt-1.5 sm:mt-2 text-[11px] sm:text-xs font-bold text-[#1C3F2D] group-hover:gap-2 sm:group-hover:gap-2.5 transition-all">
-                        Explore Trays →
+                      <span className="inline-flex items-center gap-1 sm:gap-1.5 mt-1.5 sm:mt-2 text-[11px] sm:text-xs font-bold text-[#1C3F2D] group-hover:text-[#122A1F] transition-colors">
+                        <span>Explore Trays</span>
+                        <span className="inline-block transform group-hover:translate-x-1.5 transition-transform duration-300">→</span>
                       </span>
                     </div>
                   </button>
@@ -684,8 +704,9 @@ export default function HomePageClient({
             viewport={{ once: true, amount: 0.2 }}
             className="max-w-lg mb-10 text-shadow"
           >
-            <span className="font-mono text-[11.5px] tracking-[0.13em] uppercase text-[#CFFA57] block mb-3 font-semibold">
-              {content.recipes_badge || '🍽️ Recipe Khazana'}
+            <span className="font-mono text-[11.5px] tracking-[0.13em] uppercase text-[#CFFA57] inline-flex items-center gap-2 mb-3 font-semibold">
+              <Utensils className="w-3.5 h-3.5 text-[#CFFA57]" />
+              <span>{content.recipes_badge ? content.recipes_badge.replace(/^[^\w\s]+\s*/, '') : 'Recipe Khazana'}</span>
             </span>
             <p className="font-serif italic text-lg sm:text-xl text-[#FFFDF8]/95 mb-3">
               {content.recipes_subtitle || 'Good for you. Easy for you. Delicious for you.'}
@@ -799,7 +820,7 @@ export default function HomePageClient({
       </section>
 
       {/* ================= LONG STORY (Scroll-triggered) ================= */}
-      <section className="relative bg-[#E4DDC8] py-20 text-center overflow-hidden" id="story">
+      <section className="relative bg-[#F1EDE3] py-20 text-center overflow-hidden" id="story">
         <div className="wrap">
           <motion.div
             variants={scrollContainerVariants(0.1)}
@@ -935,7 +956,7 @@ export default function HomePageClient({
         };
 
         return (
-          <section className="bg-[#FAF7EE] py-16 sm:py-20 border-t border-[#E8E2D2] overflow-hidden">
+          <section className="bg-white py-16 sm:py-20 border-t border-[#E8E2D2] overflow-hidden">
             <div className="wrap mb-10 sm:mb-12">
               <motion.div
                 variants={scrollContainerVariants(0.08)}
@@ -1036,7 +1057,7 @@ export default function HomePageClient({
           </motion.p>
           <motion.div variants={scrollItemVariants} className="flex justify-center gap-3.5 flex-wrap">
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/wild.about.greens/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 border border-[#FFFDF8]/30 px-5 py-3 rounded-full text-sm font-semibold text-white hover:bg-[#CFFA57] hover:border-[#CFFA57] hover:text-[#151F19] hover:-translate-y-0.5 transition-all duration-200"
@@ -1052,11 +1073,11 @@ export default function HomePageClient({
               <span>Shop Products</span>
             </Link>
             <Link
-              href="/products?category=bundle"
+              href="/bulk-order"
               className="inline-flex items-center gap-2 border border-[#FFFDF8]/30 px-5 py-3 rounded-full text-sm font-semibold text-white hover:bg-[#CFFA57] hover:border-[#CFFA57] hover:text-[#151F19] hover:-translate-y-0.5 transition-all duration-200"
             >
-              <Subscription className="w-4 h-4 shrink-0" />
-              <span>Subscriptions</span>
+              <PackageBox className="w-4 h-4 shrink-0" />
+              <span>Bulk Order</span>
             </Link>
           </motion.div>
         </motion.div>

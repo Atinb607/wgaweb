@@ -18,12 +18,19 @@ export async function GET() {
         AND created_at >= CURRENT_DATE
     `;
 
-    // ── Pending fulfillment ──
+    // ── Pending fulfillment (both paid and active COD pending orders) ──
     const pendingFulfillment = await sql`
       SELECT COUNT(*)::int AS count
       FROM orders
       WHERE fulfillment_status = 'unfulfilled'
-        AND payment_status = 'paid'
+        AND (payment_status = 'paid' OR payment_status = 'cod_pending')
+    `;
+
+    // ── COD Pending orders ──
+    const codPending = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM orders
+      WHERE payment_status = 'cod_pending'
     `;
 
     // ── Low stock variants (stock_qty <= 5) ──
@@ -77,6 +84,7 @@ export async function GET() {
       orders_today_count: todayOrders[0]?.count ?? 0,
       orders_today_revenue_paise: Number(todayOrders[0]?.revenue_paise ?? 0),
       pending_fulfillment_count: pendingFulfillment[0]?.count ?? 0,
+      cod_pending_count: codPending[0]?.count ?? 0,
       low_stock_variants: lowStock,
       newsletter_subscriber_count: subscribers[0]?.count ?? 0,
       new_inquiry_count: newInquiries[0]?.count ?? 0,

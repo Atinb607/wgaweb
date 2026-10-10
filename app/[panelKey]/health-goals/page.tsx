@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import ImageField from '@/components/admin/ImageField';
+import { Target, AlertTriangle, Sprout } from '@/components/icons';
 
 export interface HealthGoalContentItem {
   id: string;
@@ -90,7 +91,7 @@ export default function AdminHealthGoalsPage() {
         setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
         setEditing(updated);
         setForm(updated);
-        setSuccessMsg('Changes saved successfully! 🎉');
+        setSuccessMsg('Changes saved successfully!');
         setTimeout(() => setSuccessMsg(''), 3500);
       } else {
         alert('Failed to save health goal content.');
@@ -117,7 +118,8 @@ export default function AdminHealthGoalsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <span>🎯</span> Health Goal Content
+            <Target className="w-6 h-6 text-emerald-800" />
+            <span>Health Goal Content</span>
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             Customize the card text, tag badge, and popup content for each of the 8 health goals shown on the homepage.
@@ -205,14 +207,14 @@ export default function AdminHealthGoalsPage() {
                 {/* Icon Emoji */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    Icon Emoji
+                    Icon Symbol / Key
                   </label>
                   <input
                     type="text"
                     value={form.icon || ''}
                     onChange={(e) => setForm({ ...form, icon: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-center text-lg"
-                    placeholder="e.g. 🛡️"
+                    className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-center font-mono text-sm"
+                    placeholder="e.g. shield"
                   />
                 </div>
 
@@ -327,7 +329,9 @@ export default function AdminHealthGoalsPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-4xl">🌱</span>
+                      <div className="w-full h-full flex items-center justify-center bg-emerald-50">
+                        <Sprout className="w-10 h-10 text-emerald-600" />
+                      </div>
                     )}
                   </div>
                   <div className="pt-3 px-1">
@@ -367,8 +371,9 @@ export default function AdminHealthGoalsPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
-                      ⚠️ No products currently have this health goal selected. Go to Products → Edit to map products to this goal.
+                    <div className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                      <span>No products currently have this health goal selected. Go to Products → Edit to map products to this goal.</span>
                     </div>
                   )}
                 </div>
@@ -397,8 +402,8 @@ export default function AdminHealthGoalsPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl bg-emerald-50">
-                        {g.icon || '🌱'}
+                      <div className="w-full h-full flex items-center justify-center bg-emerald-50">
+                        <Sprout className="w-12 h-12 text-emerald-600" />
                       </div>
                     )}
                     <span className="absolute top-3 left-3 z-10 bg-[#FFFDF8]/95 text-[#122A1F] font-mono text-[9px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full shadow-sm">
@@ -416,7 +421,6 @@ export default function AdminHealthGoalsPage() {
                   {/* Body Copy */}
                   <div className="p-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <span className="text-base">{g.icon || '🌱'}</span>
                       <h3 className="font-serif font-bold text-base text-gray-900 truncate">
                         {g.title}
                       </h3>
@@ -443,7 +447,7 @@ export default function AdminHealthGoalsPage() {
                     onClick={() => handleEdit(g)}
                     className="px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-emerald-800 text-white text-xs font-semibold transition-colors"
                   >
-                    Edit Content ✏️
+                    Edit Content
                   </button>
                 </div>
               </div>

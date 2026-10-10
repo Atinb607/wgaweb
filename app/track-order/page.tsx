@@ -5,27 +5,10 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
 import { formatPrice } from '@/lib/format';
-import { Truck } from '@/components/icons';
+import { Truck, Sprout, PackageBox, Clipboard, Sparkles, AlertTriangle, Lock, Subscription } from '@/components/icons';
 import JoinRevolutionSection from '@/components/JoinRevolutionSection';
 
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        container: string | HTMLElement,
-        options: {
-          sitekey: string;
-          callback: (token: string) => void;
-          'expired-callback'?: () => void;
-          'error-callback'?: () => void;
-          theme?: 'light' | 'dark' | 'auto';
-        }
-      ) => string;
-      reset: (widgetId: string) => void;
-      remove: (widgetId: string) => void;
-    };
-  }
-}
+
 
 interface OrderItem {
   id: string;
@@ -53,6 +36,7 @@ interface Order {
   purchase_type: string;
   subscription_frequency: string | null;
   payment_status: string;
+  payment_method?: string;
   fulfillment_status: string;
   created_at: string;
   items: OrderItem[];
@@ -60,31 +44,31 @@ interface Order {
 
 const fulfillmentBadgeStyles: Record<string, { label: string; bg: string; text: string; border: string }> = {
   unfulfilled: {
-    label: '🌱 Morning Harvest In Progress',
+    label: 'Morning Harvest In Progress',
     bg: 'bg-amber-50',
     text: 'text-amber-800',
     border: 'border-amber-200',
   },
   fulfilled: {
-    label: '📦 Harvested & Packed',
+    label: 'Harvested & Packed',
     bg: 'bg-emerald-50',
     text: 'text-emerald-800',
     border: 'border-emerald-200',
   },
   shipped: {
-    label: '🚚 Out for Delivery',
+    label: 'Out for Delivery',
     bg: 'bg-blue-50',
     text: 'text-blue-800',
     border: 'border-blue-200',
   },
   delivered: {
-    label: '✅ Delivered Fresh',
+    label: 'Delivered Fresh',
     bg: 'bg-green-50',
     text: 'text-green-800',
     border: 'border-green-200',
   },
   cancelled: {
-    label: '❌ Order Cancelled',
+    label: 'Order Cancelled',
     bg: 'bg-rose-50',
     text: 'text-rose-800',
     border: 'border-rose-200',
@@ -96,33 +80,50 @@ const TIMELINE_STEPS = [
     key: 'placed',
     title: 'Order Confirmed',
     desc: 'Payment received & verified',
-    icon: '📝',
+    iconType: 'clipboard',
   },
   {
     key: 'harvest',
     title: 'Morning Harvest',
     desc: 'Selected & harvested fresh at our indoor vertical farm',
-    icon: '🌱',
+    iconType: 'sprout',
   },
   {
     key: 'packed',
     title: 'Packed & Chilled',
     desc: 'Prepared in breathable eco-trays',
-    icon: '📦',
+    iconType: 'package',
   },
   {
     key: 'shipped',
     title: 'Out for Delivery',
     desc: 'In transit with our fresh delivery partner',
-    icon: '🚚',
+    iconType: 'truck',
   },
   {
     key: 'delivered',
     title: 'Delivered Fresh',
     desc: 'Delivered fresh to your doorstep',
-    icon: '✨',
+    iconType: 'sparkles',
   },
 ];
+
+function renderStepIcon(type: string, className = 'w-4 h-4') {
+  switch (type) {
+    case 'clipboard':
+      return <Clipboard className={className} />;
+    case 'sprout':
+      return <Sprout className={className} />;
+    case 'package':
+      return <PackageBox className={className} />;
+    case 'truck':
+      return <Truck className={className} />;
+    case 'sparkles':
+      return <Sparkles className={className} />;
+    default:
+      return null;
+  }
+}
 
 function getActiveStepIndex(status: string): number {
   switch (status) {
@@ -137,6 +138,12 @@ function getActiveStepIndex(status: string): number {
     default:
       return 1;
   }
+}
+
+function getWhatsAppUrl(phoneStr?: string): string {
+  const digits = (phoneStr || '').replace(/\D/g, '');
+  const cleanNumber = digits.length === 10 ? `91${digits}` : (digits || '918427974445');
+  return `https://wa.me/${cleanNumber}`;
 }
 
 function TrackOrderContent() {
@@ -157,8 +164,8 @@ function TrackOrderContent() {
     track_title: 'Track Your Order',
     track_subtitle:
       'Enter your order number along with your phone number and email address to view the live harvest and delivery status.',
-    track_support_phone: '+91 98XXXXXXXX',
-    track_support_email: 'support@example.com',
+    track_support_phone: '+91 84279 74445',
+    track_support_email: 'wildaboutgreens@gmail.com',
     track_harvest_note:
       'Grown with mineral water & clean air · Harvested morning of delivery',
   });
@@ -289,7 +296,7 @@ function TrackOrderContent() {
       )}
 
       {/* Main Container with ample top padding to avoid fixed navbar overlap */}
-      <div className="bg-[#FAF6EF] min-h-screen text-[#151F19] pt-32 sm:pt-40 pb-20">
+      <div className="bg-white min-h-screen text-[#151F19] pt-32 sm:pt-40 pb-20">
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header Section */}
           <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
@@ -324,7 +331,7 @@ function TrackOrderContent() {
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   placeholder="e.g. WAG-XXXXXXXX"
-                  className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm font-mono uppercase tracking-wider text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
+                  className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm font-mono uppercase tracking-wider text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
                   required
                   maxLength={30}
                 />
@@ -348,7 +355,7 @@ function TrackOrderContent() {
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="e.g. 98XXXXXXXX"
                     required
-                    className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
                   />
                   <p className="text-[11px] text-[#151F19]/55 mt-1">Mobile number used at checkout</p>
                 </div>
@@ -367,7 +374,7 @@ function TrackOrderContent() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="e.g. name@example.com"
                     required
-                    className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
                   />
                   <p className="text-[11px] text-[#151F19]/55 mt-1">Email address used at checkout</p>
                 </div>
@@ -381,8 +388,8 @@ function TrackOrderContent() {
               )}
 
               {error && (
-                <div className="p-3.5 bg-red-50/90 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-2">
-                  <span className="text-base leading-none">⚠️</span>
+                <div className="p-3.5 bg-red-50/90 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
@@ -414,8 +421,9 @@ function TrackOrderContent() {
             </form>
 
             <div className="mt-4 pt-4 border-t border-[#E4DDC8]/60 text-center">
-              <p className="text-xs text-[#151F19]/55">
-                🔒 For privacy, order details require matching your order number and contact info.
+              <p className="text-xs text-[#151F19]/55 inline-flex items-center justify-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#151F19]/60 shrink-0" />
+                <span>For privacy, order details require matching your order number and contact info.</span>
               </p>
             </div>
           </div>
@@ -425,7 +433,11 @@ function TrackOrderContent() {
             <div className="space-y-8 animate-fadeIn">
               {orders.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-3xl border border-[#E4DDC8] p-8 max-w-xl mx-auto shadow-sm">
-                  <span className="text-4xl mb-3 block">🔍</span>
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 text-gray-500">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                  </div>
                   <h2 className="font-serif text-xl font-bold text-[#122A1F] mb-2">No Matching Orders Found</h2>
                   <p className="text-sm text-[#151F19]/70 max-w-md mx-auto mb-6 leading-relaxed">
                     We couldn&apos;t locate a paid order with those credentials. Please check for typos in your order
@@ -439,7 +451,7 @@ function TrackOrderContent() {
                       Shop Fresh Microgreens
                     </Link>
                     <a
-                      href={`https://wa.me/${(content.track_support_phone || '').replace(/\D/g, '')}`}
+                      href={getWhatsAppUrl(content.track_support_phone)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-5 py-2.5 rounded-full border border-[#1C3F2D] text-[#1C3F2D] text-xs font-semibold hover:bg-[#1C3F2D]/5 transition-colors"
@@ -462,7 +474,7 @@ function TrackOrderContent() {
                         className="bg-white rounded-3xl border border-[#E4DDC8] shadow-[0_12px_40px_rgba(21,31,25,0.06)] overflow-hidden"
                       >
                         {/* Top Banner / Order Summary Header */}
-                        <div className="bg-[#FAF6EF]/80 px-6 sm:px-8 py-5 border-b border-[#E4DDC8] flex flex-wrap items-center justify-between gap-4">
+                        <div className="bg-gray-50/80 px-6 sm:px-8 py-5 border-b border-[#E4DDC8] flex flex-wrap items-center justify-between gap-4">
                           <div>
                             <span className="text-[11px] font-bold text-[#1C3F2D] uppercase tracking-wider">
                               Order Number
@@ -495,7 +507,11 @@ function TrackOrderContent() {
                             </div>
 
                             <div>
-                              <p className="text-[11px] text-[#151F19]/55 uppercase tracking-wide">Total Paid</p>
+                              <p className="text-[11px] text-[#151F19]/55 uppercase tracking-wide">
+                                {order.payment_method === 'cod' && order.payment_status === 'cod_pending'
+                                  ? 'Pay on Delivery'
+                                  : 'Total Paid'}
+                              </p>
                               <p className="font-bold text-[#1C3F2D]">{formatPrice(order.total_paise)}</p>
                             </div>
 
@@ -546,15 +562,15 @@ function TrackOrderContent() {
                                               ? 'bg-[#1C3F2D] text-white shadow-sm'
                                               : isCurrent
                                               ? 'bg-[#CFFA57] text-[#122A1F] border-2 border-[#1C3F2D] shadow-md ring-4 ring-[#CFFA57]/30'
-                                              : 'bg-[#FAF6EF] text-[#151F19]/40 border border-[#E4DDC8]'
+                                              : 'bg-gray-50 text-[#151F19]/40 border border-[#E4DDC8]'
                                           }`}
                                         >
                                           {isCompleted ? (
                                             <span className="text-white text-xs">✓</span>
                                           ) : isCurrent ? (
-                                            <span className="animate-pulse">{step.icon}</span>
+                                            <span className="animate-pulse">{renderStepIcon(step.iconType, 'w-4 h-4 text-[#122A1F]')}</span>
                                           ) : (
-                                            <span className="text-xs opacity-75">{idx + 1}</span>
+                                            <span className="text-xs opacity-60">{renderStepIcon(step.iconType, 'w-3.5 h-3.5 text-[#151F19]/40')}</span>
                                           )}
                                         </div>
                                       </div>
@@ -582,7 +598,7 @@ function TrackOrderContent() {
 
                         {isCancelled && (
                           <div className="p-6 bg-rose-50/60 border-b border-rose-200 text-sm text-rose-800 flex items-center gap-3">
-                            <span className="text-2xl">⚠️</span>
+                            <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0" />
                             <div>
                               <p className="font-semibold">This order has been cancelled.</p>
                               <p className="text-xs text-rose-700/80">
@@ -595,7 +611,7 @@ function TrackOrderContent() {
                         {/* Order Content & Itemized Breakdown */}
                         <div className="p-6 sm:p-8">
                           {/* Destination & Delivery Info */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-[#FAF6EF]/50 border border-[#E4DDC8]/60 mb-6 text-xs sm:text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-gray-50/50 border border-[#E4DDC8]/60 mb-6 text-xs sm:text-sm">
                             <div>
                               <span className="text-[11px] font-bold uppercase tracking-wider text-[#1C3F2D] block mb-1">
                                 Delivery Address
@@ -617,8 +633,9 @@ function TrackOrderContent() {
                                   'Grown with mineral water & clean air · Harvested morning of delivery'}
                               </p>
                               {order.subscription_frequency && (
-                                <span className="inline-block mt-1 text-xs font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-300">
-                                  🔁 Active {order.subscription_frequency} Subscription
+                                <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-300">
+                                  <Subscription className="w-3.5 h-3.5 text-emerald-800" />
+                                  <span>Active {order.subscription_frequency} Subscription</span>
                                 </span>
                               )}
                             </div>
@@ -629,8 +646,8 @@ function TrackOrderContent() {
                             {order.items.map((item) => (
                               <div key={item.id} className="py-3.5 flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-[#FAF6EF] border border-[#E4DDC8] flex items-center justify-center text-lg shrink-0">
-                                    🌿
+                                  <div className="w-10 h-10 rounded-xl bg-gray-50 border border-[#E4DDC8] flex items-center justify-center shrink-0 text-[#1C3F2D]">
+                                    <Sprout className="w-5 h-5" />
                                   </div>
                                   <div>
                                     <Link
@@ -643,9 +660,9 @@ function TrackOrderContent() {
                                       {item.variant_label} ({item.net_weight_grams}g) &times; {item.quantity}
                                     </p>
                                     {item.subscription_trays && item.subscription_weeks && (
-                                      <span className="inline-block mt-0.5 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                        🔁 Subscription: {item.subscription_trays} trays/wk · {item.subscription_weeks}{' '}
-                                        wks
+                                      <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                        <Subscription className="w-3 h-3 text-emerald-700" />
+                                        <span>Subscription: {item.subscription_trays} trays/wk · {item.subscription_weeks} wks</span>
                                       </span>
                                     )}
                                   </div>
@@ -680,7 +697,11 @@ function TrackOrderContent() {
                               </span>
                             </div>
                             <div className="flex justify-between text-sm sm:text-base font-bold text-[#122A1F] pt-2 border-t border-[#E4DDC8]/60">
-                              <span>Total Paid</span>
+                              <span>
+                                {order.payment_method === 'cod' && order.payment_status === 'cod_pending'
+                                  ? `Cash on delivery: pay ${formatPrice(order.total_paise)} on delivery`
+                                  : 'Paid'}
+                              </span>
                               <span className="text-[#1C3F2D]">{formatPrice(order.total_paise)}</span>
                             </div>
                           </div>
@@ -694,7 +715,7 @@ function TrackOrderContent() {
                             <div className="flex items-center gap-3">
                               {content.track_support_phone && (
                                 <a
-                                  href={`https://wa.me/${content.track_support_phone.replace(/\D/g, '')}`}
+                                  href={getWhatsAppUrl(content.track_support_phone)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="px-3.5 py-1.5 rounded-full bg-[#1C3F2D] text-white font-medium hover:bg-[#122A1F] transition-colors inline-flex items-center gap-1.5"
@@ -733,7 +754,7 @@ export default function TrackOrderPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FAF6EF] pt-40 text-center text-sm text-[#151F19]/60">
+        <div className="min-h-screen bg-white pt-40 text-center text-sm text-[#151F19]/60">
           Loading tracking...
         </div>
       }

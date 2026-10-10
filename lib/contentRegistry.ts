@@ -52,7 +52,7 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'why_badge',
       label: 'Why Microgreens Badge',
       type: 'text',
-      defaultValue: '🔬 The Actual Data',
+      defaultValue: 'The Actual Data',
     },
     {
       key: 'why_title',
@@ -104,7 +104,7 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'goals_badge',
       label: 'Health Goals Section Badge',
       type: 'text',
-      defaultValue: '🎯 Find Your Fit',
+      defaultValue: 'Find Your Fit',
     },
     {
       key: 'goals_title',
@@ -116,7 +116,7 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'recipes_badge',
       label: 'Recipe Khazana Badge',
       type: 'text',
-      defaultValue: '🍽️ Recipe Khazana',
+      defaultValue: 'Recipe Khazana',
     },
     {
       key: 'recipes_subtitle',
@@ -222,7 +222,7 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'hero_eyebrow',
       label: 'Hero Eyebrow / Pill',
       type: 'text',
-      defaultValue: '🌱 FRESH HARVEST · HARVESTED TO ORDER',
+      defaultValue: 'FRESH HARVEST · HARVESTED TO ORDER',
     },
     {
       key: 'hero_title',
@@ -452,6 +452,13 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
   ],
 
   'product-detail': [
+    {
+      key: 'subscription_discount_percent',
+      label: 'Subscription Discount Percentage (%)',
+      type: 'text',
+      defaultValue: '15',
+      description: 'Storewide discount percentage applied to all recurring weekly subscription orders (e.g. 15 for 15% off). Automatically recalculates pricing, weekly rates, and badges for all products across the site.',
+    },
     {
       key: 'bundle_banner_title',
       label: 'Trio Bundle Banner Title',
@@ -732,7 +739,7 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'order_confirmation_subject',
       label: 'Order Confirmation Email Subject',
       type: 'text',
-      defaultValue: 'Wild About Greens: Order #{order_number} Confirmed! 🌱',
+      defaultValue: 'Wild About Greens: Order #{order_number} Confirmed!',
       description: 'Subject line for the order confirmation email. Supports {order_number} and {customer_name}.',
     },
     {
@@ -762,7 +769,7 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'newsletter_thankyou_subject',
       label: 'Newsletter Welcome Email Subject',
       type: 'text',
-      defaultValue: 'Welcome to Wild About Greens! 🌱',
+      defaultValue: 'Welcome to Wild About Greens!',
       description: 'Subject line for the welcome email sent after newsletter signup.',
     },
     {
@@ -776,7 +783,7 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'newsletter_thankyou_body',
       label: 'Newsletter Welcome Email Body',
       type: 'textarea',
-      defaultValue: "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us. 🌱\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team",
+      defaultValue: "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us.\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team",
       description: 'Body content for the welcome email. Use plain text with line breaks.',
     },
     {
@@ -1022,14 +1029,14 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'track_support_phone',
       label: 'Support Phone / WhatsApp Number',
       type: 'text',
-      defaultValue: '+91 98XXXXXXXX',
+      defaultValue: '+91 84279 74445',
       description: 'Phone or WhatsApp number displayed in the help and delivery inquiries section.',
     },
     {
       key: 'track_support_email',
       label: 'Support Email Address',
       type: 'text',
-      defaultValue: 'hello@wildaboutgreens.com',
+      defaultValue: 'wildaboutgreens@gmail.com',
       description: 'Contact email displayed in the customer help section.',
     },
     {
@@ -1115,8 +1122,8 @@ These Terms of Service and any separate agreements whereby we provide you Servic
 SECTION 12 - CONTACT INFORMATION
 Questions about the Terms of Service should be sent to us at:
 Wild About Greens Customer Care
-Email: hello@wildaboutgreens.com
-WhatsApp / Phone: +91 98XXXXXXXX
+Email: wildaboutgreens@gmail.com
+WhatsApp / Phone: +91 84279 74445
 Operating Hours: Monday – Sunday, 7:00 AM – 7:00 PM`,
       description:
         'Full legal content. All-caps lines automatically become bold uppercase underlined section headers. Lines starting with "-" or "*" become bullet points.',
@@ -1220,8 +1227,8 @@ SECTION 10 - CONTACT INFORMATION & GRIEVANCE OFFICER
 If you have any questions, concerns, or requests regarding this Privacy Policy or the handling of your personal data, please contact our Grievance Officer:
 Wild About Greens
 Attn: Privacy & Grievance Officer
-Email: hello@wildaboutgreens.com
-WhatsApp / Phone: +91 98XXXXXXXX
+Email: wildaboutgreens@gmail.com
+WhatsApp / Phone: +91 84279 74445
 Operating Hours: Monday – Sunday, 7:00 AM – 7:00 PM`,
       description:
         'Full privacy policy content. All-caps lines automatically become bold uppercase underlined section headers. Lines starting with "-" or "*" become bullet points.',
@@ -1308,8 +1315,8 @@ SECTION 7 - ORDER CANCELLATIONS & SUBSCRIPTION MODIFICATIONS
 SECTION 8 - CUSTOMER SUPPORT CONTACT
 To request a replacement, refund, or delivery inquiry:
 Wild About Greens Customer Care
-Email: hello@wildaboutgreens.com
-WhatsApp / Phone: +91 98XXXXXXXX
+Email: wildaboutgreens@gmail.com
+WhatsApp / Phone: +91 84279 74445
 Operating Hours: Monday – Sunday, 7:00 AM – 7:00 PM`,
       description:
         'Full shipping and returns policy content. All-caps lines automatically become bold uppercase underlined section headers. Lines starting with "-" or "*" become bullet points.',

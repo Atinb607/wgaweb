@@ -5,6 +5,7 @@ import { adminFetch } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
 import ImageField from '@/components/admin/ImageField';
 import { HEALTH_GOALS } from '@/lib/healthGoals';
+import { Target, Utensils, Sprout, Lightbulb } from '@/components/icons';
 
 interface Variant {
   id: string;
@@ -36,10 +37,10 @@ export interface ProductFAQ {
 }
 
 const defaultBadges: HighlightBadge[] = [
-  { icon: '⚡', label: '40x Sulforaphane' },
-  { icon: '🛡️', label: 'Zero Pesticides' },
-  { icon: '💧', label: 'Mineral RO Grown' },
-  { icon: '✂️', label: 'Cut to Order' },
+  { icon: 'zap', label: '40x Sulforaphane' },
+  { icon: 'shield', label: 'Zero Pesticides' },
+  { icon: 'droplet', label: 'Mineral RO Grown' },
+  { icon: 'scissors', label: 'Cut to Order' },
 ];
 
 const defaultProductFaqs: ProductFAQ[] = [
@@ -178,6 +179,10 @@ export default function AdminProductsPage() {
   const [faqs, setFaqs] = useState<ProductFAQ[]>(defaultProductFaqs);
   const [accordions, setAccordions] = useState<DetailAccordion[]>(defaultDetailAccordions);
   const [pairsWellWith, setPairsWellWith] = useState<string[]>(['', '', '']);
+  const [subDiscount, setSubDiscount] = useState<number>(15);
+  const [subDiscountInput, setSubDiscountInput] = useState<string>('15');
+  const [savingSubDiscount, setSavingSubDiscount] = useState(false);
+  const [subDiscountSaved, setSubDiscountSaved] = useState(false);
 
   const handleBadgeChange = (index: number, field: 'icon' | 'label', value: string) => {
     setBadges((prev) => {
@@ -189,7 +194,7 @@ export default function AdminProductsPage() {
 
   const handleAddBadge = () => {
     if (badges.length >= 4) return;
-    setBadges((prev) => [...prev, { icon: '🌱', label: '' }]);
+    setBadges((prev) => [...prev, { icon: 'sprout', label: '' }]);
   };
 
   const handleRemoveBadge = (index: number) => {
@@ -275,13 +280,59 @@ export default function AdminProductsPage() {
     if (res.ok) setProducts(await res.json());
   };
 
+  const loadSubDiscount = async () => {
+    try {
+      const res = await adminFetch('/api/admin/subscription-discount');
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.discount_percent === 'number') {
+          setSubDiscount(data.discount_percent);
+          setSubDiscountInput(String(data.discount_percent));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load subscription discount:', err);
+    }
+  };
+
   useEffect(() => {
     loadProducts();
+    loadSubDiscount();
     fetch('/api/products/categories')
       .then((r) => r.json())
       .then(setAllCategories)
       .catch(() => {});
   }, []);
+
+  const handleSaveSubDiscount = async () => {
+    const val = parseFloat(subDiscountInput);
+    if (isNaN(val) || val < 0 || val > 100) {
+      alert('Please enter a valid percentage between 0 and 100.');
+      return;
+    }
+    setSavingSubDiscount(true);
+    try {
+      const res = await adminFetch('/api/admin/subscription-discount', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discount_percent: val }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubDiscount(data.discount_percent);
+        setSubDiscountInput(String(data.discount_percent));
+        setSubDiscountSaved(true);
+        setTimeout(() => setSubDiscountSaved(false), 3000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to update subscription discount.');
+      }
+    } catch {
+      alert('Network error while saving subscription discount.');
+    } finally {
+      setSavingSubDiscount(false);
+    }
+  };
 
   const handleAddCategory = (rawCat: string) => {
     const val = rawCat.trim().toLowerCase().replace(/\s+/g, '-');
@@ -606,7 +657,8 @@ export default function AdminProductsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
                 <div>
                   <label className="block text-sm font-semibold text-emerald-950 flex items-center gap-1.5">
-                    <span>🎯</span> Health Goals (Shop by Health Goal)
+                    <Target className="w-4 h-4 text-emerald-800" />
+                    <span>Health Goals (Shop by Health Goal)</span>
                   </label>
                   <p className="text-xs text-emerald-800/80">
                     Assign one or multiple of the 8 health goals to display this product under those goals on the website.
@@ -652,7 +704,6 @@ export default function AdminProductsPage() {
                         key={goalId}
                         className="inline-flex items-center gap-1.5 bg-white text-[#1C3F2D] text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-300 shadow-sm"
                       >
-                        <span>{goalDef?.icon || '🌱'}</span>
                         <span>{goalDef?.title || goalId}</span>
                         <button
                           type="button"
@@ -705,8 +756,8 @@ export default function AdminProductsPage() {
                         className={isSelected ? 'text-gray-400 bg-gray-50' : 'text-gray-900'}
                       >
                         {isSelected
-                          ? `✓ ${goal.icon} ${goal.title} (Already selected)`
-                          : `${goal.icon} ${goal.title} — ${goal.subtitle}`}
+                          ? `✓ ${goal.title} (Already selected)`
+                          : `${goal.title} — ${goal.subtitle}`}
                       </option>
                     );
                   })}
@@ -760,7 +811,7 @@ export default function AdminProductsPage() {
                   Detail Highlight Badges (Max 4)
                 </label>
                 <p className="text-xs text-gray-500">
-                  The 4 feature chips shown under the description on the public product page (e.g. ⚡ 40x Sulforaphane).
+                  The 4 feature chips shown under the description on the public product page (e.g. 40x Sulforaphane).
                 </p>
               </div>
               {badges.length < 4 && (
@@ -782,10 +833,10 @@ export default function AdminProductsPage() {
                   <div key={idx} className="flex items-center gap-2">
                     <input
                       type="text"
-                      placeholder="Icon (e.g. ⚡)"
+                      placeholder="Icon key"
                       value={b.icon}
                       onChange={(e) => handleBadgeChange(idx, 'icon', e.target.value)}
-                      className="w-20 px-2 py-1.5 border rounded-lg text-sm text-center bg-white"
+                      className="w-24 px-2 py-1.5 border rounded-lg text-sm text-center font-mono bg-white"
                     />
                     <input
                       type="text"
@@ -1091,8 +1142,9 @@ export default function AdminProductsPage() {
           {/* Pairs Well With Section (3 Products) */}
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">
-                🥗 &ldquo;Pairs Well With&rdquo; Recommendations (3 Products)
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                <Utensils className="w-4 h-4 inline mr-1.5 text-[#1C3F2D]" />
+                &ldquo;Pairs Well With&rdquo; Recommendations (3 Products)
               </h3>
               <p className="text-xs text-gray-500">
                 Choose the 3 companion products displayed directly below the description accordions on this product&apos;s page.
@@ -1157,8 +1209,9 @@ export default function AdminProductsPage() {
           </div>
           <div className="flex gap-2">
             {isNew && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 w-full">
-                💡 <strong>Image Gallery</strong> will appear here right after you save; it needs a product ID first.
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 w-full flex items-center gap-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-600 inline shrink-0" />
+                <span><strong>Image Gallery</strong> will appear here right after you save; it needs a product ID first.</span>
               </p>
             )}
           </div>
@@ -1289,7 +1342,7 @@ export default function AdminProductsPage() {
         {/* Variants section */}
         {!isNew && (
           <div className="bg-white rounded-xl border p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="font-bold text-gray-900">Variants</h2>
               <button
                 onClick={() => setShowVariantForm(true)}
@@ -1298,6 +1351,9 @@ export default function AdminProductsPage() {
                 + Add Variant
               </button>
             </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Variants configure the single-tray standard base price. The storewide subscription routine automatically applies <strong className="text-emerald-700 font-semibold">{subDiscount}% off</strong> on top of this price when customers subscribe.
+            </p>
 
             {showVariantForm && (
               <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-3">
@@ -1409,6 +1465,61 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
+      {/* ── Global Subscription Discount Control Card ── */}
+      <div className="mb-6 bg-gradient-to-r from-emerald-50/90 via-[#F7FAF0] to-amber-50/60 border border-emerald-200/90 rounded-xl p-4 sm:p-5 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold font-mono tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-200">
+                STOREWIDE SUBSCRIPTION ROUTINE
+              </span>
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                Active: {subDiscount}% OFF
+              </span>
+            </div>
+            <h2 className="text-base font-bold text-gray-900">
+              Subscription &amp; Save Discount Percentage
+            </h2>
+            <p className="text-xs text-gray-600 max-w-2xl leading-relaxed">
+              Applied automatically to the <strong>&ldquo;Subscribe&rdquo;</strong> routine option for all products across the site using the formula:
+              <code className="ml-1 bg-white px-1.5 py-0.5 rounded border border-gray-200 text-emerald-800 text-[11px] font-mono">
+                Base Price &times; Trays &times; Weeks &times; (1 &minus; Discount%)
+              </code>.
+              Single tray / one-time orders remain at regular standard price.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 bg-white p-2 rounded-lg border border-gray-200 shadow-xs">
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={subDiscountInput}
+                onChange={(e) => setSubDiscountInput(e.target.value)}
+                className="w-20 sm:w-24 px-3 py-1.5 text-center font-mono font-bold text-base text-gray-900 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="15"
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 font-bold text-gray-500 pointer-events-none text-sm">
+                %
+              </span>
+            </div>
+            <button
+              onClick={handleSaveSubDiscount}
+              disabled={savingSubDiscount}
+              className={`px-4 py-2 text-xs font-bold rounded-md transition-all shadow-sm ${
+                subDiscountSaved
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-[#1C3F2D] hover:bg-[#122A1F] text-white'
+              } disabled:opacity-50 cursor-pointer`}
+            >
+              {savingSubDiscount ? 'Saving…' : subDiscountSaved ? '✓ Saved!' : 'Save Discount'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -1434,7 +1545,7 @@ export default function AdminProductsPage() {
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-400 border">
-                      🌿
+                      <Sprout className="w-5 h-5 text-gray-400" />
                     </div>
                   )}
                 </td>
@@ -1466,7 +1577,7 @@ export default function AdminProductsPage() {
                             key={gId}
                             className="text-[9.5px] font-semibold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1"
                           >
-                            <span>{gDef?.icon || '🌱'}</span>
+                            <Target className="w-2.5 h-2.5 text-emerald-700 inline" />
                             <span>{gDef?.title || gId}</span>
                           </span>
                         );

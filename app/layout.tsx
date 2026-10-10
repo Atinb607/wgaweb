@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -41,12 +42,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col font-sans bg-[#F3EEE0] text-[#151F19] antialiased">
+      <body className="min-h-screen flex flex-col font-sans bg-white text-[#151F19] antialiased">
         <Header />
         <CartDrawer />
         <div className="flex-1">{children}</div>
         <Footer />
         <WhatsAppButton />
+        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+          <Script
+            id="cf-turnstile-script"
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+            strategy="afterInteractive"
+          />
+        )}
       </body>
     </html>
   );

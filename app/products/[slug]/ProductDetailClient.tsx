@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
-import { LeafFavicon } from '@/components/icons';
+import { LeafFavicon, Sprout, Shield, Sparkles, CheckCircle, Clock, Utensils, Zap, Droplet, Scissors } from '@/components/icons';
 import { Product, Variant, RelatedProduct, Review, HighlightBadge, WhyChoosePin, ProductFAQ, DetailAccordion } from './page';
 
 const DEFAULT_DETAIL_ACCORDIONS: DetailAccordion[] = [
@@ -135,7 +135,7 @@ const DEFAULT_REVIEWS: Review[] = [
     reviewer_name: 'Avi Dayal',
     reviewer_location: null,
     review_text:
-      '<strong>Clean and easy on gut.</strong> I love you guys added dates and monk fruit for sweetness and also it <strong>felt light</strong> after consuming it. There were no burps and protein farts 🤙',
+      '<strong>Clean and easy on gut.</strong> I love you guys added dates and monk fruit for sweetness and also it <strong>felt light</strong> after consuming it. There were no burps and protein farts.',
     rating: 5,
     display_order: 2,
     is_active: true,
@@ -206,36 +206,75 @@ const DEFAULT_REVIEWS: Review[] = [
 
 const REASONS = [
   {
-    icon: '🥬',
+    iconType: 'sprout',
     title: 'Nutrient Density',
     desc: 'Microgreens can carry several times the vitamins and antioxidants of the mature vegetable, gram for gram¹. A small daily habit with an outsized return.',
   },
   {
-    icon: '🛡️',
+    iconType: 'shield',
     title: 'Everyday Antioxidants',
     desc: 'Compounds like sulforaphane and vitamin C help your body stand up to daily free-radical wear and tear², especially when the rest of your plate is processed.',
   },
   {
-    icon: '🌾',
+    iconType: 'sparkles',
     title: 'Better Digestion',
     desc: 'A quiet dose of fibre in every handful, most adults fall short here³, keeps digestion moving without any extra effort.',
   },
   {
-    icon: '✅',
+    iconType: 'check',
     title: 'Genuinely Clean',
     desc: 'Grown indoors on soil-free racks with mineral RO water. Nothing sprayed, ever. Food you can actually trust for the whole family.',
   },
   {
-    icon: '⏱️',
+    iconType: 'clock',
     title: 'Peak Freshness',
     desc: 'Cut to order and delivered within hours, so nutrients reach your table instead of fading in a warehouse for a week.',
   },
   {
-    icon: '🥄',
+    iconType: 'utensils',
     title: 'Effortlessly Good',
     desc: 'One handful upgrades a toast, poha, salad or smoothie. No cooking, no fuss — just sprinkle and eat.',
   },
 ];
+
+function renderReasonIcon(type: string) {
+  switch (type) {
+    case 'sprout':
+      return <Sprout className="w-5 h-5 text-emerald-800" />;
+    case 'shield':
+      return <Shield className="w-5 h-5 text-emerald-800" />;
+    case 'sparkles':
+      return <Sparkles className="w-5 h-5 text-emerald-800" />;
+    case 'check':
+      return <CheckCircle className="w-5 h-5 text-emerald-800" />;
+    case 'clock':
+      return <Clock className="w-5 h-5 text-emerald-800" />;
+    case 'utensils':
+      return <Utensils className="w-5 h-5 text-emerald-800" />;
+    default:
+      return <Sprout className="w-5 h-5 text-emerald-800" />;
+  }
+}
+
+function renderBadgeIcon(icon: string, label: string) {
+  const norm = (icon + ' ' + label).toLowerCase();
+  if (norm.includes('sulforaphane') || norm.includes('energy') || icon === '⚡') {
+    return <Zap className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  }
+  if (norm.includes('pesticide') || norm.includes('clean') || icon === '🛡️') {
+    return <Shield className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  }
+  if (norm.includes('ro') || norm.includes('water') || norm.includes('mineral') || icon === '💧') {
+    return <Droplet className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  }
+  if (norm.includes('cut') || norm.includes('order') || icon === '✂️') {
+    return <Scissors className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  }
+  if (icon && !/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(icon)) {
+    return <span>{icon}</span>;
+  }
+  return <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+}
 
 const RELATED_FALLBACKS: Record<string, { photo: string; subtitle: string }> = {
   'radish-microgreens': {
@@ -309,10 +348,10 @@ export default function ProductDetailClient({
     Array.isArray(product.detail_highlight_badges) && product.detail_highlight_badges.length > 0
       ? product.detail_highlight_badges
       : [
-          { icon: '⚡', label: '40x Sulforaphane' },
-          { icon: '🛡️', label: 'Zero Pesticides' },
-          { icon: '💧', label: 'Mineral RO Grown' },
-          { icon: '✂️', label: 'Cut to Order' },
+          { icon: 'zap', label: '40x Sulforaphane' },
+          { icon: 'shield', label: 'Zero Pesticides' },
+          { icon: 'droplet', label: 'Mineral RO Grown' },
+          { icon: 'scissors', label: 'Cut to Order' },
         ];
 
   const effectiveReviews: Review[] =
@@ -457,9 +496,35 @@ export default function ProductDetailClient({
   const rawPrice = selectedVariant.price_paise;
   const basePriceRupees = rawPrice / 100;
 
-  // Subscription calculation (Base Price * Number of trays * number of weeks * 0.85, rounded off without decimals)
+  // Subscription discount percentage from admin content blocks (default 15)
+  const rawDiscount = content?.subscription_discount_percent ? parseFloat(content.subscription_discount_percent) : 15;
+  const [discountPercent, setDiscountPercent] = useState<number>(
+    !isNaN(rawDiscount) && rawDiscount >= 0 && rawDiscount <= 100 ? rawDiscount : 15
+  );
+
+  useEffect(() => {
+    if (content?.subscription_discount_percent) {
+      const parsed = parseFloat(content.subscription_discount_percent);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+        setDiscountPercent(parsed);
+        return;
+      }
+    }
+    fetch('/api/subscription-discount')
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d?.discount_percent === 'number') {
+          setDiscountPercent(d.discount_percent);
+        }
+      })
+      .catch(() => {});
+  }, [content?.subscription_discount_percent]);
+
+  const discountMultiplier = Math.max(0, Math.min(100, 100 - discountPercent)) / 100;
+
+  // Subscription calculation (Base Price * Number of trays * number of weeks * discountMultiplier, rounded off without decimals)
   const subtotalRupees = basePriceRupees * subTrays * subWeeks;
-  const subPriceRupees = Math.round(subtotalRupees * 0.85);
+  const subPriceRupees = Math.round(subtotalRupees * discountMultiplier);
   const subPricePaise = subPriceRupees * 100;
   const subRegularPricePaise = Math.round(subtotalRupees) * 100;
 
@@ -584,7 +649,7 @@ export default function ProductDetailClient({
   };
 
   return (
-    <div className="bg-[#F3EEE0] text-[#151F19] min-h-screen">
+    <div className="bg-white text-[#151F19] min-h-screen">
       {/* ================= PDP HERO ================= */}
       <section className="pt-28 pb-16">
         <div className="wrap">
@@ -726,7 +791,7 @@ export default function ProductDetailClient({
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFFDF8] border border-[#E4DDC8] text-xs font-semibold text-[#122A1F] shadow-sm"
                   >
-                    <span>{badge.icon}</span>
+                    {renderBadgeIcon(badge.icon, badge.label)}
                     <span>{badge.label}</span>
                   </motion.span>
                 ))}
@@ -756,7 +821,7 @@ export default function ProductDetailClient({
                   </div>
                   {plan === 'subscription' && (
                     <div className="mt-1 text-xs text-[#2D7A4D] font-medium font-mono">
-                      ₹{Math.round(subPriceRupees / subWeeks)}/wk · {subTrays} {subTrays === 1 ? 'tray' : 'trays'} × {subWeeks} weeks (Save 15%)
+                      ₹{Math.round(subPriceRupees / subWeeks)}/wk · {subTrays} {subTrays === 1 ? 'tray' : 'trays'} × {subWeeks} weeks (Save {discountPercent}%)
                     </div>
                   )}
                 </div>
@@ -788,7 +853,7 @@ export default function ProductDetailClient({
                     }`}
                   >
                     <span className="absolute -top-2.5 right-2 bg-[#CFFA57] text-[#122A1F] font-mono text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-sm">
-                      Save 15%
+                      Save {discountPercent}%
                     </span>
                     <span className="block text-[13.5px] font-bold text-[#122A1F] mb-0.5">
                       Subscribe
@@ -825,13 +890,13 @@ export default function ProductDetailClient({
 
                 {/* Subscription Options: Number of Trays & Weekly Schedule */}
                 {plan === 'subscription' && (
-                  <div className="mb-4 bg-[#F3EEE0]/60 p-3.5 rounded-xl border border-[#E4DDC8] space-y-3">
+                  <div className="mb-4 bg-gray-50 p-3.5 rounded-xl border border-[#E4DDC8] space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="block font-mono text-[10px] tracking-wider uppercase text-[#5C6B60] font-semibold">
                         Delivery Schedule
                       </label>
                       <span className="font-mono text-[10px] text-[#2D7A4D] font-bold uppercase tracking-wider bg-[#EBF5EE] px-2 py-0.5 rounded border border-[#C5DEC9]">
-                        15% Off Included
+                        {discountPercent}% Off Included
                       </span>
                     </div>
 
@@ -880,7 +945,7 @@ export default function ProductDetailClient({
                 {/* Quantity & Add to Cart */}
                 <div className="flex gap-3 items-stretch mt-4">
                   {/* Stepper */}
-                  <div className="flex items-center border border-[#E4DDC8] rounded-xl overflow-hidden bg-[#F3EEE0]/40 flex-shrink-0">
+                  <div className="flex items-center border border-[#E4DDC8] rounded-xl overflow-hidden bg-gray-50 flex-shrink-0">
                     <button
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
                       className="w-9 h-full flex items-center justify-center text-base font-bold text-[#122A1F] hover:bg-[#E4DDC8]/60 transition-colors"
@@ -965,7 +1030,7 @@ export default function ProductDetailClient({
               {companionProducts.length > 0 && (
                 <div className="mt-8 pt-6 border-t border-[#E4DDC8]">
                   <div className="flex items-center gap-2 mb-3.5">
-                    <span className="text-base sm:text-lg">🥗</span>
+                    <Utensils className="w-4 h-4 text-[#1C3F2D]" />
                     <span className="font-mono text-[11px] sm:text-xs tracking-[0.14em] uppercase text-[#5C6B60] font-semibold">
                       PAIRS WELL WITH
                     </span>
@@ -1022,7 +1087,7 @@ export default function ProductDetailClient({
                             <button
                               type="button"
                               onClick={() => handleQuickAdd(rel)}
-                              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#F3EEE0] hover:bg-[#122A1F] hover:text-[#CFFA57] active:scale-95 flex items-center justify-center text-lg sm:text-xl font-bold text-[#122A1F] transition-all shadow-sm"
+                              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gray-100 hover:bg-[#122A1F] hover:text-[#CFFA57] active:scale-95 flex items-center justify-center text-lg sm:text-xl font-bold text-[#122A1F] transition-all shadow-sm"
                               title={`Add ${rel.name} to cart`}
                               aria-label={`Add ${rel.name} to cart`}
                             >
@@ -1113,7 +1178,7 @@ export default function ProductDetailClient({
                 {REASONS.slice(0, 3).map((r, i) => (
                   <div key={i} className="flex flex-col">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg select-none leading-none">{r.icon}</span>
+                      {renderReasonIcon(r.iconType)}
                       <h3 className="font-serif font-bold text-base sm:text-lg text-[#151F19] tracking-tight">
                         {r.title}
                       </h3>
@@ -1130,7 +1195,7 @@ export default function ProductDetailClient({
                 {REASONS.slice(3, 6).map((r, i) => (
                   <div key={i} className="flex flex-col">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg select-none leading-none">{r.icon}</span>
+                      {renderReasonIcon(r.iconType)}
                       <h3 className="font-serif font-bold text-base sm:text-lg text-[#151F19] tracking-tight">
                         {r.title}
                       </h3>
@@ -1228,7 +1293,7 @@ export default function ProductDetailClient({
       </section>
 
       {/* ================= SECTION 3: REVIEWS ("STRAIGHT FROM THE GUT") ================= */}
-      <section className="bg-[#E4DDC8] pt-6 sm:pt-[36px] pb-8 sm:pb-[80px]">
+      <section className="bg-[#F1EDE3] pt-6 sm:pt-[36px] pb-8 sm:pb-[80px]">
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8">
           <div className="flex items-end justify-between mb-4 sm:mb-8">
             <div>
@@ -1280,7 +1345,7 @@ export default function ProductDetailClient({
             {/* Left Title */}
             <div>
               <span className="font-mono text-[11px] tracking-widest uppercase text-[#CFFA57] block mb-2 font-semibold">
-                ⚖️ The Real Difference
+                The Real Difference
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl font-medium leading-tight">
                 Why fresh microgreens beat the <em className="italic text-[#CFFA57] font-normal">supermarket shelf.</em>
@@ -1408,7 +1473,7 @@ export default function ProductDetailClient({
                               />
                             ) : (
                               <div className="w-full h-full flex flex-col items-center justify-center">
-                                <span className="text-3xl opacity-50 mb-1">🌱</span>
+                                <Sprout className="w-8 h-8 text-emerald-800/40 mb-1" />
                                 <span className="font-mono text-[9px] uppercase tracking-wider text-stone-500 opacity-70">
                                   {item.name}
                                 </span>
@@ -1573,7 +1638,7 @@ export default function ProductDetailClient({
 
       {/* ================= SECTION 6: PRODUCT FAQS ACCORDION ================= */}
       {effectiveFaqs.length > 0 && (
-        <section className="bg-[#F5EFE6] py-16 sm:py-24 border-t border-[#E4DDC8]">
+        <section className="bg-[#F1EDE3] py-16 sm:py-24 border-t border-[#E4DDC8]/60">
           <div className="max-w-[860px] mx-auto px-4 sm:px-6">
             {/* Pill Badge */}
             <div className="flex justify-center mb-4">
@@ -1646,7 +1711,7 @@ export default function ProductDetailClient({
 
       {/* ================= STICKY ADD-TO-CART BAR ================= */}
       <div
-        className={`fixed left-0 right-0 bottom-0 z-40 bg-[#F3EEE0]/95 backdrop-blur-md border-t border-black/10 py-3 transition-transform duration-300 shadow-2xl ${
+        className={`fixed left-0 right-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/10 py-3 transition-transform duration-300 shadow-2xl ${
           showStickyBar ? 'translate-y-0' : 'translate-y-full'
         }`}
       >

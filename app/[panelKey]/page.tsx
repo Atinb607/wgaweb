@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
+import { AlertTriangle } from '@/components/icons';
 
 interface LowStockVariant {
   id: string;
@@ -59,7 +60,10 @@ export default function AdminDashboard() {
 
       {stats.low_stock_variants.length > 0 && (
         <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-bold text-gray-900 mb-3">⚠️ Low Stock Variants</h2>
+          <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500 inline shrink-0" />
+            <span>Low Stock Variants</span>
+          </h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-gray-500 border-b">

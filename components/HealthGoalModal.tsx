@@ -7,7 +7,7 @@ import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
 import type { Product } from '@/app/products/page';
-import { LeafFavicon } from '@/components/icons';
+import { LeafFavicon, Sprout, Zap } from '@/components/icons';
 
 interface HealthGoalModalProps {
   isOpen: boolean;
@@ -241,7 +241,7 @@ export default function HealthGoalModal({
                           : 'bg-white/10 text-white/85 hover:bg-white/20 hover:text-white'
                       }`}
                     >
-                      <span>{g.icon || '🌱'}</span>
+                      <span>{g.icon && !/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(g.icon) ? g.icon : <Sprout className="w-3.5 h-3.5 inline" />}</span>
                       <span>{g.title}</span>
                     </button>
                   );
@@ -256,7 +256,8 @@ export default function HealthGoalModal({
             >
               <div className="flex items-center justify-between border-b border-[#E4DDC8] pb-3">
                 <div className="font-mono text-[11px] sm:text-xs uppercase tracking-wider text-[#5C6B60] font-semibold flex items-center gap-1.5">
-                  <span>🌱</span> Available Trays ({mappedProducts.length})
+                  <Sprout className="w-3.5 h-3.5 text-emerald-800" />
+                  <span>Available Trays ({mappedProducts.length})</span>
                 </div>
               </div>
 
@@ -313,7 +314,7 @@ export default function HealthGoalModal({
                               />
                             ) : (
                               <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#E6EBE4] to-[#D5DDD2] flex flex-col items-center justify-center p-4">
-                                <span className="text-3xl opacity-50 mb-1">🌿</span>
+                                <Sprout className="w-10 h-10 text-emerald-800/40 mb-1" />
                                 <span className="font-mono text-[9px] uppercase tracking-wider text-[#5C6B60]">
                                   Fresh Greens
                                 </span>
@@ -336,15 +337,15 @@ export default function HealthGoalModal({
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-xs opacity-50">
-                                    🌿
+                                  <div className="w-full h-full flex items-center justify-center text-xs opacity-50 text-emerald-800">
+                                    <Sprout className="w-4 h-4" />
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1 p-2 flex flex-col justify-between">
                                 <div>
                                   <div className="font-serif font-bold text-[7.5px] tracking-wide text-[#1C3F2D] flex items-center gap-1 mb-0.5">
-                                    <span>🌱</span> WAG
+                                    <Sprout className="w-2.5 h-2.5" /> WAG
                                   </div>
                                   <h5 className="font-serif font-bold text-[10.5px] leading-tight text-[#151F19] mb-1 line-clamp-2">
                                     {product.name}
@@ -373,11 +374,11 @@ export default function HealthGoalModal({
                           {/* Highlights */}
                           <div className="border-t border-b border-[#E4DDC8] py-1.5 sm:py-2 mb-2.5 sm:mb-3 space-y-1 text-[11px] sm:text-xs text-[#5C6B60]">
                             <div className="flex items-center gap-1.5 truncate">
-                              <span className="text-[#1C3F2D]">⚡</span>
+                              <Zap className="w-3.5 h-3.5 text-[#1C3F2D] shrink-0" />
                               <span className="truncate">{product.highlight_1 || meta.benefit}</span>
                             </div>
                             <div className="flex items-center gap-1.5 truncate">
-                              <span className="text-[#3E8F52]">🌿</span>
+                              <Sprout className="w-3.5 h-3.5 text-[#3E8F52] shrink-0" />
                               <span className="truncate">
                                 {product.highlight_2 || (isBundle ? 'Fresh bundle · 7-10 days fresh' : 'Fresh tray · 7-10 days fresh')}
                               </span>
@@ -422,7 +423,9 @@ export default function HealthGoalModal({
                 </div>
               ) : (
                 <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-[#E4DDC8]">
-                  <span className="text-3xl mb-2 block">🌱</span>
+                  <div className="w-12 h-12 rounded-full bg-[#EBF5EE] text-[#1C3F2D] flex items-center justify-center mx-auto mb-2">
+                    <Sprout className="w-6 h-6" />
+                  </div>
                   <h4 className="font-serif text-lg font-semibold text-[#151F19] mb-1">
                     No microgreens currently mapped to {activeGoal.title}
                   </h4>
@@ -440,7 +443,7 @@ export default function HealthGoalModal({
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-[#EBE4D3] px-4 sm:px-6 py-2.5 sm:py-3.5 border-t border-[#DFD7C2] flex flex-row items-center justify-between gap-3 text-[11px] sm:text-xs text-[#5C6B60]">
+            <div className="bg-[#F1EDE3] px-4 sm:px-6 py-2.5 sm:py-3.5 border-t border-[#E4DDC8]/60 flex flex-row items-center justify-between gap-3 text-[11px] sm:text-xs text-[#5C6B60]">
               <span className="truncate sm:overflow-visible">Grown pure with 100% mineral RO water &amp; zero pesticides.</span>
               <button
                 onClick={onClose}

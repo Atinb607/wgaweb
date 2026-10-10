@@ -96,7 +96,7 @@ export default async function PathshalaDetailPage({ params }: { params: { slug: 
   const rightCol = paragraphs.slice(midPoint);
 
   return (
-    <div className="bg-[#F3EEE0] min-h-screen pt-[64px] lg:pt-[70px]">
+    <div className="bg-white min-h-screen pt-[64px] lg:pt-[70px]">
       {/* 1. Full-Width Edge-to-Edge Panoramic Hero Banner */}
       <div className="w-full relative overflow-hidden bg-[#EAE8E1] h-[220px] sm:h-[300px] md:h-[380px] lg:h-[440px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -108,7 +108,7 @@ export default async function PathshalaDetailPage({ params }: { params: { slug: 
       </div>
 
       {/* 2. Page Title Band: Clean, centered uppercase with metadata */}
-      <div className="bg-[#F3EEE0] pt-10 pb-6 sm:pt-14 sm:pb-8 px-4 sm:px-6 text-center max-w-4xl mx-auto">
+      <div className="bg-white pt-10 pb-6 sm:pt-14 sm:pb-8 px-4 sm:px-6 text-center max-w-4xl mx-auto">
         <h1 className="font-sans font-bold text-xl sm:text-2xl md:text-3xl lg:text-[34px] text-[#111111] uppercase tracking-[0.2em] leading-snug">
           {post.title}
         </h1>
@@ -138,7 +138,7 @@ export default async function PathshalaDetailPage({ params }: { params: { slug: 
       </div>
 
       {/* 3. Main Content Section: 2-Column Article Layout */}
-      <div className="bg-[#F3EEE0] text-[#151F19] pt-2 pb-14 sm:pt-4 sm:pb-20">
+      <div className="bg-white text-[#151F19] pt-2 pb-14 sm:pt-4 sm:pb-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {paragraphs.length > 1 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-14 xl:gap-16 items-start">

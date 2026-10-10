@@ -73,7 +73,7 @@ export default function Header() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           showSolidNav
-            ? 'bg-[#F3EEE0]/95 backdrop-blur-md py-3 shadow-[0_1px_0_rgba(21,31,25,0.08)]'
+            ? 'bg-white/95 backdrop-blur-md py-3 shadow-[0_1px_0_rgba(21,31,25,0.08)]'
             : 'bg-transparent py-5'
         }`}
       >
@@ -255,13 +255,13 @@ export default function Header() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-              className="fixed top-0 left-0 bottom-0 h-full w-[310px] sm:w-[350px] max-w-[85vw] bg-[#F3EEE0] border-r border-[#E4DDC8] shadow-2xl z-[70] flex flex-col justify-between overflow-hidden lg:hidden"
+              className="fixed top-0 left-0 bottom-0 h-full w-[310px] sm:w-[350px] max-w-[85vw] bg-white border-r border-[#E4DDC8] shadow-2xl z-[70] flex flex-col justify-between overflow-hidden lg:hidden"
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
             >
               {/* Drawer Top Header: Logo + Close Button */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4DDC8] bg-[#F3EEE0] shrink-0">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4DDC8] bg-white shrink-0">
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
@@ -281,7 +281,7 @@ export default function Header() {
                 </Link>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-9 h-9 flex items-center justify-center text-[#5C6B60] hover:text-[#151F19] hover:bg-[#E8E1CE] active:bg-[#DCD4BF] rounded-full transition-colors"
+                  className="w-9 h-9 flex items-center justify-center text-[#5C6B60] hover:text-[#151F19] hover:bg-gray-100 active:bg-gray-200 rounded-full transition-colors"
                   aria-label="Close menu"
                 >
                   <X />
@@ -300,7 +300,7 @@ export default function Header() {
                       className={`flex items-center justify-between py-3 px-3.5 rounded-xl text-[14.5px] font-medium transition-all ${
                         pathname === '/products' || pathname.startsWith('/products')
                           ? 'bg-[#1C3F2D] text-white font-semibold shadow-xs'
-                          : 'text-[#151F19] hover:bg-[#E8E1CE]/80 active:bg-[#E8E1CE]'
+                          : 'text-[#151F19] hover:bg-gray-100 active:bg-gray-200'
                       }`}
                     >
                       <span>Shop Our Products</span>
@@ -315,7 +315,7 @@ export default function Header() {
                       className={`flex items-center justify-between py-3 px-3.5 rounded-xl text-[14.5px] font-medium transition-all ${
                         pathname === '/pathshala' || pathname.startsWith('/pathshala')
                           ? 'bg-[#1C3F2D] text-white font-semibold shadow-xs'
-                          : 'text-[#151F19] hover:bg-[#E8E1CE]/80 active:bg-[#E8E1CE]'
+                          : 'text-[#151F19] hover:bg-gray-100 active:bg-gray-200'
                       }`}
                     >
                       <span>Why Microgreens</span>
@@ -330,7 +330,7 @@ export default function Header() {
                       className={`flex items-center justify-between py-3 px-3.5 rounded-xl text-[14.5px] font-medium transition-all ${
                         pathname === '/recipes' || pathname.startsWith('/recipes')
                           ? 'bg-[#1C3F2D] text-white font-semibold shadow-xs'
-                          : 'text-[#151F19] hover:bg-[#E8E1CE]/80 active:bg-[#E8E1CE]'
+                          : 'text-[#151F19] hover:bg-gray-100 active:bg-gray-200'
                       }`}
                     >
                       <span>Recipe Khazana</span>
@@ -345,7 +345,7 @@ export default function Header() {
                       className={`flex items-center justify-between py-3 px-3.5 rounded-xl text-[14.5px] font-medium transition-all ${
                         pathname === '/our-story' || pathname.startsWith('/our-story')
                           ? 'bg-[#1C3F2D] text-white font-semibold shadow-xs'
-                          : 'text-[#151F19] hover:bg-[#E8E1CE]/80 active:bg-[#E8E1CE]'
+                          : 'text-[#151F19] hover:bg-gray-100 active:bg-gray-200'
                       }`}
                     >
                       <span>Our Story</span>
@@ -360,7 +360,7 @@ export default function Header() {
                       className={`flex items-center justify-between py-3 px-3.5 rounded-xl text-[14.5px] font-medium transition-all ${
                         pathname === '/track-order' || pathname.startsWith('/track-order')
                           ? 'bg-[#1C3F2D] text-white font-semibold shadow-xs'
-                          : 'text-[#151F19] hover:bg-[#E8E1CE]/80 active:bg-[#E8E1CE]'
+                          : 'text-[#151F19] hover:bg-gray-100 active:bg-gray-200'
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
@@ -385,7 +385,7 @@ export default function Header() {
                     className="w-56 h-56 sm:w-64 sm:h-64 max-w-[240px] max-h-[240px] drop-shadow-sm transition-transform duration-300 hover:scale-105"
                   />
                   <p className="font-handwriting text-2xl sm:text-[26px] text-[#2D7A4D] font-bold mt-2 leading-snug">
-                    Fresh Greens, grown for you 🌱
+                    Fresh Greens, grown for you
                   </p>
                 </div>
               </div>

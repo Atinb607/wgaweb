@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
+import { Sprout, Globe, Star } from '@/components/icons';
 
 interface Review {
   id: string;
@@ -232,10 +233,10 @@ export default function AdminReviewsPage() {
                   onChange={(e) => setForm({ ...form, product_id: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
                 >
-                  <option value="">🌐 All Products (Site-wide)</option>
+                  <option value="">All Products (Site-wide)</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      🌱 Specific: {p.name}
+                      Specific: {p.name}
                     </option>
                   ))}
                 </select>
@@ -335,12 +336,12 @@ export default function AdminReviewsPage() {
           className="text-xs px-2.5 py-1.5 border rounded-md bg-white text-gray-700"
         >
           <option value="all">All Reviews ({reviews.length})</option>
-          <option value="sitewide">🌐 Site-wide Only ({reviews.filter((r) => !r.product_id).length})</option>
+          <option value="sitewide">Site-wide Only ({reviews.filter((r) => !r.product_id).length})</option>
           {products.map((p) => {
             const count = reviews.filter((r) => r.product_id === p.id).length;
             return (
               <option key={p.id} value={p.id}>
-                🌱 {p.name} ({count})
+                {p.name} ({count})
               </option>
             );
           })}
@@ -353,7 +354,7 @@ export default function AdminReviewsPage() {
       {/* Reviews List */}
       {filteredReviews.length === 0 ? (
         <div className="bg-white rounded-xl border p-12 text-center text-gray-500">
-          <p className="text-3xl mb-2">⭐</p>
+          <Star className="w-8 h-8 mx-auto text-amber-400 mb-2" />
           <p className="font-medium text-gray-700">No reviews found</p>
           <p className="text-xs text-gray-400 mt-1">
             {filterProductId !== 'all'
@@ -402,11 +403,13 @@ export default function AdminReviewsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {rev.product_id ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                          🌱 {rev.product_name || 'Product'}
+                          <Sprout className="w-3 h-3 text-blue-700 inline" />
+                          <span>{rev.product_name || 'Product'}</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          🌐 Site-wide
+                          <Globe className="w-3 h-3 text-emerald-700 inline" />
+                          <span>Site-wide</span>
                         </span>
                       )}
                     </td>

@@ -142,12 +142,12 @@ export default function AdminPinsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Badge / Icon (e.g. 01 Purity or 🌱)
+                Badge / Icon (e.g. 01 Purity)
               </label>
               <input
                 value={form.icon}
                 onChange={(e) => setForm({ ...form, icon: e.target.value })}
-                placeholder="e.g. 01 Purity or 🌱"
+                placeholder="e.g. 01 Purity"
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>

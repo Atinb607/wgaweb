@@ -26,7 +26,7 @@ export default function WhyMicrogreensChart() {
   return (
     <div
       ref={panelRef}
-      className="bg-[#F3EEE0] rounded-[24px] p-6 sm:p-8 shadow-sm border border-[#E4DDC8]"
+      className="bg-white rounded-[24px] p-6 sm:p-8 shadow-sm border border-[#E4DDC8]"
     >
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <h4 className="font-serif text-lg font-semibold text-[#122A1F]">

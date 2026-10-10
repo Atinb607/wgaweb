@@ -1,107 +1,51 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { isAdminPath } from '@/lib/adminAuth';
-
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        container: string | HTMLElement,
-        options: {
-          sitekey: string;
-          callback: (token: string) => void;
-          'expired-callback'?: () => void;
-          'error-callback'?: () => void;
-          theme?: 'light' | 'dark' | 'auto';
-        }
-      ) => string;
-      reset: (widgetId: string) => void;
-      remove: (widgetId: string) => void;
-    };
-  }
-}
+import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 
 export default function Footer() {
   const pathname = usePathname();
   const [email, setEmail] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const turnstileWidgetId = useRef<string | null>(null);
-  const turnstileContainerRef = useRef<HTMLDivElement>(null);
 
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-
-  const handleTurnstileScriptReady = useCallback(() => {
-    setTurnstileReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.turnstile) {
-      setTurnstileReady(true);
-      return;
-    }
-    const interval = setInterval(() => {
-      if (window.turnstile) {
-        setTurnstileReady(true);
-        clearInterval(interval);
-      }
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  const renderTurnstile = useCallback(() => {
-    if (!turnstileReady || !siteKey || !window.turnstile || !turnstileContainerRef.current) return;
-    if (turnstileWidgetId.current) {
-      try { window.turnstile.remove(turnstileWidgetId.current); } catch { /* ignore */ }
-    }
-    turnstileContainerRef.current.innerHTML = '';
-    turnstileWidgetId.current = window.turnstile.render(turnstileContainerRef.current, {
-      sitekey: siteKey,
-      callback: (token: string) => setTurnstileToken(token),
-      'expired-callback': () => setTurnstileToken(null),
-      'error-callback': () => setTurnstileToken(null),
-      theme: 'dark',
-    });
-  }, [turnstileReady, siteKey]);
-
-  useEffect(() => {
-    renderTurnstile();
-  }, [renderTurnstile]);
+  const { containerRef, getTokenBeforeSubmit, reset: resetCaptcha } = useInvisibleTurnstile();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-
-    if (!turnstileToken) {
-      setStatus('error');
-      setMessage('Security check in progress. Please try again in a moment.');
-      return;
-    }
+    if (!email.trim()) return;
 
     setStatus('loading');
     setMessage('');
     try {
+      // 1. Obtain invisible captcha token before sending the request to backend
+      const captchaToken = await getTokenBeforeSubmit();
+      if (!captchaToken) {
+        setStatus('error');
+        setMessage('Security check in progress. Please try again in a moment.');
+        return;
+      }
+
+      // 2. Send request to backend
       const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim(),
           source: 'footer',
-          turnstileToken,
+          turnstileToken: captchaToken,
+          website: honeypot,
         }),
       });
       const data = await res.json();
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'Thanks for subscribing! 🌱');
+        setMessage(data.message || 'Thanks for subscribing!');
         setEmail('');
       } else {
         setStatus('error');
@@ -112,8 +56,7 @@ export default function Footer() {
       setMessage('Failed to connect. Please try again.');
     } finally {
       // Reset Turnstile for next submission
-      setTurnstileToken(null);
-      renderTurnstile();
+      resetCaptcha();
     }
   };
 
@@ -123,13 +66,6 @@ export default function Footer() {
 
   return (
     <>
-      {siteKey && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          strategy="afterInteractive"
-          onReady={handleTurnstileScriptReady}
-        />
-      )}
       <footer className="bg-[#151F19] text-[#FFFDF8]/70 pt-16 pb-8 border-t border-white/10 mt-auto">
         <div className="wrap">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] gap-10 pb-12 border-b border-white/10">
@@ -161,8 +97,8 @@ export default function Footer() {
               <Link href="/products" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
                 All Microgreens
               </Link>
-              <Link href="/products?category=bundle" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
-                Subscriptions &amp; Bundles
+              <Link href="/bulk-order" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
+                Bulk Order
               </Link>
               <Link href="/cart" className="block text-[14.5px] text-[#FFFDF8]/75 hover:text-[#CFFA57] transition-colors">
                 Your Cart
@@ -202,6 +138,16 @@ export default function Footer() {
                   required
                   className="bg-transparent border-none text-white text-sm flex-1 outline-none placeholder:text-white/40"
                 />
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
                 <button
                   type="submit"
                   disabled={status === 'loading'}
@@ -210,10 +156,17 @@ export default function Footer() {
                   {status === 'loading' ? '...' : 'Join →'}
                 </button>
               </form>
-              {/* Invisible Turnstile container positioned off-screen to preserve exact layout */}
+              {/* Invisible Captcha container — zero visual footprint to preserve exact design */}
               <div
-                ref={turnstileContainerRef}
-                style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
+                ref={containerRef}
+                style={{
+                  position: 'absolute',
+                  width: 0,
+                  height: 0,
+                  overflow: 'hidden',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                }}
                 aria-hidden="true"
               />
               {message && (

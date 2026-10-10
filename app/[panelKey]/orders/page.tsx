@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
 import { downloadCSV } from '@/lib/csvExport';
+import { Banknote, X, Subscription, Download, Search } from '@/components/icons';
 
 interface Order {
   id: string;
@@ -12,6 +13,7 @@ interface Order {
   customer_phone: string;
   customer_email: string | null;
   total_paise: number;
+  payment_method?: string;
   payment_status: string;
   fulfillment_status: string;
   created_at: string;
@@ -39,6 +41,7 @@ interface OrderDetail extends Order {
 const statusColors: Record<string, string> = {
   paid: 'bg-green-50 text-green-700',
   pending: 'bg-yellow-50 text-yellow-700',
+  cod_pending: 'bg-amber-100 text-amber-900 border border-amber-300 font-medium',
   failed: 'bg-red-50 text-red-700',
   unfulfilled: 'bg-yellow-50 text-yellow-700',
   fulfilled: 'bg-blue-50 text-blue-700',
@@ -80,6 +83,39 @@ export default function AdminOrdersPage() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fulfillment_status: status }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setDetail({ ...detail, fulfillment_status: updated.fulfillment_status });
+      loadOrders();
+    }
+    setSaving(false);
+  };
+
+  const markCashCollected = async () => {
+    if (!detail) return;
+    setSaving(true);
+    const res = await adminFetch(`/api/admin/orders/${detail.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_cash_collected' }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setDetail({ ...detail, payment_status: updated.payment_status });
+      loadOrders();
+    }
+    setSaving(false);
+  };
+
+  const cancelOrder = async () => {
+    if (!detail) return;
+    if (!confirm('Are you sure you want to cancel this order? Any decremented stock will be restored.')) return;
+    setSaving(true);
+    const res = await adminFetch(`/api/admin/orders/${detail.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cancel' }),
     });
     if (res.ok) {
       const updated = await res.json();
@@ -186,6 +222,18 @@ export default function AdminOrdersPage() {
               </span>
             </div>
             <div>
+              <span className="text-gray-500">Method:</span>
+              <span
+                className={`ml-2 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                  detail.payment_method === 'cod'
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : 'bg-sky-50 text-sky-800 border border-sky-200'
+                }`}
+              >
+                {detail.payment_method === 'cod' ? 'Cash on Delivery (COD)' : 'Online (Razorpay)'}
+              </span>
+            </div>
+            <div>
               <span className="text-gray-500">Created:</span>
               <span className="ml-2">{new Date(detail.created_at).toLocaleString()}</span>
             </div>
@@ -197,21 +245,49 @@ export default function AdminOrdersPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
-            <span className="text-sm font-medium text-gray-700">Fulfillment Status:</span>
-            <select
-              value={detail.fulfillment_status}
-              onChange={(e) => updateFulfillment(e.target.value)}
-              disabled={saving}
-              className="px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-[#1C3F2D] outline-none"
-            >
-              <option value="unfulfilled">🌱 Unfulfilled (Harvesting / Processing)</option>
-              <option value="fulfilled">📦 Fulfilled (Harvested & Packed)</option>
-              <option value="shipped">🚚 Shipped (Out for Delivery)</option>
-              <option value="delivered">✅ Delivered (Doorstep)</option>
-              <option value="cancelled">❌ Cancelled</option>
-            </select>
-            {saving && <span className="text-xs text-gray-400">Saving update...</span>}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-gray-700">Fulfillment Status:</span>
+              <select
+                value={detail.fulfillment_status}
+                onChange={(e) => updateFulfillment(e.target.value)}
+                disabled={saving}
+                className="px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-[#1C3F2D] outline-none"
+              >
+                <option value="unfulfilled">Unfulfilled (Harvesting / Processing)</option>
+                <option value="fulfilled">Fulfilled (Harvested & Packed)</option>
+                <option value="shipped">Shipped (Out for Delivery)</option>
+                <option value="delivered">Delivered (Doorstep)</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              {saving && <span className="text-xs text-gray-400">Saving update...</span>}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {detail.payment_method === 'cod' && detail.payment_status === 'cod_pending' && (
+                <button
+                  type="button"
+                  onClick={markCashCollected}
+                  disabled={saving}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Banknote className="w-4 h-4" />
+                  <span>Mark Cash Collected</span>
+                </button>
+              )}
+
+              {detail.fulfillment_status !== 'cancelled' && (
+                <button
+                  type="button"
+                  onClick={cancelOrder}
+                  disabled={saving}
+                  className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 border border-rose-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Cancel / Refused</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -234,8 +310,9 @@ export default function AdminOrdersPage() {
                   <td className="py-2">
                     <div>{item.variant_label}</div>
                     {item.subscription_trays && item.subscription_weeks && (
-                      <span className="inline-block mt-0.5 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">
-                        🔁 Subscription: {item.subscription_trays} {item.subscription_trays === 1 ? 'tray' : 'trays'}/wk · {item.subscription_weeks} wks
+                      <span className="inline-flex items-center gap-1 mt-0.5 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">
+                        <Subscription className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>Subscription: {item.subscription_trays} {item.subscription_trays === 1 ? 'tray' : 'trays'}/wk · {item.subscription_weeks} wks</span>
                       </span>
                     )}
                   </td>
@@ -316,7 +393,7 @@ export default function AdminOrdersPage() {
           disabled={filteredOrders.length === 0}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <span>📥</span>
+          <Download className="w-4 h-4" />
           <span>Export to CSV</span>
         </button>
       </div>
@@ -331,7 +408,9 @@ export default function AdminOrdersPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#1C3F2D] focus:border-[#1C3F2D] bg-white"
           />
-          <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+          <span className="absolute left-3 top-2.5 text-gray-400">
+            <Search className="w-4 h-4 text-gray-400" />
+          </span>
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
@@ -349,6 +428,7 @@ export default function AdminOrdersPage() {
           >
             <option value="">All payment statuses</option>
             <option value="paid">Paid</option>
+            <option value="cod_pending">COD Pending</option>
             <option value="pending">Pending</option>
             <option value="failed">Failed</option>
           </select>
@@ -399,13 +479,24 @@ export default function AdminOrdersPage() {
                 <td className="px-4 py-3 text-gray-600 text-xs font-mono">{o.customer_phone}</td>
                 <td className="px-4 py-3 font-semibold text-gray-800">{formatPrice(o.total_paise)}</td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      statusColors[o.payment_status] || 'bg-gray-100'
-                    }`}
-                  >
-                    {o.payment_status}
-                  </span>
+                  <div className="flex flex-col gap-1 items-start">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        o.payment_method === 'cod'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-sky-50 text-sky-800 border border-sky-200'
+                      }`}
+                    >
+                      {o.payment_method === 'cod' ? 'COD' : 'Online'}
+                    </span>
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        statusColors[o.payment_status] || 'bg-gray-100'
+                      }`}
+                    >
+                      {o.payment_status}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <span

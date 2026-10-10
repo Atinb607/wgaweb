@@ -49,10 +49,17 @@ export interface DeliveryCalculation {
  */
 export function calculateDeliveryFee(
   pincode: string | undefined | null,
-  subtotalPaise: number
+  subtotalPaise: number,
+  eligiblePincodes?: Set<string> | string[]
 ): DeliveryCalculation {
   const cleanPin = pincode ? pincode.trim() : '';
   const safeSubtotal = Math.max(0, Number(subtotalPaise) || 0);
+  const eligibleSet =
+    eligiblePincodes instanceof Set
+      ? eligiblePincodes
+      : Array.isArray(eligiblePincodes)
+      ? new Set(eligiblePincodes)
+      : FREE_DELIVERY_PINCODES;
 
   // If pincode is incomplete / not yet 6 digits
   if (!/^\d{6}$/.test(cleanPin)) {
@@ -71,7 +78,7 @@ export function calculateDeliveryFee(
   }
 
   // Check if pincode is one of the eligible free delivery pincodes
-  const isEligibleFreePincode = FREE_DELIVERY_PINCODES.has(cleanPin);
+  const isEligibleFreePincode = eligibleSet.has(cleanPin);
 
   // Rule 1: Eligible Pincode -> FREE Delivery regardless of order price
   if (isEligibleFreePincode) {

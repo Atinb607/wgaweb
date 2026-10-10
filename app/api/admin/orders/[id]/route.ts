@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { restoreStock } from '@/lib/stock';
 
 const VALID_FULFILLMENT_STATUSES = ['unfulfilled', 'fulfilled', 'shipped', 'delivered', 'cancelled'];
 
@@ -40,7 +41,7 @@ export async function GET(
   }
 }
 
-// PUT /api/admin/orders/[id]: update fulfillment_status only
+// PUT /api/admin/orders/[id]: update fulfillment_status or execute actions
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -49,27 +50,87 @@ export async function PUT(
     const sql = getSQL();
     const { id } = params;
     const body = await request.json();
-    const { fulfillment_status } = body;
+    const { action, fulfillment_status, payment_status } = body;
 
-    if (!fulfillment_status || !VALID_FULFILLMENT_STATUSES.includes(fulfillment_status)) {
-      return NextResponse.json(
-        { error: `fulfillment_status must be one of: ${VALID_FULFILLMENT_STATUSES.join(', ')}` },
-        { status: 400 }
-      );
+    // Action 1: "Mark cash collected" (cod_pending -> paid)
+    if (action === 'mark_cash_collected') {
+      const result = await sql`
+        UPDATE orders
+        SET payment_status = 'paid'
+        WHERE id = ${id}
+        RETURNING id, order_number, payment_method, payment_status, fulfillment_status
+      `;
+
+      if (result.length === 0) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+
+      console.log(`[admin] Order ${id} marked cash collected (paid)`);
+      return NextResponse.json(result[0]);
     }
 
-    const result = await sql`
-      UPDATE orders
-      SET fulfillment_status = ${fulfillment_status}
-      WHERE id = ${id}
-      RETURNING id, fulfillment_status, payment_status
-    `;
+    // Action 2: "Cancel / refused" (fulfillment_status='cancelled'; restore stock if decremented)
+    if (action === 'cancel' || fulfillment_status === 'cancelled') {
+      // Restore stock exactly once if it was decremented
+      const restored = await restoreStock(id);
+      if (restored) {
+        console.log(`[admin] Stock restored for cancelled order ${id}`);
+      }
 
-    if (result.length === 0) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      const result = await sql`
+        UPDATE orders
+        SET fulfillment_status = 'cancelled'
+        WHERE id = ${id}
+        RETURNING id, order_number, payment_method, payment_status, fulfillment_status, stock_decremented
+      `;
+
+      if (result.length === 0) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+
+      return NextResponse.json(result[0]);
     }
 
-    return NextResponse.json(result[0]);
+    // Direct payment_status update
+    if (payment_status) {
+      const result = await sql`
+        UPDATE orders
+        SET payment_status = ${payment_status}
+        WHERE id = ${id}
+        RETURNING id, order_number, payment_method, payment_status, fulfillment_status
+      `;
+
+      if (result.length === 0) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+
+      return NextResponse.json(result[0]);
+    }
+
+    // Direct fulfillment_status update
+    if (fulfillment_status) {
+      if (!VALID_FULFILLMENT_STATUSES.includes(fulfillment_status)) {
+        return NextResponse.json(
+          { error: `fulfillment_status must be one of: ${VALID_FULFILLMENT_STATUSES.join(', ')}` },
+          { status: 400 }
+        );
+      }
+
+      const result = await sql`
+        UPDATE orders
+        SET fulfillment_status = ${fulfillment_status}
+        WHERE id = ${id}
+        RETURNING id, order_number, payment_method, payment_status, fulfillment_status
+      `;
+
+      if (result.length === 0) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+
+      return NextResponse.json(result[0]);
+    }
+
+    return NextResponse.json({ error: 'No valid action or update provided' }, { status: 400 });
   } catch (error: unknown) {
     console.error('admin update order error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';

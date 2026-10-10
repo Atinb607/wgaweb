@@ -5,7 +5,25 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import { useAdminAuth } from '@/lib/adminAuth';
-import { LeafFavicon } from '@/components/icons';
+import {
+  LeafFavicon,
+  BarChart,
+  Sprout,
+  Target,
+  PackageBox,
+  Clipboard,
+  Truck,
+  Mail,
+  Inbox,
+  Star,
+  Edit3,
+  FileText,
+  Building,
+  Pin,
+  BookOpen,
+  Globe,
+  LogOut,
+} from '@/components/icons';
 
 export default function AdminLayoutClient({
   children,
@@ -35,18 +53,20 @@ export default function AdminLayoutClient({
   }, []);
 
   const navItems = [
-    { href: `/${currentKey}`, label: 'Dashboard', icon: '📊' },
-    { href: `/${currentKey}/products`, label: 'Products', icon: '🌱' },
-    { href: `/${currentKey}/health-goals`, label: 'Health Goal Content', icon: '🎯' },
-    { href: `/${currentKey}/orders`, label: 'Orders', icon: '📦' },
-    { href: `/${currentKey}/newsletter`, label: 'Newsletter', icon: '📬' },
-    { href: `/${currentKey}/inquiries`, label: 'Inquiries', icon: '📩' },
-    { href: `/${currentKey}/reviews`, label: 'Reviews', icon: '⭐' },
-    { href: `/${currentKey}/content`, label: 'Content', icon: '✏️' },
-    { href: `/${currentKey}/email-content`, label: 'Email Content', icon: '✉️' },
-    { href: `/${currentKey}/partner-logos`, label: 'Partner Logos', icon: '🏢' },
-    { href: `/${currentKey}/pins`, label: 'Pins', icon: '📌' },
-    { href: `/${currentKey}/blog`, label: 'Pathshala & Recipes', icon: '📝' },
+    { href: `/${currentKey}`, label: 'Dashboard', icon: BarChart },
+    { href: `/${currentKey}/products`, label: 'Products', icon: Sprout },
+    { href: `/${currentKey}/health-goals`, label: 'Health Goal Content', icon: Target },
+    { href: `/${currentKey}/orders`, label: 'Orders', icon: PackageBox },
+    { href: `/${currentKey}/bulk-orders`, label: 'Bulk Orders Request', icon: Clipboard },
+    { href: `/${currentKey}/delivery-pincodes`, label: 'Delivery Pincodes', icon: Truck },
+    { href: `/${currentKey}/newsletter`, label: 'Newsletter', icon: Mail },
+    { href: `/${currentKey}/inquiries`, label: 'Inquiries', icon: Inbox },
+    { href: `/${currentKey}/reviews`, label: 'Reviews', icon: Star },
+    { href: `/${currentKey}/content`, label: 'Content', icon: Edit3 },
+    { href: `/${currentKey}/email-content`, label: 'Email Content', icon: FileText },
+    { href: `/${currentKey}/partner-logos`, label: 'Partner Logos', icon: Building },
+    { href: `/${currentKey}/pins`, label: 'Pins', icon: Pin },
+    { href: `/${currentKey}/blog`, label: 'Pathshala & Recipes', icon: BookOpen },
   ];
 
   // Login page: no sidebar, no auth check blocking
@@ -97,6 +117,7 @@ export default function AdminLayoutClient({
               item.href === `/${currentKey}`
                 ? pathname === `/${currentKey}`
                 : pathname.startsWith(item.href);
+            const Icon = item.icon;
             return (
               <Link
                 key={item.href}
@@ -107,7 +128,7 @@ export default function AdminLayoutClient({
                     : 'text-gray-400 hover:text-white hover:bg-gray-800'
                 }`}
               >
-                <span>{item.icon}</span>
+                <Icon className="w-4 h-4 shrink-0" />
                 {item.label}
               </Link>
             );
@@ -118,13 +139,15 @@ export default function AdminLayoutClient({
             href="/"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800"
           >
-            <span>🌐</span> View Site
+            <Globe className="w-4 h-4 shrink-0" />
+            <span>View Site</span>
           </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 w-full text-left"
           >
-            <span>🚪</span> Logout
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Logout</span>
           </button>
         </div>
       </aside>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { formatPrice } from '@/lib/format';
+import { Sprout } from './icons';
 
 interface Variant {
   id: string;
@@ -48,7 +49,7 @@ export default function ProductCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <span className="text-5xl opacity-60">🌿</span>
+          <Sprout className="w-14 h-14 text-emerald-700/60" />
         )}
       </div>
 

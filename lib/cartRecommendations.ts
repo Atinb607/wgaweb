@@ -129,9 +129,7 @@ export function formatProductForCart(
   const badgeLabel =
     rawBadge.startsWith('★') ||
     rawBadge.startsWith('☀') ||
-    rawBadge.startsWith('🌱') ||
-    rawBadge.startsWith('✦') ||
-    rawBadge.startsWith('🏷️')
+    rawBadge.startsWith('✦')
       ? rawBadge
       : `★ ${rawBadge.toUpperCase()}`;
 

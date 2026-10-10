@@ -8,27 +8,11 @@ import {
   Phone,
   AlertTriangle,
   CheckCircle,
+  Shield,
 } from '@/components/icons';
 import JoinRevolutionSection from '@/components/JoinRevolutionSection';
 
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        container: string | HTMLElement,
-        options: {
-          sitekey: string;
-          callback: (token: string) => void;
-          'expired-callback'?: () => void;
-          'error-callback'?: () => void;
-          theme?: 'light' | 'dark' | 'auto';
-        }
-      ) => string;
-      reset: (widgetId: string) => void;
-      remove: (widgetId: string) => void;
-    };
-  }
-}
+
 
 export default function ContactUsPage() {
   // Form state
@@ -139,7 +123,7 @@ export default function ContactUsPage() {
         />
       )}
 
-      <div className="bg-[#FAF6EF] min-h-screen text-[#151F19] pt-32 sm:pt-40 pb-20">
+      <div className="bg-white min-h-screen text-[#151F19] pt-32 sm:pt-40 pb-20">
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
@@ -195,7 +179,7 @@ export default function ContactUsPage() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Your Name"
                       required
-                      className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
                     />
                   </div>
 
@@ -214,7 +198,7 @@ export default function ContactUsPage() {
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="e.g. 98XXXXXXXX"
                         required
-                        className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
+                        className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
                       />
                       <p className="text-[11px] text-[#151F19]/55 mt-1">For WhatsApp or call updates</p>
                     </div>
@@ -232,7 +216,7 @@ export default function ContactUsPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="e.g. name@example.com"
-                        className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
+                        className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all"
                       />
                       <p className="text-[11px] text-[#151F19]/55 mt-1">For email response (optional)</p>
                     </div>
@@ -249,7 +233,7 @@ export default function ContactUsPage() {
                       id="contactSubject"
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all cursor-pointer"
+                      className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all cursor-pointer"
                     >
                       <option value="general">General Inquiry</option>
                       <option value="order">Existing Order Question</option>
@@ -273,7 +257,7 @@ export default function ContactUsPage() {
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Write your message or inquiry here..."
                       required
-                      className="w-full px-4 py-3 bg-[#FAF6EF]/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all resize-none"
+                      className="w-full px-4 py-3 bg-gray-50/50 border border-[#E4DDC8] rounded-xl text-sm text-[#151F19] placeholder:text-[#151F19]/40 focus:bg-white focus:border-[#1C3F2D] focus:ring-2 focus:ring-[#1C3F2D]/15 outline-none transition-all resize-none"
                     />
                   </div>
 
@@ -318,8 +302,9 @@ export default function ContactUsPage() {
                 </form>
 
                 <div className="mt-4 pt-4 border-t border-[#E4DDC8]/60 text-center">
-                  <p className="text-xs text-[#151F19]/55">
-                    🛡️ We typically respond within 4–6 business hours. Your information is kept strictly confidential.
+                  <p className="text-xs text-[#151F19]/55 inline-flex items-center justify-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-emerald-800 shrink-0" />
+                    <span>We typically respond within 4–6 business hours. Your information is kept strictly confidential.</span>
                   </p>
                 </div>
               </>
@@ -334,8 +319,8 @@ export default function ContactUsPage() {
               </div>
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-[#1C3F2D]">Phone &amp; WhatsApp</span>
-                <a href="tel:+919800000000" className="text-sm font-bold text-[#122A1F] hover:underline font-mono">
-                  +91 98XXXXXXXX
+                <a href="tel:+918427974445" className="text-sm font-bold text-[#122A1F] hover:underline font-mono">
+                  +91 84279 74445
                 </a>
               </div>
             </div>
@@ -346,8 +331,8 @@ export default function ContactUsPage() {
               </div>
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-[#1C3F2D]">Email Support</span>
-                <a href="mailto:support@example.com" className="text-sm font-semibold text-[#122A1F] hover:underline">
-                  support@example.com
+                <a href="mailto:wildaboutgreens@gmail.com" className="text-sm font-semibold text-[#122A1F] hover:underline">
+                  wildaboutgreens@gmail.com
                 </a>
               </div>
             </div>

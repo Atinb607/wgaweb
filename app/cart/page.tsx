@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore, getProductThumbnail } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
-import { Plus, Minus, Scissors, Droplet, Zap, Truck } from '@/components/icons';
+import { Plus, Minus, Scissors, Droplet, Zap, Truck, Sprout, Subscription, Lock } from '@/components/icons';
 import CartMascot from '@/components/CartMascot';
 import {
   CartRecommendationProduct,
@@ -89,10 +89,12 @@ export default function CartPage() {
 
   if (!mounted) {
     return (
-      <div className="bg-[#F3EEE0] text-[#151F19] min-h-screen pt-32 pb-24 text-center">
+      <div className="bg-white text-[#151F19] min-h-screen pt-32 pb-24 text-center">
         <main className="max-w-2xl mx-auto px-4">
           <div className="bg-[#FFFDF8] border border-[#E4DDC8] rounded-3xl p-10 sm:p-14 shadow-sm">
-            <span className="text-6xl mb-5 block">🌱</span>
+            <div className="w-16 h-16 rounded-2xl bg-[#EBF5EE] text-[#1C3F2D] flex items-center justify-center mx-auto mb-5">
+              <Sprout className="w-8 h-8" />
+            </div>
             <p className="font-mono text-sm text-[#5C6B60]">Loading cart...</p>
           </div>
         </main>
@@ -103,7 +105,7 @@ export default function CartPage() {
   /* ================= EMPTY STATE ================= */
   if (items.length === 0) {
     return (
-      <div className="relative bg-[#F3EEE0] text-[#151F19] min-h-screen pt-32 pb-24 overflow-hidden">
+      <div className="relative bg-white text-[#151F19] min-h-screen pt-32 pb-24 overflow-hidden">
         <main className="max-w-2xl mx-auto px-4 text-center relative z-10">
           <div className="bg-[#FFFDF8] border border-[#E4DDC8] rounded-3xl p-8 sm:p-14 shadow-sm">
             <CartMascot
@@ -130,7 +132,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="relative bg-[#F3EEE0] text-[#151F19] min-h-screen pt-28 pb-24 overflow-hidden">
+    <div className="relative bg-white text-[#151F19] min-h-screen pt-28 pb-24 overflow-hidden">
       <main className="max-w-3xl mx-auto px-4 sm:px-6 relative z-10">
         {/* Breadcrumb */}
         <nav className="font-mono text-[11px] tracking-wider uppercase text-[#5C6B60] mb-4 flex items-center gap-2">
@@ -166,7 +168,7 @@ export default function CartPage() {
               >
                 <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
                   {/* Product Thumbnail - fixed compact square */}
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl overflow-hidden border border-[#E4DDC8] bg-[#F3EEE0] relative">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl overflow-hidden border border-[#E4DDC8] bg-gray-50 relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getProductThumbnail(item.productSlug, item.thumbnailUrl)}
@@ -194,8 +196,8 @@ export default function CartPage() {
                     </p>
                     {item.isSubscription && (
                       <div className="mt-1">
-                        <span className="inline-flex items-center gap-1 font-mono text-[10.5px] text-[#2D7A4D] bg-[#EBF5EE] px-2 py-0.5 rounded border border-[#C5DEC9] font-medium">
-                          <span>🔁</span>
+                        <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] text-[#2D7A4D] bg-[#EBF5EE] px-2 py-0.5 rounded border border-[#C5DEC9] font-medium">
+                          <Subscription className="w-3 h-3 text-[#2D7A4D] shrink-0" />
                           <span>Weekly: {item.subscriptionTrays} {item.subscriptionTrays === 1 ? 'tray' : 'trays'}/wk · {item.subscriptionWeeks} wks plan</span>
                         </span>
                       </div>
@@ -208,7 +210,7 @@ export default function CartPage() {
 
                 <div className="flex items-center justify-between sm:justify-end gap-5 pt-3 sm:pt-0 border-t sm:border-t-0 border-[#E4DDC8]/60">
                   {/* Stepper */}
-                  <div className="flex items-center border border-[#E4DDC8] rounded-xl bg-[#F3EEE0]/50 overflow-hidden shadow-2xs">
+                  <div className="flex items-center border border-[#E4DDC8] rounded-xl bg-gray-50 overflow-hidden shadow-2xs">
                     <button
                       onClick={() => updateQuantity(itemKey, item.quantity - 1)}
                       className="w-8 h-8 flex items-center justify-center text-sm font-bold text-[#151F19] hover:bg-[#E4DDC8] transition-colors"
@@ -265,9 +267,6 @@ export default function CartPage() {
           <div className="mt-8 pt-6 border-t border-[#E4DDC8]">
             <div className="flex items-center justify-between mb-3.5">
               <div>
-                <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#5C6B60] block">
-                  PAIR WITH YOUR ORDER
-                </span>
                 <h3 className="font-serif font-bold text-xl text-[#151F19]">
                   Pairs Well With
                 </h3>
@@ -312,7 +311,7 @@ export default function CartPage() {
                     className="w-[280px] sm:w-[320px] shrink-0 flex items-center justify-between gap-3 p-3 sm:p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl shadow-xs hover:border-[#1C3F2D]/40 transition-all"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#E4DDC8] bg-[#F3EEE0]">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#E4DDC8] bg-gray-50">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={addon.photo}
@@ -397,8 +396,8 @@ export default function CartPage() {
             </Link>
           </div>
 
-          <p className="font-mono text-[11.5px] text-[#5C6B60] text-center mt-5 flex items-center justify-center gap-2">
-            <span>🔒</span>
+          <p className="font-mono text-[11.5px] text-[#5C6B60] text-center mt-5 flex items-center justify-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-[#5C6B60] shrink-0" />
             <span>Safe &amp; Secure Checkout via Razorpay · UPI, Cards &amp; NetBanking</span>
           </p>
         </div>

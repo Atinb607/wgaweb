@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { WhatsApp } from '@/components/icons';
+import { WhatsApp, Check, Clipboard, Banknote, Subscription, Mail, Sprout } from '@/components/icons';
 
 interface StoredOrderItem {
   productName: string;
@@ -26,6 +26,7 @@ interface StoredOrder {
   totalPaise: number;
   purchaseType?: string;
   subscriptionFrequency?: string | null;
+  paymentMethod?: string;
   items?: StoredOrderItem[];
   createdAt?: string;
 }
@@ -73,7 +74,7 @@ function ConfirmationContent() {
   );
 
   return (
-    <main className="min-h-screen bg-[#FAF7EE] pt-28 pb-12 sm:pt-36 sm:pb-16 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-white pt-28 pb-12 sm:pt-36 sm:pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Celebration / Thank You Header */}
         <div className="text-center space-y-4">
@@ -90,13 +91,17 @@ function ConfirmationContent() {
 
           <div className="space-y-2">
             <span className="font-mono text-xs uppercase tracking-[0.2em] font-semibold text-[#5C6B60] block">
-              Order Confirmed &amp; Payment Received
+              {storedOrder?.paymentMethod === 'cod'
+                ? 'Order Placed — Cash on Delivery'
+                : 'Order Confirmed & Payment Received'}
             </span>
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium text-[#151F19] leading-tight">
               Thank You for Your Order{customerName ? `, ${customerName}` : ''}!
             </h1>
             <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto leading-relaxed">
-              We&apos;ve received your order and payment successfully. Thank you for shopping with us! We are preparing your order and will share tracking updates shortly.
+              {storedOrder?.paymentMethod === 'cod'
+                ? "We've received your order! Our urban farm team will harvest and prepare your microgreens fresh. Please keep the exact cash amount ready at doorstep delivery."
+                : "We've received your order and payment successfully. Thank you for shopping with us! We are preparing your order and will share tracking updates shortly."}
             </p>
           </div>
         </div>
@@ -119,19 +124,27 @@ function ConfirmationContent() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
               title="Copy Order Number"
             >
-              <span>{copied ? '✅' : '📋'}</span>
+              <span>{copied ? <Check className="w-3.5 h-3.5 text-emerald-600 inline" /> : <Clipboard className="w-3.5 h-3.5 text-gray-500 inline" />}</span>
               <span>{copied ? 'Copied!' : 'Copy'}</span>
             </button>
           </div>
 
           <div className="flex items-center justify-center gap-3 mt-4 text-xs font-medium">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-              Payment Confirmed
-            </span>
+            {storedOrder?.paymentMethod === 'cod' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-300">
+                <Banknote className="w-4 h-4 text-amber-800" />
+                <span>Pay on Delivery: {totalAmountFormatted || 'Cash'}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                Payment Confirmed
+              </span>
+            )}
             {storedOrder?.purchaseType === 'subscription' && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-300">
-                🌿 {storedOrder.subscriptionFrequency || 'Weekly'} Subscription
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-300">
+                <Subscription className="w-3.5 h-3.5 text-amber-800" />
+                <span>{storedOrder.subscriptionFrequency || 'Weekly'} Subscription</span>
               </span>
             )}
           </div>
@@ -139,8 +152,8 @@ function ConfirmationContent() {
 
         {/* Resend Email Notice Banner */}
         <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-xl shrink-0 mt-0.5">
-            ✉️
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
+            <Mail className="w-5 h-5 text-emerald-800" />
           </div>
           <div className="space-y-1 text-sm text-emerald-950">
             <h3 className="font-bold text-emerald-900">
@@ -174,7 +187,7 @@ function ConfirmationContent() {
                 <div key={idx} className="py-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     {item.image ? (
-                      <div className="w-14 h-14 rounded-xl bg-[#FAF7EE] border border-[#E8E2D2] overflow-hidden shrink-0 relative">
+                      <div className="w-14 h-14 rounded-xl bg-gray-50 border border-[#E8E2D2] overflow-hidden shrink-0 relative">
                         <Image
                           src={item.image}
                           alt={item.productName}
@@ -183,8 +196,8 @@ function ConfirmationContent() {
                         />
                       </div>
                     ) : (
-                      <div className="w-14 h-14 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg shrink-0">
-                        🌱
+                      <div className="w-14 h-14 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                        <Sprout className="w-6 h-6" />
                       </div>
                     )}
                     <div className="min-w-0">
@@ -231,14 +244,14 @@ function ConfirmationContent() {
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-gray-200 text-base sm:text-lg font-bold text-[#151F19]">
-                <span>Total Paid</span>
+                <span>{storedOrder.paymentMethod === 'cod' ? 'Total Payable (COD)' : 'Total Paid'}</span>
                 <span className="text-[#1C3F2D]">{totalAmountFormatted}</span>
               </div>
             </div>
 
             {/* Delivery Address Details */}
             {storedOrder.deliveryAddress && (
-              <div className="mt-6 pt-6 border-t border-gray-100 bg-[#FAF7EE] rounded-xl p-4 sm:p-5">
+              <div className="mt-6 pt-6 border-t border-gray-100 bg-gray-50 rounded-xl p-4 sm:p-5">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C6B60] block mb-1">
                   Delivery Destination
                 </span>
@@ -267,7 +280,7 @@ function ConfirmationContent() {
           </Link>
 
           <a
-            href={`https://wa.me/919800000000?text=${whatsappMessage}`}
+            href={`https://wa.me/918427974445?text=${whatsappMessage}`}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-6 py-3.5 bg-[#25D366] text-white rounded-full font-semibold text-sm hover:bg-[#20ba59] transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -278,7 +291,7 @@ function ConfirmationContent() {
 
           <Link
             href="/products"
-            className="w-full sm:w-auto px-6 py-3.5 bg-white border border-[#E8E2D2] text-[#151F19] rounded-full font-semibold text-sm hover:bg-[#F3EEE0] transition-all text-center"
+            className="w-full sm:w-auto px-6 py-3.5 bg-white border border-[#E8E2D2] text-[#151F19] rounded-full font-semibold text-sm hover:bg-gray-100 transition-all text-center"
           >
             Continue Shopping
           </Link>
@@ -302,7 +315,7 @@ export default function OrderConfirmationPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FAF7EE] flex items-center justify-center">
+        <div className="min-h-screen bg-white flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-[#1C3F2D] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium text-gray-500">Loading your order confirmation...</p>

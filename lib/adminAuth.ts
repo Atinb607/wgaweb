@@ -63,6 +63,7 @@ const KNOWN_PUBLIC_PREFIXES = [
   '/checkout',
   '/order-confirmation',
   '/track-order',
+  '/bulk-order',
   '/our-story',
   '/pathshala',
   '/recipes',
@@ -83,11 +84,18 @@ const KNOWN_PUBLIC_PREFIXES = [
 const ADMIN_SUBPAGES = [
   'products',
   'orders',
+  'bulk-orders',
+  'delivery-pincodes',
+  'health-goals',
+  'newsletter',
+  'inquiries',
+  'reviews',
   'content',
+  'email-content',
+  'partner-logos',
   'pins',
   'blog',
   'carousel',
-  'inquiries',
   'login',
 ];
 

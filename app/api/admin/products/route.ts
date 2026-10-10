@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
     const formattedBadges = Array.isArray(detail_highlight_badges)
       ? JSON.stringify(detail_highlight_badges)
       : JSON.stringify([
-          { icon: '⚡', label: '40x Sulforaphane' },
-          { icon: '🛡️', label: 'Zero Pesticides' },
-          { icon: '💧', label: 'Mineral RO Grown' },
-          { icon: '✂️', label: 'Cut to Order' },
+          { icon: 'zap', label: '40x Sulforaphane' },
+          { icon: 'shield', label: 'Zero Pesticides' },
+          { icon: 'droplet', label: 'Mineral RO Grown' },
+          { icon: 'scissors', label: 'Cut to Order' },
         ]);
     const formattedFaqs = Array.isArray(faqs) ? JSON.stringify(faqs) : JSON.stringify([]);
     const formattedAccordions = Array.isArray(detail_accordions) ? JSON.stringify(detail_accordions) : JSON.stringify([]);

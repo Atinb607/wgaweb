@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import { CONTENT_REGISTRY } from '@/lib/contentRegistry';
+import { Mail, Save, Check, AlertTriangle, PackageBox } from '@/components/icons';
 
 interface ContentBlock {
   id?: string;
@@ -14,15 +15,15 @@ interface ContentBlock {
 
 const DEFAULT_TEMPLATES = {
   // Order Confirmation
-  order_confirmation_subject: 'Wild About Greens: Order #{order_number} Confirmed! 🌱',
+  order_confirmation_subject: 'Wild About Greens: Order #{order_number} Confirmed!',
   order_confirmation_heading: 'Thanks for your order, {customer_name}!',
   order_confirmation_intro: "We've received your order and payment. Our urban farm team will harvest and prepare your microgreens fresh for delivery.",
   order_confirmation_footer: 'Questions about your delivery? Reply directly to this email or reach us on WhatsApp. Thank you for supporting sustainable urban farming!',
 
   // Newsletter
-  newsletter_thankyou_subject: 'Welcome to Wild About Greens! 🌱',
+  newsletter_thankyou_subject: 'Welcome to Wild About Greens!',
   newsletter_thankyou_heading: 'Welcome to the Wild About Greens Family!',
-  newsletter_thankyou_body: "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us. 🌱\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team",
+  newsletter_thankyou_body: "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us.\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team",
   newsletter_thankyou_footer: 'Fresh harvest delivered straight from our indoor farm to your doorstep.',
 };
 
@@ -176,7 +177,7 @@ export default function AdminEmailContentPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-gray-200">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">✉️</span>
+            <Mail className="w-7 h-7 text-[#1C3F2D]" />
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Email Content</h1>
             <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-300">
               Resend Powered
@@ -208,7 +209,8 @@ export default function AdminEmailContentPage() {
               </>
             ) : (
               <>
-                <span>💾 Save Email Changes</span>
+                <Save className="w-4 h-4" />
+                <span>Save Email Changes</span>
               </>
             )}
           </button>
@@ -219,7 +221,7 @@ export default function AdminEmailContentPage() {
       {saved && (
         <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl flex items-center justify-between shadow-sm animate-fade-in">
           <div className="flex items-center gap-2.5">
-            <span className="text-lg">✅</span>
+            <Check className="w-5 h-5 text-green-700" />
             <span className="font-medium text-sm">Email templates updated successfully! New emails will use this content.</span>
           </div>
         </div>
@@ -227,13 +229,13 @@ export default function AdminEmailContentPage() {
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-center gap-2.5 shadow-sm">
-          <span>⚠️</span>
+          <AlertTriangle className="w-5 h-5 text-red-600" />
           <span className="font-medium text-sm">{error}</span>
         </div>
       )}
 
       {/* Resend Service Info Card */}
-      <div className="bg-[#FAF7EE] border border-[#E8E2D2] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E8E2D2] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-[#1C3F2D] text-[#CFFA57] flex items-center justify-center font-bold text-lg shrink-0">
             R
@@ -243,7 +245,7 @@ export default function AdminEmailContentPage() {
             <p className="text-xs text-[#5C6B60] mt-0.5">
               Emails are sent automatically through <strong>Resend</strong> using your verified domain sender{' '}
               <code className="bg-white/80 px-1.5 py-0.5 rounded text-[#1C3F2D] font-mono text-[11px] border border-[#D5CEC0]">
-                orders@wildaboutgreens.com
+                wildaboutgreens@gmail.com
               </code>
             </p>
           </div>
@@ -265,7 +267,7 @@ export default function AdminEmailContentPage() {
               : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'
           }`}
         >
-          <span>📦</span>
+          <PackageBox className="w-4 h-4" />
           <span>Order Confirmation Email</span>
         </button>
 
@@ -278,7 +280,7 @@ export default function AdminEmailContentPage() {
               : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'
           }`}
         >
-          <span>📬</span>
+          <Mail className="w-4 h-4" />
           <span>Newsletter Welcome Email</span>
         </button>
       </div>
@@ -327,7 +329,7 @@ export default function AdminEmailContentPage() {
                 type="text"
                 value={form.order_confirmation_subject || ''}
                 onChange={(e) => handleChange('order_confirmation_subject', e.target.value)}
-                placeholder="Wild About Greens: Order #{order_number} Confirmed! 🌱"
+                placeholder="Wild About Greens: Order #{order_number} Confirmed!"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1C3F2D] focus:border-[#1C3F2D] outline-none"
               />
               <span className="text-[11px] text-gray-500 mt-1 block">
@@ -416,7 +418,7 @@ export default function AdminEmailContentPage() {
               <div className="bg-gray-100 border-b border-gray-200 px-4 py-3 text-xs space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">From:</span>
-                  <span className="text-gray-900 font-medium">Wild About Greens &lt;orders@wildaboutgreens.com&gt;</span>
+                  <span className="text-gray-900 font-medium">Wild About Greens &lt;wildaboutgreens@gmail.com&gt;</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">To:</span>
@@ -429,7 +431,7 @@ export default function AdminEmailContentPage() {
               </div>
 
               {/* Rendered Email Body */}
-              <div className="p-4 sm:p-6 bg-[#FAF7EE] max-h-[700px] overflow-y-auto">
+              <div className="p-4 sm:p-6 bg-gray-50 max-h-[700px] overflow-y-auto">
                 <div className="max-w-[560px] mx-auto bg-white rounded-xl border border-[#E8E2D2] overflow-hidden shadow-sm">
                   {/* Brand Header */}
                   <div className="bg-[#1C3F2D] p-5 text-center text-[#FFFDF8]">
@@ -453,7 +455,7 @@ export default function AdminEmailContentPage() {
                     </div>
 
                     {/* Order Number Box */}
-                    <div className="bg-[#FAF7EE] border border-[#E4DDC8] rounded-xl p-4 flex items-center justify-between">
+                    <div className="bg-gray-50 border border-[#E4DDC8] rounded-xl p-4 flex items-center justify-between">
                       <div>
                         <span className="text-[10px] uppercase tracking-wider font-semibold text-[#5C6B60] block">
                           Order Number
@@ -463,7 +465,7 @@ export default function AdminEmailContentPage() {
                         </span>
                       </div>
                       <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-300">
-                        PAID ✅
+                        PAID
                       </span>
                     </div>
 
@@ -557,7 +559,7 @@ export default function AdminEmailContentPage() {
                 type="text"
                 value={form.newsletter_thankyou_subject || ''}
                 onChange={(e) => handleChange('newsletter_thankyou_subject', e.target.value)}
-                placeholder="Welcome to Wild About Greens! 🌱"
+                placeholder="Welcome to Wild About Greens!"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1C3F2D] focus:border-[#1C3F2D] outline-none"
               />
               <span className="text-[11px] text-gray-500 mt-1 block">
@@ -646,7 +648,7 @@ export default function AdminEmailContentPage() {
               <div className="bg-gray-100 border-b border-gray-200 px-4 py-3 text-xs space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">From:</span>
-                  <span className="text-gray-900 font-medium">Wild About Greens &lt;orders@wildaboutgreens.com&gt;</span>
+                  <span className="text-gray-900 font-medium">Wild About Greens &lt;wildaboutgreens@gmail.com&gt;</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">To:</span>
@@ -659,7 +661,7 @@ export default function AdminEmailContentPage() {
               </div>
 
               {/* Rendered Email Body */}
-              <div className="p-4 sm:p-6 bg-[#FAF7EE] max-h-[700px] overflow-y-auto">
+              <div className="p-4 sm:p-6 bg-gray-50 max-h-[700px] overflow-y-auto">
                 <div className="max-w-[560px] mx-auto bg-white rounded-xl border border-[#E8E2D2] overflow-hidden shadow-sm">
                   {/* Brand Header */}
                   <div className="bg-[#1C3F2D] p-5 text-center text-[#FFFDF8]">

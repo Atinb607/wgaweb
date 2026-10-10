@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Clipboard, Sprout } from '@/components/icons';
 
 export interface ArticleItem {
   id: string;
@@ -42,7 +43,7 @@ export default function PathshalaClient({
   });
 
   return (
-    <div className="bg-[#F3EEE0] text-[#151F19] min-h-screen pt-[64px] lg:pt-[70px] pb-24">
+    <div className="bg-white text-[#151F19] min-h-screen pt-[64px] lg:pt-[70px] pb-24">
       {/* Full-Width Edge-to-Edge Panoramic Hero Banner (W S Bentley Style) */}
       <div className="w-full relative overflow-hidden bg-[#EAE8E1] h-[220px] sm:h-[280px] md:h-[340px] lg:h-[380px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -99,7 +100,9 @@ export default function PathshalaClient({
         {/* 4-Column Article Grid */}
         {filteredPosts.length === 0 ? (
           <div className="text-center py-16 bg-[#FAF9F6] border border-[#E4DDC8] p-8 max-w-xl mx-auto shadow-xs">
-            <span className="text-5xl mb-4 block">📰</span>
+            <div className="w-14 h-14 rounded-2xl bg-[#EDEAE1] text-[#1C3F2D] flex items-center justify-center mx-auto mb-4">
+              <Clipboard className="w-7 h-7" />
+            </div>
             <h2 className="font-serif text-xl font-bold text-[#151F19] mb-2">
               No articles found
             </h2>
@@ -144,8 +147,8 @@ export default function PathshalaClient({
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#EDE7D6] to-[#E1DAC3] text-4xl opacity-50">
-                        🌿
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#EDE7D6] to-[#E1DAC3] opacity-60">
+                        <Sprout className="w-10 h-10 text-[#1C3F2D]" />
                       </div>
                     )}
                   </Link>

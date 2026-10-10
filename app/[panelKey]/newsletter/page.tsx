@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { adminFetch } from '@/lib/adminAuth';
 import { downloadCSV } from '@/lib/csvExport';
 import { DEFAULT_NEWSLETTER_BANNER, renderNewsletterTitle } from '@/lib/newsletterBanner';
+import { Download, Users, Palette, Search, Clipboard, Lightbulb, Save } from '@/components/icons';
 
 interface Subscriber {
   id: string;
@@ -191,7 +192,7 @@ export default function AdminNewsletterPage() {
             disabled={filteredSubscribers.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
           >
-            <span>📥</span>
+            <Download className="w-4 h-4" />
             <span>Export to CSV</span>
           </button>
         )}
@@ -207,7 +208,7 @@ export default function AdminNewsletterPage() {
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
           }`}
         >
-          <span>👥</span>
+          <Users className="w-4 h-4" />
           <span>Subscribers List</span>
           <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
             {subscribers.length}
@@ -222,7 +223,7 @@ export default function AdminNewsletterPage() {
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
           }`}
         >
-          <span>🎨</span>
+          <Palette className="w-4 h-4" />
           <span>Banner Customization</span>
           <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
             Live Editor
@@ -242,7 +243,9 @@ export default function AdminNewsletterPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#1C3F2D] focus:border-[#1C3F2D] bg-white"
             />
-            <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+            <span className="absolute left-3 top-2.5 text-gray-400">
+              <Search className="w-4 h-4 text-gray-400" />
+            </span>
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
@@ -284,7 +287,7 @@ export default function AdminNewsletterPage() {
                             className="text-[10px] text-gray-400 hover:text-gray-700 p-0.5 rounded cursor-pointer"
                             title="Copy email"
                           >
-                            {copiedId === sub.id ? '✓' : '📋'}
+                            {copiedId === sub.id ? '✓' : <Clipboard className="w-3.5 h-3.5 inline text-gray-400" />}
                           </button>
                         </div>
                       </td>
@@ -455,8 +458,11 @@ export default function AdminNewsletterPage() {
                 placeholder="Want 15% off and the *inside scoop?*"
                 className="w-full px-3.5 py-2.5 border rounded-lg text-sm text-gray-900 outline-none focus:ring-2 focus:ring-[#1C3F2D] focus:border-[#1C3F2D] bg-white font-mono"
               />
-              <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
-                💡 <strong>Styling Tip:</strong> Wrap any word in <code className="bg-gray-100 px-1 py-0.5 rounded text-emerald-800">*asterisks*</code> to highlight it in lime-green italic letters (like <em>*inside scoop?*</em>).
+              <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed flex items-center gap-1">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>
+                  <strong>Styling Tip:</strong> Wrap any word in <code className="bg-gray-100 px-1 py-0.5 rounded text-emerald-800">*asterisks*</code> to highlight it in lime-green italic letters (like <em>*inside scoop?*</em>).
+                </span>
               </p>
             </div>
 
@@ -542,7 +548,7 @@ export default function AdminNewsletterPage() {
                     </>
                   ) : (
                     <>
-                      <span>💾</span>
+                      <Save className="w-4 h-4" />
                       <span>Save Banner Settings</span>
                     </>
                   )}

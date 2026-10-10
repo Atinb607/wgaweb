@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
 import type { HealthGoal } from '@/lib/healthGoals';
 import type { Product, WhyChoosePin, Review } from '@/app/products/page';
-import { LeafFavicon } from '@/components/icons';
+import { LeafFavicon, Target, Sprout, Zap } from '@/components/icons';
+import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 
 interface ProductMeta {
   photo: string;
@@ -190,88 +190,46 @@ export default function HealthGoalClient({
   const [whyChooseBlocks, setWhyChooseBlocks] = useState<WhyChoosePin[]>(whyChoosePins);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterHoneypot, setNewsletterHoneypot] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [newsletterMessage, setNewsletterMessage] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const turnstileWidgetId = useRef<string | null>(null);
-  const turnstileContainerRef = useRef<HTMLDivElement>(null);
 
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const {
+    containerRef: newsletterCaptchaRef,
+    getTokenBeforeSubmit: getNewsletterCaptchaToken,
+    reset: resetNewsletterCaptcha,
+  } = useInvisibleTurnstile();
+
   const addItem = useCartStore((s) => s.addItem);
-
-  const handleTurnstileScriptReady = useCallback(() => {
-    setTurnstileReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.turnstile) {
-      setTurnstileReady(true);
-      return;
-    }
-    const interval = setInterval(() => {
-      if (window.turnstile) {
-        setTurnstileReady(true);
-        clearInterval(interval);
-      }
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  const renderTurnstile = useCallback(() => {
-    if (!turnstileReady || !siteKey || !window.turnstile || !turnstileContainerRef.current) return;
-    if (turnstileWidgetId.current) {
-      try {
-        window.turnstile.remove(turnstileWidgetId.current);
-      } catch {
-        /* ignore */
-      }
-    }
-    turnstileContainerRef.current.innerHTML = '';
-    try {
-      turnstileWidgetId.current = window.turnstile.render(turnstileContainerRef.current, {
-        sitekey: siteKey,
-        callback: (token: string) => setTurnstileToken(token),
-        'expired-callback': () => setTurnstileToken(null),
-        'error-callback': () => setTurnstileToken(null),
-        theme: 'dark',
-      });
-    } catch {
-      /* ignore */
-    }
-  }, [turnstileReady, siteKey]);
-
-  useEffect(() => {
-    renderTurnstile();
-  }, [renderTurnstile]);
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail.trim()) return;
 
-    if (!turnstileToken) {
-      setNewsletterStatus('error');
-      setNewsletterMessage('Security check in progress. Please try again in a moment.');
-      return;
-    }
-
     setNewsletterStatus('loading');
     setNewsletterMessage('');
     try {
+      const captchaToken = await getNewsletterCaptchaToken();
+      if (!captchaToken) {
+        setNewsletterStatus('error');
+        setNewsletterMessage('Security check in progress. Please try again in a moment.');
+        return;
+      }
+
       const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: newsletterEmail.trim(),
           source: `health_goal_${currentGoal.slug}`,
-          turnstileToken,
+          turnstileToken: captchaToken,
+          website: newsletterHoneypot,
         }),
       });
       const data = await res.json();
       if (res.ok) {
         setNewsletterStatus('success');
-        setNewsletterMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code. 🌱');
+        setNewsletterMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code.');
         setNewsletterEmail('');
       } else {
         setNewsletterStatus('error');
@@ -281,8 +239,7 @@ export default function HealthGoalClient({
       setNewsletterStatus('error');
       setNewsletterMessage('Failed to connect. Please check your internet connection.');
     } finally {
-      setTurnstileToken(null);
-      renderTurnstile();
+      resetNewsletterCaptcha();
     }
   };
 
@@ -331,15 +288,7 @@ export default function HealthGoalClient({
   };
 
   return (
-    <>
-      {siteKey && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          strategy="afterInteractive"
-          onReady={handleTurnstileScriptReady}
-        />
-      )}
-      <div className="bg-[#F3EEE0] text-[#151F19] min-h-screen">
+    <div className="bg-white text-[#151F19] min-h-screen">
         {/* ================= SECTION 1: GOAL HERO BANNER ================= */}
         <section className="grid grid-cols-1 md:grid-cols-2 min-h-[82vh]">
           {/* Left Column: Forest Copy */}
@@ -392,8 +341,9 @@ export default function HealthGoalClient({
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 md:bg-black/10" />
             <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 z-10">
-              <span className="inline-block bg-[#122A1F]/90 backdrop-blur-md text-[#FFFDF8] font-mono text-[11px] tracking-wide px-3.5 py-1.5 rounded-full border border-white/20 shadow-md">
-                🎯 {currentGoal.title} · {currentGoal.subtitle}
+              <span className="inline-flex items-center gap-1.5 bg-[#122A1F]/90 backdrop-blur-md text-[#FFFDF8] font-mono text-[11px] tracking-wide px-3.5 py-1.5 rounded-full border border-white/20 shadow-md">
+                <Target className="w-3.5 h-3.5 text-[#CFFA57] shrink-0" />
+                <span>{currentGoal.title} · {currentGoal.subtitle}</span>
               </span>
             </div>
           </div>
@@ -406,7 +356,8 @@ export default function HealthGoalClient({
         >
           <div className="max-w-[1180px] mx-auto flex gap-2 overflow-x-auto scrollbar-none items-center">
             <span className="font-mono text-[11px] uppercase tracking-wider text-[#5C6B60] font-semibold pr-2 border-r border-[#E4DDC8] hidden sm:inline-flex items-center gap-1.5 flex-shrink-0">
-              <span>🎯</span> Goals:
+              <Target className="w-3.5 h-3.5 text-[#1C3F2D] shrink-0" />
+              <span>Goals:</span>
             </span>
 
             {allGoals.map((goal) => {
@@ -503,7 +454,7 @@ export default function HealthGoalClient({
                           />
                         ) : (
                           <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#E6EBE4] to-[#D5DDD2] flex flex-col items-center justify-center p-4">
-                            <span className="text-4xl opacity-50 mb-1">🌿</span>
+                            <Sprout className="w-10 h-10 text-emerald-800/40 mb-1" />
                             <span className="font-mono text-[9px] uppercase tracking-wider text-[#5C6B60] opacity-75">
                               Fresh Greens
                             </span>
@@ -527,8 +478,8 @@ export default function HealthGoalClient({
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs opacity-50">
-                                🌿
+                              <div className="w-full h-full flex items-center justify-center text-xs opacity-50 text-emerald-800">
+                                <Sprout className="w-4 h-4" />
                               </div>
                             )}
                           </div>
@@ -537,7 +488,7 @@ export default function HealthGoalClient({
                           <div className="flex-1 p-2 flex flex-col justify-between">
                             <div>
                               <div className="font-serif font-bold text-[8px] tracking-wide text-[#1C3F2D] flex items-center gap-1 mb-1">
-                                <span>🌱</span> WAG
+                                <Sprout className="w-2.5 h-2.5" /> WAG
                               </div>
                               <h5 className="font-serif font-bold text-[11px] leading-tight text-[#151F19] mb-1 line-clamp-2">
                                 {product.name}
@@ -564,11 +515,11 @@ export default function HealthGoalClient({
                       {/* Info Rows */}
                       <div className="border-t border-b border-[#E4DDC8] py-2 mb-3 space-y-1.5 text-xs text-[#5C6B60]">
                         <div className="flex items-center gap-2">
-                          <span className="text-[#1C3F2D] text-xs">⚡</span>
+                          <Zap className="w-3.5 h-3.5 text-[#1C3F2D] shrink-0" />
                           <span className="truncate">{product.highlight_1 || meta.benefit}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[#3E8F52] text-xs">🌿</span>
+                          <Sprout className="w-3.5 h-3.5 text-[#3E8F52] shrink-0" />
                           <span className="truncate">
                             {product.highlight_2 || (isBundle ? 'Fresh bundle · 7-10 days fresh' : 'Fresh tray · 7-10 days fresh')}
                           </span>
@@ -612,7 +563,9 @@ export default function HealthGoalClient({
             </div>
           ) : (
             <div className="bg-[#FFFDF8] border border-dashed border-[#E4DDC8] rounded-2xl p-10 text-center max-w-lg mx-auto">
-              <span className="text-4xl mb-3 block">🌱</span>
+              <div className="w-12 h-12 rounded-full bg-[#EBF5EE] text-[#1C3F2D] flex items-center justify-center mx-auto mb-3">
+                <Sprout className="w-6 h-6" />
+              </div>
               <h3 className="font-serif text-xl font-semibold text-[#151F19] mb-2">
                 No trays currently mapped to {currentGoal.title}
               </h3>
@@ -738,7 +691,7 @@ export default function HealthGoalClient({
         </section>
 
         {/* ================= SECTION 6: REVIEWS ================= */}
-        <section className="py-16 bg-[#EBE4D3] border-t border-[#DFD7C2]">
+        <section className="py-16 bg-[#F1EDE3] border-t border-[#E4DDC8]/60">
           <div className="max-w-[1180px] mx-auto px-4 sm:px-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
               <div>
@@ -820,7 +773,7 @@ export default function HealthGoalClient({
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <div className="px-5 pb-5 pt-1 text-sm text-[#5C6B60] leading-relaxed border-t border-[#F3EEE0]">
+                        <div className="px-5 pb-5 pt-1 text-sm text-[#5C6B60] leading-relaxed border-t border-gray-100">
                           {faq.defaultA}
                         </div>
                       </motion.div>
@@ -855,6 +808,16 @@ export default function HealthGoalClient({
                   required
                   className="flex-1 px-4 py-3 rounded-full bg-white/10 text-white placeholder-white/50 border border-white/20 text-sm focus:outline-none focus:border-[#CFFA57] transition-all"
                 />
+                <input
+                  type="text"
+                  name="website"
+                  value={newsletterHoneypot}
+                  onChange={(e) => setNewsletterHoneypot(e.target.value)}
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
                 <button
                   type="submit"
                   disabled={newsletterStatus === 'loading'}
@@ -864,8 +827,19 @@ export default function HealthGoalClient({
                 </button>
               </div>
 
-              {/* Turnstile Widget */}
-              <div ref={turnstileContainerRef} className="flex justify-center" />
+              {/* Invisible Captcha container — zero visual footprint to preserve exact design */}
+              <div
+                ref={newsletterCaptchaRef}
+                style={{
+                  position: 'absolute',
+                  width: 0,
+                  height: 0,
+                  overflow: 'hidden',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                }}
+                aria-hidden="true"
+              />
 
               {newsletterMessage && (
                 <p
@@ -880,6 +854,5 @@ export default function HealthGoalClient({
           </div>
         </section>
       </div>
-    </>
   );
 }

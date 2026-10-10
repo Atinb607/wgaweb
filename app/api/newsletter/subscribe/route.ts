@@ -12,7 +12,13 @@ export async function POST(request: NextRequest) {
 
     const sql = getSQL();
     const body = await request.json();
-    const { email, source, turnstileToken } = body;
+    const { email, source, turnstileToken, website, hp_field } = body;
+
+    // ── Anti-bot Honeypot trap ──
+    if (website || hp_field) {
+      // Silently return success to bot without database insertion
+      return NextResponse.json({ message: 'Thanks for subscribing!' });
+    }
 
     // ── Require Turnstile token ──
     if (!turnstileToken) {
@@ -33,7 +39,8 @@ export async function POST(request: NextRequest) {
     }
 
     const secretToUse =
-      process.env.NODE_ENV !== 'production' && turnstileToken === 'XXXX.DUMMY.TOKEN.XXXX'
+      process.env.NODE_ENV !== 'production' &&
+      (turnstileToken === 'XXXX.DUMMY.TOKEN.XXXX' || turnstileToken === 'dev-token')
         ? '1x0000000000000000000000000000000AA'
         : turnstileSecret;
 
@@ -96,7 +103,7 @@ export async function POST(request: NextRequest) {
     // an email with the code. For now we just capture the email.
 
     return NextResponse.json({
-      message: 'Thanks for subscribing! 🌱',
+      message: 'Thanks for subscribing!',
     });
   } catch (error: unknown) {
     console.error('newsletter subscribe error:', error);

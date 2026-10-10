@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import ImageField from '@/components/admin/ImageField';
 import { getOptimizedLogoUrl } from '@/lib/format';
+import { Building } from '@/components/icons';
 
 export interface PartnerLogo {
   id: string;
@@ -474,7 +475,7 @@ export default function AdminPartnerLogosPage() {
           <div className="py-12 text-center text-sm text-gray-500">Loading partner logos...</div>
         ) : logos.length === 0 ? (
           <div className="py-12 px-4 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-            <span className="text-4xl block mb-2">🏢</span>
+            <Building className="w-12 h-12 mx-auto mb-2 text-gray-300" />
             <h4 className="text-sm font-bold text-gray-800">No partner logos uploaded yet</h4>
             <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
               Click &ldquo;Add Partner Logo&rdquo; above to upload company partner logos that have partnered with you.

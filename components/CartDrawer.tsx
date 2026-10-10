@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore, getProductThumbnail } from '@/lib/cartStore';
 import { isAdminPath } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
-import { X, Plus, Minus } from './icons';
+import { X, Plus, Minus, Subscription } from './icons';
 import CartMascot from './CartMascot';
 import {
   BestsellerProduct,
@@ -150,7 +150,7 @@ export default function CartDrawer() {
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="w-8 h-8 flex items-center justify-center text-[#5C6B60] hover:text-[#151F19] hover:bg-[#F3EEE0] rounded-full transition-colors"
+                className="w-8 h-8 flex items-center justify-center text-[#5C6B60] hover:text-[#151F19] hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Close cart"
               >
                 <X />
@@ -180,8 +180,8 @@ export default function CartDrawer() {
                   </p>
                 </div>
 
-                {/* Bestsellers Section in Signature Warm Cream */}
-                <div className="bg-[#F3EEE0] border-t border-[#E4DDC8] pt-5 pb-6 flex-1 flex flex-col justify-between">
+                {/* Bestsellers Section in Signature Warm White */}
+                <div className="bg-white border-t border-[#E4DDC8] pt-5 pb-6 flex-1 flex flex-col justify-between">
                   <div>
                     {/* Eyebrow & Fraunces Heading */}
                     <div className="text-center mb-4">
@@ -299,7 +299,7 @@ export default function CartDrawer() {
                         className="flex gap-3.5 p-3.5 bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl shadow-xs hover:border-[#1C3F2D]/40 transition-colors"
                       >
                         {/* Thumbnail */}
-                        <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 bg-[#F3EEE0] rounded-xl overflow-hidden shrink-0 border border-[#E4DDC8] relative">
+                        <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-[#E4DDC8] relative">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={thumb}
@@ -332,7 +332,7 @@ export default function CartDrawer() {
                             {item.isSubscription && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[#2D7A4D] bg-[#EBF5EE] px-2 py-0.5 rounded border border-[#C5DEC9] font-medium">
-                                  <span>🔁</span>
+                                  <Subscription className="w-3 h-3 text-[#2D7A4D] shrink-0" />
                                   <span>Weekly: {item.subscriptionTrays} {item.subscriptionTrays === 1 ? 'tray' : 'trays'}/wk · {item.subscriptionWeeks} wks</span>
                                 </span>
                               </div>
@@ -345,7 +345,7 @@ export default function CartDrawer() {
                             </span>
 
                             {/* Stepper */}
-                            <div className="flex items-center border border-[#E4DDC8] rounded-lg bg-[#F3EEE0]/50 overflow-hidden shadow-2xs">
+                            <div className="flex items-center border border-[#E4DDC8] rounded-lg bg-gray-50 overflow-hidden shadow-2xs">
                               <button
                                 onClick={() => updateQuantity(itemKey, item.quantity - 1)}
                                 className="p-1 hover:bg-[#E4DDC8] text-[#151F19] transition-colors"
@@ -374,7 +374,7 @@ export default function CartDrawer() {
 
                 {/* Upsell strip inside filled cart */}
                 {pairedUpsellProducts.length > 0 && (
-                  <div className="bg-[#F3EEE0] border-t border-[#E4DDC8] p-4 mt-auto">
+                  <div className="bg-white border-t border-[#E4DDC8] p-4 mt-auto">
                     <div className="flex items-center justify-between mb-2.5">
                       <p className="font-mono text-xs font-bold uppercase tracking-wider text-[#1C3F2D]">
                         Pair with your order
@@ -390,7 +390,7 @@ export default function CartDrawer() {
                           key={prod.id}
                           className="w-52 shrink-0 bg-[#FFFDF8] rounded-xl p-2.5 border border-[#E4DDC8] shadow-2xs flex items-center gap-2.5"
                         >
-                          <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-[#E4DDC8] bg-[#F3EEE0]">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-[#E4DDC8] bg-gray-50">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={prod.photo}

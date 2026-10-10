@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
+import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 import type { SamplerVariantData } from './page';
 
 export default function OurStoryClient({
@@ -19,70 +19,42 @@ export default function OurStoryClient({
 
   // Newsletter form state
   const [email, setEmail] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const turnstileWidgetId = useRef<string | null>(null);
-  const turnstileContainerRef = useRef<HTMLDivElement>(null);
 
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-
-  const handleTurnstileScriptReady = useCallback(() => {
-    setTurnstileReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.turnstile) {
-      setTurnstileReady(true);
-    }
-  }, []);
-
-  const renderTurnstile = useCallback(() => {
-    if (!turnstileReady || !siteKey || !window.turnstile || !turnstileContainerRef.current) return;
-    if (turnstileWidgetId.current) {
-      try { window.turnstile.remove(turnstileWidgetId.current); } catch { /* ignore */ }
-    }
-    turnstileContainerRef.current.innerHTML = '';
-    turnstileWidgetId.current = window.turnstile.render(turnstileContainerRef.current, {
-      sitekey: siteKey,
-      callback: (token: string) => setTurnstileToken(token),
-      'expired-callback': () => setTurnstileToken(null),
-      'error-callback': () => setTurnstileToken(null),
-      theme: 'dark',
-    });
-  }, [turnstileReady, siteKey]);
-
-  useEffect(() => {
-    renderTurnstile();
-  }, [renderTurnstile]);
+  const { containerRef, getTokenBeforeSubmit, reset: resetCaptcha } = useInvisibleTurnstile();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
-    if (!turnstileToken) {
-      setStatus('error');
-      setMessage('Security check in progress. Please try again in a moment.');
-      return;
-    }
-
     setStatus('loading');
     setMessage('');
     try {
+      // 1. Obtain invisible captcha token before sending request to backend
+      const captchaToken = await getTokenBeforeSubmit();
+      if (!captchaToken) {
+        setStatus('error');
+        setMessage('Security check in progress. Please try again in a moment.');
+        return;
+      }
+
+      // 2. Send request to backend
       const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim(),
           source: 'our_story',
-          turnstileToken,
+          turnstileToken: captchaToken,
+          website: honeypot,
         }),
       });
       const data = await res.json();
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code. 🌱');
+        setMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code.');
         setEmail('');
       } else {
         setStatus('error');
@@ -93,8 +65,7 @@ export default function OurStoryClient({
       setMessage('Failed to connect. Please check your internet connection.');
     } finally {
       // Reset Turnstile for next submission
-      setTurnstileToken(null);
-      renderTurnstile();
+      resetCaptcha();
     }
   };
 
@@ -119,18 +90,10 @@ export default function OurStoryClient({
   };
 
   return (
-    <>
-      {siteKey && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          strategy="afterInteractive"
-          onReady={handleTurnstileScriptReady}
-        />
-      )}
-      <div className="bg-[#F3EEE0] text-[#151F19] min-h-screen pt-[64px] sm:pt-[72px]">
+    <div className="bg-white text-[#151F19] min-h-screen pt-[64px] sm:pt-[72px]">
       {/* ============ ANCHOR NAV ============ */}
       <nav
-        className="sticky top-[58px] sm:top-[64px] z-40 bg-[#F3EEE0]/95 backdrop-blur-md border-b border-[#151F19]/10 transition-all duration-300"
+        className="sticky top-[58px] sm:top-[64px] z-40 bg-white/95 backdrop-blur-md border-b border-[#151F19]/10 transition-all duration-300"
         aria-label="On this page"
       >
         <div className="wrap flex gap-8 sm:gap-10 h-12 sm:h-[52px] items-center font-mono text-[11px] sm:text-[11.5px] tracking-[0.08em] uppercase overflow-x-auto whitespace-nowrap scrollbar-none">
@@ -160,7 +123,7 @@ export default function OurStoryClient({
 
       <main id="main">
         {/* ===== HERO SPLIT ===== */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[560px] lg:min-h-[calc(100vh-130px)] bg-[#F3EEE0]">
+        <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[560px] lg:min-h-[calc(100vh-130px)] bg-white">
           {/* Left Text */}
           <motion.div
             initial="hidden"
@@ -192,11 +155,11 @@ export default function OurStoryClient({
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
-            className="relative bg-[#F3EEE0] flex items-center justify-center p-6 sm:p-10 lg:p-12"
+            className="relative bg-white flex items-center justify-center p-6 sm:p-10 lg:p-12"
             aria-label="Photo collage of our microgreens, from tray to table"
           >
             <div className="w-full max-w-[480px] aspect-square grid grid-cols-3 grid-rows-3 gap-2.5 sm:gap-3.5">
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/3296644/pexels-photo-3296644.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -205,7 +168,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/15874889/pexels-photo-15874889.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -214,7 +177,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.unsplash.com/photo-1593629718347-283811841101?q=80&w=1200&auto=format&fit=crop"
@@ -223,7 +186,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -232,7 +195,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/29168411/pexels-photo-29168411.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -241,7 +204,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/32095425/pexels-photo-32095425.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -250,7 +213,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -259,7 +222,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -268,7 +231,7 @@ export default function OurStoryClient({
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
-              <div className="relative overflow-hidden bg-[#E4DDC8] rounded-sm group">
+              <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="https://images.pexels.com/photos/29122091/pexels-photo-29122091.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -354,7 +317,7 @@ export default function OurStoryClient({
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
             variants={fadeInUp}
-            className="flex flex-col justify-center bg-[#F3EEE0] py-14 px-6 sm:px-12 lg:p-20"
+            className="flex flex-col justify-center bg-white py-14 px-6 sm:px-12 lg:p-20"
           >
             <div
               id="story"
@@ -369,7 +332,7 @@ export default function OurStoryClient({
         </section>
 
         {/* ===== JOURNEY STRIP ===== */}
-        <section className="bg-[#DAD4BF]" id="journey">
+        <section className="bg-[#F1EDE3]" id="journey">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -396,7 +359,7 @@ export default function OurStoryClient({
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
             variants={fadeInUp}
-            className="order-2 lg:order-1 flex flex-col justify-center bg-[#F3EEE0] py-14 px-6 sm:px-12 lg:p-20"
+            className="order-2 lg:order-1 flex flex-col justify-center bg-white py-14 px-6 sm:px-12 lg:p-20"
           >
             <div
               id="belief"
@@ -425,7 +388,7 @@ export default function OurStoryClient({
         </section>
 
         {/* ===== PRINCIPLES ===== */}
-        <section className="bg-[#DAD4BF]" id="principles">
+        <section className="bg-[#F1EDE3]" id="principles">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -469,7 +432,7 @@ export default function OurStoryClient({
         </section>
 
         {/* ===== NEW TO MICROGREENS (Mid-CTA) ===== */}
-        <section className="bg-[#E4DDC8] p-0 overflow-hidden">
+        <section className="bg-[#F1EDE3] p-0 overflow-hidden">
           <div className="mband">
             <div className="row">
               <div className="slice">
@@ -600,6 +563,16 @@ export default function OurStoryClient({
                   disabled={status === 'loading'}
                   className="flex-1 min-w-[200px] bg-[#FFFDF8]/10 border border-[#FFFDF8]/25 rounded-full px-5 py-3.5 text-[#FFFDF8] text-sm outline-none placeholder:text-[#FFFDF8]/45 focus:border-[#CFFA57] transition-colors"
                 />
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
                 <button
                   type="submit"
                   disabled={status === 'loading'}
@@ -608,10 +581,17 @@ export default function OurStoryClient({
                   {status === 'loading' ? 'Signing Up...' : (content.newsletter_button_text || 'Sign Up')}
                 </button>
               </form>
-              {/* Invisible Turnstile container positioned off-screen to preserve exact layout */}
+              {/* Invisible Captcha container — zero visual footprint to preserve exact design */}
               <div
-                ref={turnstileContainerRef}
-                style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
+                ref={containerRef}
+                style={{
+                  position: 'absolute',
+                  width: 0,
+                  height: 0,
+                  overflow: 'hidden',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                }}
                 aria-hidden="true"
               />
               {message && (
@@ -631,6 +611,5 @@ export default function OurStoryClient({
         </section>
       </main>
     </div>
-    </>
   );
 }

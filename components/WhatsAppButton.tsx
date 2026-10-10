@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { isAdminPath } from '@/lib/adminAuth';
 import { WhatsApp } from '@/components/icons';
 
-const DEFAULT_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919800000000';
+const DEFAULT_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918427974445';
 
 export default function WhatsAppButton() {
   const pathname = usePathname();
@@ -16,7 +16,9 @@ export default function WhatsAppButton() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data: Record<string, string> | null) => {
         if (data?.whatsapp_number) {
-          setWhatsappNumber(data.whatsapp_number.replace(/\D/g, ''));
+          let num = data.whatsapp_number.replace(/\D/g, '');
+          if (num.length === 10) num = `91${num}`;
+          setWhatsappNumber(num);
         }
       })
       .catch(() => {
@@ -29,7 +31,10 @@ export default function WhatsAppButton() {
     return null;
   }
 
-  const cleanNumber = whatsappNumber.replace(/\D/g, '');
+  let cleanNumber = whatsappNumber.replace(/\D/g, '');
+  if (cleanNumber.length === 10) {
+    cleanNumber = `91${cleanNumber}`;
+  }
 
   return (
     <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50">

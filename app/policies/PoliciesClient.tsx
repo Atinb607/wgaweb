@@ -18,7 +18,7 @@ export default function PoliciesClient() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#F3EEE0] pt-40 text-center text-sm text-[#151F19]/60">
+    <div className="min-h-screen bg-white pt-40 text-center text-sm text-[#151F19]/60">
       Redirecting to policy...
     </div>
   );
