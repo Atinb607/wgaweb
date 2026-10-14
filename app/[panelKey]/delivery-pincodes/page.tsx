@@ -303,7 +303,6 @@ export default function AdminDeliveryPincodesPage() {
   };
 
   const activeCount = pincodes.filter((p) => p.is_active).length;
-  const freeFarmCount = pincodes.filter((p) => p.is_active && p.is_free_delivery).length;
 
   return (
     <div className="space-y-6">

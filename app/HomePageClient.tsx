@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import StoryModal from '@/components/StoryModal';
 import WhyMicrogreensChart from '@/components/WhyMicrogreensChart';
-import HealthGoalModal from '@/components/HealthGoalModal';
 import { Instagram, ShoppingBag, PackageBox, Sprout, Flask, Target, Utensils } from '@/components/icons';
 import { HEALTH_GOALS } from '@/lib/healthGoals';
 import { getOptimizedLogoUrl } from '@/lib/format';
@@ -86,7 +85,6 @@ export default function HomePageClient({
   dbPins,
   featuredRecipes = [],
   initialHealthGoals = [],
-  allProducts = [],
   partnerLogos: initialPartnerLogos = [],
 }: HomePageClientProps) {
   const shouldReduceMotion = useReducedMotion();
@@ -96,7 +94,6 @@ export default function HomePageClient({
   const [partnerLogos, setPartnerLogos] = useState<PartnerLogo[]>(
     initialPartnerLogos.length > 0 ? initialPartnerLogos : []
   );
-  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/health-goals')
@@ -119,8 +116,6 @@ export default function HomePageClient({
   }, []);
 
   const effectiveHealthGoals = healthGoals.length > 0 ? healthGoals : DEFAULT_HEALTH_GOALS;
-  const currentModalGoal =
-    effectiveHealthGoals.find((g) => g.id === selectedGoalId || g.slug === selectedGoalId) || null;
 
   // Hero background: give top preference to hero background video over hero bg image
   const rawVideo = content.hero_video_url?.trim() || '';

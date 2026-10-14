@@ -77,10 +77,6 @@ interface ProductRow {
   is_bundle: boolean;
 }
 
-interface CategoryRow {
-  category: string;
-}
-
 async function getProducts(): Promise<Product[]> {
   try {
     const sql = getSQL();
