@@ -237,9 +237,19 @@ summary {
 }
 
 /* Hide public header and footer on admin panel */
-body:has(.admin-panel-root) header,
-body:has(.admin-panel-root) footer {
+body:has(.admin-panel-root) > header,
+body:has(.admin-panel-root) > footer {
   display: none !important;
+}
+
+/* Ensure mobile admin topbar is always visible on mobile/tablet */
+@media (max-width: 1023px) {
+  .admin-mobile-topbar {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+  }
 }
 
 /* Scrollbar hiding utilities for clean modal and horizontal scroll design */

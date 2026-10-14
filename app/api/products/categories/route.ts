@@ -1,20 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { getOrderedActiveCategories } from '@/lib/categoryServer';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/products/categories: distinct category values from active products
+// GET /api/products/categories: returns active categories in admin-configured display order
 export async function GET() {
   try {
-    const sql = getSQL();
-    const result = await sql`
-      SELECT DISTINCT unnest(categories) AS category
-      FROM products
-      WHERE is_active = true
-      ORDER BY category ASC
-    `;
-
-    const categories = result.map((row) => row.category as string);
+    const categories = await getOrderedActiveCategories();
     return NextResponse.json(categories);
   } catch (error: unknown) {
     console.error('categories error:', error);

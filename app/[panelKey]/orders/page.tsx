@@ -291,9 +291,9 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white rounded-xl border p-4 sm:p-6 overflow-x-auto">
           <h2 className="font-bold text-gray-900 mb-3">Line Items</h2>
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[500px] text-sm">
             <thead>
               <tr className="text-left text-gray-500 border-b">
                 <th className="pb-2">Product</th>
@@ -447,8 +447,8 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden shadow-xs">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border overflow-x-auto shadow-xs">
+        <table className="w-full min-w-[800px] text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b bg-gray-50/80">
               <th className="px-3 py-3 w-14 text-center">S. no.</th>

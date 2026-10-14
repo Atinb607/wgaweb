@@ -24,7 +24,14 @@ declare global {
   }
 }
 
-export function useInvisibleTurnstile() {
+export interface TurnstileOptions {
+  size?: 'invisible' | 'normal' | 'compact' | 'flexible';
+  theme?: 'light' | 'dark' | 'auto';
+  execution?: 'render' | 'execute';
+}
+
+export function useTurnstile(options: TurnstileOptions = {}) {
+  const { size = 'normal', theme = 'dark', execution = 'render' } = options;
   const [token, setToken] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -49,7 +56,9 @@ export function useInvisibleTurnstile() {
       containerRef.current.innerHTML = '';
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: siteKey,
-        size: 'invisible',
+        size,
+        theme,
+        execution,
         callback: (newToken: string) => {
           tokenRef.current = newToken;
           setToken(newToken);
@@ -66,12 +75,21 @@ export function useInvisibleTurnstile() {
     } catch (e) {
       console.warn('Turnstile initialization error:', e);
     }
-  }, [siteKey]);
+  }, [siteKey, size, theme, execution]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     let active = true;
+
+    // Ensure Turnstile script is loaded if not already injected
+    if (!window.turnstile && !document.getElementById('cf-turnstile-script')) {
+      const script = document.createElement('script');
+      script.id = 'cf-turnstile-script';
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      document.head.appendChild(script);
+    }
 
     const checkAndInit = () => {
       if (!active) return;
@@ -90,9 +108,22 @@ export function useInvisibleTurnstile() {
       checkAndInit();
     }, 150);
 
+    const safetyTimeout = setTimeout(() => {
+      clearInterval(interval);
+    }, 10000);
+
     return () => {
       active = false;
       clearInterval(interval);
+      clearTimeout(safetyTimeout);
+      if (widgetIdRef.current && typeof window !== 'undefined' && window.turnstile) {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch {
+          /* ignore */
+        }
+        widgetIdRef.current = null;
+      }
     };
   }, [initWidget]);
 
@@ -164,8 +195,17 @@ export function useInvisibleTurnstile() {
   return {
     containerRef,
     token,
+    isVerified: !!token,
     getTokenBeforeSubmit,
     reset,
     siteKey,
   };
+}
+
+export function useInvisibleTurnstile() {
+  return useTurnstile({ size: 'invisible' });
+}
+
+export function useMinimalTurnstile(options?: { theme?: 'light' | 'dark' | 'auto' }) {
+  return useTurnstile({ size: 'normal', theme: options?.theme ?? 'dark' });
 }

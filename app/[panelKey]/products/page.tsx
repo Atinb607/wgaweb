@@ -5,7 +5,15 @@ import { adminFetch } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
 import ImageField from '@/components/admin/ImageField';
 import { HEALTH_GOALS } from '@/lib/healthGoals';
-import { Target, Utensils, Sprout, Lightbulb } from '@/components/icons';
+import { Target, Utensils, Sprout, Lightbulb, Trash2 } from '@/components/icons';
+
+export interface CategorySetting {
+  id?: string;
+  name: string;
+  display_order: number;
+  is_active: boolean;
+  product_count?: number;
+}
 
 interface Variant {
   id: string;
@@ -184,6 +192,15 @@ export default function AdminProductsPage() {
   const [savingSubDiscount, setSavingSubDiscount] = useState(false);
   const [subDiscountSaved, setSubDiscountSaved] = useState(false);
 
+  // Category sequencing & visibility state
+  const [categoriesList, setCategoriesList] = useState<CategorySetting[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [savingCategories, setSavingCategories] = useState(false);
+  const [categoriesSaved, setCategoriesSaved] = useState(false);
+  const [newCatInput, setNewCatInput] = useState('');
+  const [addingCat, setAddingCat] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
   const handleBadgeChange = (index: number, field: 'icon' | 'label', value: string) => {
     setBadges((prev) => {
       const next = [...prev];
@@ -278,6 +295,23 @@ export default function AdminProductsPage() {
   const loadProducts = async () => {
     const res = await adminFetch('/api/admin/products');
     if (res.ok) setProducts(await res.json());
+    loadCategories();
+  };
+
+  const loadCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const res = await adminFetch('/api/admin/categories');
+      if (res.ok) {
+        const data = await res.json();
+        setCategoriesList(data);
+        setAllCategories(data.map((c: CategorySetting) => c.name));
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    } finally {
+      setLoadingCategories(false);
+    }
   };
 
   const loadSubDiscount = async () => {
@@ -298,11 +332,130 @@ export default function AdminProductsPage() {
   useEffect(() => {
     loadProducts();
     loadSubDiscount();
-    fetch('/api/products/categories')
-      .then((r) => r.json())
-      .then(setAllCategories)
-      .catch(() => {});
+    loadCategories();
   }, []);
+
+  const handleSaveCategories = async () => {
+    setSavingCategories(true);
+    try {
+      const res = await adminFetch('/api/admin/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories: categoriesList }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.categories) {
+          setCategoriesList(data.categories);
+          setAllCategories(data.categories.map((c: CategorySetting) => c.name));
+        }
+        setCategoriesSaved(true);
+        setTimeout(() => setCategoriesSaved(false), 3000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to update category order.');
+      }
+    } catch {
+      alert('Network error while saving categories.');
+    } finally {
+      setSavingCategories(false);
+    }
+  };
+
+  const handleCategoryMove = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= categoriesList.length) return;
+    const next = [...categoriesList];
+    const temp = next[index];
+    next[index] = next[targetIndex];
+    next[targetIndex] = temp;
+    // Sequential display_orders
+    const updated = next.map((cat, idx) => ({
+      ...cat,
+      display_order: (idx + 1) * 10,
+    }));
+    setCategoriesList(updated);
+  };
+
+  const handleCategoryOrderInput = (index: number, val: string) => {
+    const parsed = parseInt(val, 10);
+    setCategoriesList((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        display_order: isNaN(parsed) ? 0 : parsed,
+      };
+      return next;
+    });
+  };
+
+  const handleToggleCategoryVisibility = (index: number) => {
+    setCategoriesList((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        is_active: !next[index].is_active,
+      };
+      return next;
+    });
+  };
+
+  const handleAddCategoryDirect = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const val = newCatInput.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (!val) {
+      alert('Please enter a valid category name.');
+      return;
+    }
+    setAddingCat(true);
+    try {
+      const res = await adminFetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: val }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.categories) {
+          setCategoriesList(data.categories);
+          setAllCategories(data.categories.map((c: CategorySetting) => c.name));
+        }
+        setNewCatInput('');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to add category.');
+      }
+    } catch {
+      alert('Network error while adding category.');
+    } finally {
+      setAddingCat(false);
+    }
+  };
+
+  const handleDeleteCategoryDirect = async (name: string, count: number = 0) => {
+    const msg = count > 0
+      ? `Category "${name}" is tagged on ${count} product(s). Are you sure you want to remove it from storefront display settings?`
+      : `Remove category "${name}" from storefront display settings?`;
+    if (!confirm(msg)) return;
+
+    try {
+      const res = await adminFetch(`/api/admin/categories?name=${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.categories) {
+          setCategoriesList(data.categories);
+          setAllCategories(data.categories.map((c: CategorySetting) => c.name));
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to delete category.');
+      }
+    } catch {
+      alert('Network error while deleting category.');
+    }
+  };
 
   const handleSaveSubDiscount = async () => {
     const val = parseFloat(subDiscountInput);
@@ -1417,7 +1570,8 @@ export default function AdminProductsPage() {
               </div>
             )}
 
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[500px] text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
                   <th className="pb-2">Label</th>
@@ -1439,37 +1593,57 @@ export default function AdminProductsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
     );
   }
 
+  const filteredTableProducts =
+    categoryFilter === 'all'
+      ? products
+      : products
+          .filter((p) => p.categories?.includes(categoryFilter))
+          .sort((a, b) => {
+            const ordA = a.category_orders?.[categoryFilter] ?? a.display_order ?? 9999;
+            const ordB = b.category_orders?.[categoryFilter] ?? b.display_order ?? 9999;
+            return ordA - ordB;
+          });
+
   // ── Product list view ──
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-        <button
-          onClick={() => {
-            setIsNew(true);
-            setForm(emptyProduct);
-            setBadges(defaultBadges);
-            setFaqs(defaultProductFaqs);
-            setAccordions(defaultDetailAccordions);
-            setPairsWellWith(['', '', '']);
-          }}
-          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800"
-        >
-          + Add Product
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Products</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="#category-manager"
+            className="px-3 py-2 bg-white border border-gray-300 text-gray-700 text-xs sm:text-sm font-semibold rounded-lg hover:bg-gray-50 shrink-0 cursor-pointer shadow-xs transition-colors"
+          >
+            ↕ Manage Categories &amp; Order
+          </a>
+          <button
+            onClick={() => {
+              setIsNew(true);
+              setForm(emptyProduct);
+              setBadges(defaultBadges);
+              setFaqs(defaultProductFaqs);
+              setAccordions(defaultDetailAccordions);
+              setPairsWellWith(['', '', '']);
+            }}
+            className="px-4 py-2 bg-gray-900 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-gray-800 shrink-0 cursor-pointer shadow-xs"
+          >
+            + Add Product
+          </button>
+        </div>
       </div>
 
       {/* ── Global Subscription Discount Control Card ── */}
       <div className="mb-6 bg-gradient-to-r from-emerald-50/90 via-[#F7FAF0] to-amber-50/60 border border-emerald-200/90 rounded-xl p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold font-mono tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-200">
                 STOREWIDE SUBSCRIPTION ROUTINE
               </span>
@@ -1477,19 +1651,19 @@ export default function AdminProductsPage() {
                 Active: {subDiscount}% OFF
               </span>
             </div>
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="text-sm sm:text-base font-bold text-gray-900">
               Subscription &amp; Save Discount Percentage
             </h2>
             <p className="text-xs text-gray-600 max-w-2xl leading-relaxed">
               Applied automatically to the <strong>&ldquo;Subscribe&rdquo;</strong> routine option for all products across the site using the formula:
-              <code className="ml-1 bg-white px-1.5 py-0.5 rounded border border-gray-200 text-emerald-800 text-[11px] font-mono">
+              <code className="block sm:inline sm:ml-1 mt-1 sm:mt-0 bg-white px-1.5 py-0.5 rounded border border-gray-200 text-emerald-800 text-[11px] font-mono break-all sm:break-normal">
                 Base Price &times; Trays &times; Weeks &times; (1 &minus; Discount%)
               </code>.
               Single tray / one-time orders remain at regular standard price.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 bg-white p-2 rounded-lg border border-gray-200 shadow-xs">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 bg-white p-2 rounded-lg border border-gray-200 shadow-xs self-start sm:self-auto">
             <div className="relative">
               <input
                 type="number"
@@ -1520,8 +1694,220 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
+      {/* ── Category Display Order & Visibility Manager Card ── */}
+      <div id="category-manager" className="mb-6 bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-gray-100">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold font-mono tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-200">
+                STOREFRONT CATEGORY SEQUENCING &amp; VISIBILITY
+              </span>
+              <span className="text-xs text-gray-500 font-medium">
+                {categoriesList.filter((c) => c.is_active).length} of {categoriesList.length} categories visible on shop
+              </span>
+            </div>
+            <h2 className="text-sm sm:text-base font-bold text-gray-900">
+              Category Display Order &amp; Visibility on Shop
+            </h2>
+            <p className="text-xs text-gray-500 max-w-3xl leading-relaxed mt-0.5">
+              Choose which category carousels appear on the customer shop page (<code className="text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded font-mono text-[11px]">/products</code>) and specify the exact order they are presented. Toggle to show or hide, click arrows or set numbers, and click &ldquo;Save Category Order&rdquo;.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            <button
+              onClick={handleSaveCategories}
+              disabled={savingCategories || categoriesList.length === 0}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5 ${
+                categoriesSaved
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-[#1C3F2D] hover:bg-[#122A1F] text-white'
+              } disabled:opacity-50 cursor-pointer`}
+            >
+              {savingCategories ? 'Saving…' : categoriesSaved ? '✓ Saved!' : 'Save Category Order'}
+            </button>
+          </div>
+        </div>
+
+        {/* Categories List */}
+        {loadingCategories ? (
+          <div className="py-8 text-center text-sm text-gray-400">Loading categories…</div>
+        ) : categoriesList.length === 0 ? (
+          <div className="py-8 text-center text-sm text-gray-400">No categories found. Add your first category below.</div>
+        ) : (
+          <div className="divide-y divide-gray-100 my-2">
+            {categoriesList.map((cat, idx) => {
+              const formattedName = cat.name.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+              return (
+                <div
+                  key={cat.name}
+                  className={`py-3 px-2 sm:px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg transition-colors ${
+                    cat.is_active ? 'hover:bg-gray-50/80' : 'bg-gray-50/60 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  {/* Left: Reorder controls + Category info */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Up / Down arrows */}
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryMove(idx, 'up')}
+                        disabled={idx === 0}
+                        title="Move Up in sequence"
+                        className="w-6 h-6 flex items-center justify-center text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent rounded cursor-pointer"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryMove(idx, 'down')}
+                        disabled={idx === categoriesList.length - 1}
+                        title="Move Down in sequence"
+                        className="w-6 h-6 flex items-center justify-center text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent rounded cursor-pointer"
+                      >
+                        ▼
+                      </button>
+                    </div>
+
+                    {/* Order # input */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[11px] font-medium text-gray-400">#</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={cat.display_order}
+                        onChange={(e) => handleCategoryOrderInput(idx, e.target.value)}
+                        className="w-14 px-2 py-1 text-center font-mono font-bold text-xs text-gray-900 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                        title="Sequence order number on storefront"
+                      />
+                    </div>
+
+                    {/* Name + slug */}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-gray-900">
+                          {formattedName}
+                        </span>
+                        <span className="font-mono text-[10.5px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                          {cat.name}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-2">
+                        <span className="font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                          {cat.product_count ?? 0} {cat.product_count === 1 ? 'product' : 'products'}
+                        </span>
+                        {cat.display_order > 0 && (
+                          <span className="text-gray-400 font-mono text-[10.5px]">
+                            Position #{idx + 1}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Visibility toggle + Delete */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                    {/* Visibility toggle switch/button */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCategoryVisibility(idx)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+                        cat.is_active
+                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300 border border-gray-300'
+                      }`}
+                      title={cat.is_active ? 'Click to hide category from shop' : 'Click to show category on shop'}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          cat.is_active ? 'bg-emerald-600' : 'bg-gray-400'
+                        }`}
+                      />
+                      <span>{cat.is_active ? 'Visible on Shop' : 'Hidden from Shop'}</span>
+                    </button>
+
+                    {/* Delete category */}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCategoryDirect(cat.name, cat.product_count ?? 0)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded text-xs transition-colors cursor-pointer"
+                      title="Remove category setting"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Bottom toolbar: Add Category form */}
+        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <form
+            onSubmit={handleAddCategoryDirect}
+            className="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-1 max-w-md"
+          >
+            <input
+              type="text"
+              value={newCatInput}
+              onChange={(e) => setNewCatInput(e.target.value)}
+              placeholder="New category name (e.g. Microgreens)"
+              className="flex-1 min-w-[180px] px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+            />
+            <button
+              type="submit"
+              disabled={addingCat || !newCatInput.trim()}
+              className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-40 text-white text-xs font-semibold rounded-lg shrink-0 transition-colors cursor-pointer"
+            >
+              {addingCat ? 'Adding…' : '+ Add Category'}
+            </button>
+          </form>
+
+          {categoriesSaved && (
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 self-center">
+              ✓ Category display order and visibility saved!
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Category filter tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none mb-3">
+        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1">
+          Filter:
+        </span>
+        <button
+          onClick={() => setCategoryFilter('all')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+            categoryFilter === 'all'
+              ? 'bg-gray-900 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          All Products ({products.length})
+        </button>
+        {categoriesList.map((cat) => {
+          const count = products.filter((p) => p.categories?.includes(cat.name)).length;
+          return (
+            <button
+              key={cat.name}
+              onClick={() => setCategoryFilter(cat.name)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                categoryFilter === cat.name
+                  ? 'bg-emerald-800 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <span className="capitalize">{cat.name.replace(/-/g, ' ')}</span> ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="bg-white rounded-xl border overflow-x-auto shadow-xs">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b bg-gray-50">
               <th className="px-4 py-3">Thumbnail</th>
@@ -1534,7 +1920,16 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => (
+            {(categoryFilter === 'all'
+              ? products
+              : products
+                  .filter((p) => p.categories?.includes(categoryFilter))
+                  .sort((a, b) => {
+                    const ordA = a.category_orders?.[categoryFilter] ?? a.display_order ?? 9999;
+                    const ordB = b.category_orders?.[categoryFilter] ?? b.display_order ?? 9999;
+                    return ordA - ordB;
+                  })
+            ).map((p) => (
               <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
                 <td className="px-4 py-3">
                   {p.thumbnail_url ? (
@@ -1624,7 +2019,13 @@ export default function AdminProductsPage() {
             ))}
           </tbody>
         </table>
-        {products.length === 0 && <p className="p-6 text-center text-gray-400">No products yet</p>}
+        {filteredTableProducts.length === 0 && (
+          <p className="p-6 text-center text-gray-400">
+            {categoryFilter === 'all'
+              ? 'No products yet'
+              : `No products found under category "${categoryFilter}"`}
+          </p>
+        )}
       </div>
     </div>
   );

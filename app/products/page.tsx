@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
+import { getOrderedActiveCategories } from '@/lib/categoryServer';
 import ProductListClient from './ProductListClient';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,7 @@ export interface Product {
   slug: string;
   name: string;
   categories: string[];
+  health_goals?: string[];
   category_orders?: Record<string, number> | null;
   display_order?: number;
   description: string;
@@ -61,6 +63,7 @@ interface ProductRow {
   slug: string;
   name: string;
   categories: string[];
+  health_goals?: string[];
   category_orders?: Record<string, number> | null;
   display_order?: number;
   description: string;
@@ -82,7 +85,7 @@ async function getProducts(): Promise<Product[]> {
   try {
     const sql = getSQL();
     const products = await sql`
-      SELECT id, slug, name, categories, category_orders, display_order, description, nutrition_notes,
+      SELECT id, slug, name, categories, health_goals, category_orders, display_order, description, nutrition_notes,
              thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, is_bundle
       FROM products
       WHERE is_active = true
@@ -123,20 +126,7 @@ async function getProducts(): Promise<Product[]> {
 }
 
 async function getCategories(): Promise<string[]> {
-  try {
-    const sql = getSQL();
-    const rows = await sql`
-      SELECT DISTINCT unnest(categories) AS category
-      FROM products
-      WHERE is_active = true
-      ORDER BY category ASC
-    `;
-    const categoryList = rows as unknown as CategoryRow[];
-    return categoryList.map((r) => r.category);
-  } catch (err) {
-    console.error('Error fetching categories:', err);
-    return [];
-  }
+  return getOrderedActiveCategories();
 }
 
 async function getContentMap(): Promise<Record<string, string>> {
@@ -247,7 +237,7 @@ async function getGlobalReviews(): Promise<Review[]> {
     const reviews = await sql`
       SELECT id, product_id, reviewer_name, reviewer_location, review_text, rating, display_order, is_active
       FROM product_reviews
-      WHERE is_active = true AND product_id IS NULL
+      WHERE is_active = true
       ORDER BY display_order ASC, created_at ASC
     `;
     return reviews as unknown as Review[];

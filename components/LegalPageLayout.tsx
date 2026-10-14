@@ -6,6 +6,7 @@ interface LegalPageLayoutProps {
   preamble?: string;
   content: string;
   lastUpdated?: string;
+  showFssai?: boolean;
 }
 
 /**
@@ -91,6 +92,7 @@ export default function LegalPageLayout({
   preamble,
   content,
   lastUpdated,
+  showFssai = false,
 }: LegalPageLayoutProps) {
   const isHtml = /<[a-z][\s\S]*>/i.test(content);
 
@@ -107,9 +109,17 @@ export default function LegalPageLayout({
     <div className="bg-white min-h-screen text-[#151F19] font-sans">
       <main className="max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-28 sm:pt-36 pb-20 sm:pb-28">
         {/* Page Title: Top Left, Simple Bold Sans-Serif */}
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#151F19] mb-8 sm:mb-10 font-sans">
-          {pageTitle}
-        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#151F19] font-sans">
+            {pageTitle}
+          </h1>
+          {showFssai && (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FAF7F0] border border-[#E4DDC8] text-xs font-mono text-[#1C3F2D] w-fit shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-[#2E7D32]" />
+              <span>FSSAI Lic. No. 11512018001447</span>
+            </div>
+          )}
+        </div>
 
         {/* Centered Document Heading (e.g. TERMS OF SERVICE) */}
         {docHeading && (
@@ -198,9 +208,43 @@ export default function LegalPageLayout({
           </div>
         )}
 
+        {/* FSSAI Registration Compliance Card */}
+        {showFssai && (
+          <div className="mt-14 pt-8 border-t border-[#E4DDC8]">
+            <div className="p-6 sm:p-8 bg-[#FAF7F0] border border-[#E4DDC8] rounded-2xl flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+              <a
+                href="/FSSAI.png"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View FSSAI Registration Certificate"
+                className="bg-white p-3.5 sm:p-4 rounded-xl border border-[#E4DDC8] shadow-sm flex items-center justify-center flex-shrink-0 hover:border-[#1C3F2D] transition-all group cursor-zoom-in"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/FSSAI.png"
+                  alt="FSSAI Registration - Lic. No. 11512018001447"
+                  className="h-16 sm:h-20 w-auto object-contain group-hover:scale-105 transition-transform"
+                />
+              </a>
+              <div>
+                <span className="font-mono text-[11px] uppercase tracking-wider text-[#1C3F2D] font-bold block mb-1">
+                  Food Safety Compliance &amp; Standards
+                </span>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-[#151F19] mb-1">
+                  Food Safety and Standards Authority of India (FSSAI)
+                </h3>
+                <p className="text-xs sm:text-sm text-[#5C6B60] leading-relaxed">
+                  Wild About Greens is certified and registered with the Food Safety and Standards Authority of India under License No.{' '}
+                  <strong className="font-mono text-[#151F19]">11512018001447</strong>. All harvesting, handling, packaging, and distribution operations comply with statutory hygiene requirements and food safety regulations under the Food Safety and Standards Act, 2006.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Optional Last Updated Note */}
         {lastUpdated && (
-          <div className="mt-12 pt-6 border-t border-[#E4DDC8] text-xs text-[#5C6B60] font-sans">
+          <div className="mt-10 pt-4 border-t border-[#E4DDC8] text-xs text-[#5C6B60] font-sans">
             Last Updated: {lastUpdated}
           </div>
         )}

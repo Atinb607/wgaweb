@@ -1,3 +1,7 @@
 [build]
   command = "npm run build"
   publish = ".next"
+
+[build.environment]
+  NEXT_PUBLIC_COD_ENABLED = "true"
+  COD_ENABLED = "true"

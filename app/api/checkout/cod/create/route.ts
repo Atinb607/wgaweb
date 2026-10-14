@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { isCodEnabled, getCodMaxOrderPaise } from '@/lib/codConfig';
+import { isCodEnabled, getCodMaxOrderPaise, ensureCodOrdersSchema } from '@/lib/codConfig';
 import { verifyCodChallenge } from '@/lib/codCaptcha';
 import {
   validateCheckoutPayload,
@@ -152,6 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 8. Create Order in Database (with payment_method = 'cod' and payment_status = 'cod_pending') ──
+    await ensureCodOrdersSchema();
     const sql = getSQL();
     let orderId: string;
     let orderNumber: string;

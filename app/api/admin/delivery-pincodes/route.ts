@@ -10,7 +10,7 @@ export async function GET() {
     await ensureDeliveryPincodesTable();
     const sql = getSQL();
     const pincodes = await sql`
-      SELECT id, pincode, area_name, city, notes, is_active, created_at, updated_at
+      SELECT id, pincode, area_name, city, notes, is_active, is_free_delivery, created_at, updated_at
       FROM delivery_pincodes
       ORDER BY pincode ASC
     `;
@@ -23,13 +23,13 @@ export async function GET() {
   }
 }
 
-// POST /api/admin/delivery-pincodes: create a new free delivery pincode
+// POST /api/admin/delivery-pincodes: create a new delivery pincode
 export async function POST(request: NextRequest) {
   try {
     await ensureDeliveryPincodesTable();
     const sql = getSQL();
     const body = await request.json();
-    const { pincode, area_name, city, notes, is_active } = body;
+    const { pincode, area_name, city, notes, is_active, is_free_delivery } = body;
 
     const cleanPin = pincode ? String(pincode).trim() : '';
 
@@ -51,19 +51,20 @@ export async function POST(request: NextRequest) {
 
     if (existing.length > 0) {
       return NextResponse.json(
-        { error: `Pincode ${cleanPin} is already registered in the free delivery list.` },
+        { error: `Pincode ${cleanPin} is already registered in the deliverable areas list.` },
         { status: 409 }
       );
     }
 
     const result = await sql`
-      INSERT INTO delivery_pincodes (pincode, area_name, city, notes, is_active)
+      INSERT INTO delivery_pincodes (pincode, area_name, city, notes, is_active, is_free_delivery)
       VALUES (
         ${cleanPin},
         ${area_name ? String(area_name).trim() : null},
         ${city ? String(city).trim() : 'Mohali / Chandigarh'},
         ${notes ? String(notes).trim() : null},
-        ${is_active !== undefined ? Boolean(is_active) : true}
+        ${is_active !== undefined ? Boolean(is_active) : true},
+        ${is_free_delivery !== undefined ? Boolean(is_free_delivery) : false}
       )
       RETURNING *
     `;

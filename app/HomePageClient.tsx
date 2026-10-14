@@ -622,9 +622,8 @@ export default function HomePageClient({
 
               return (
                 <motion.div key={goal.id || index} variants={scrollItemVariants}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedGoalId(goal.id)}
+                  <Link
+                    href={`/products/health-goals?goal=${goal.slug || goal.id}`}
                     className="group block w-full text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C3F2D] rounded-xl sm:rounded-2xl"
                   >
                     <div
@@ -669,11 +668,30 @@ export default function HomePageClient({
                         <span className="inline-block transform group-hover:translate-x-1.5 transition-transform duration-300">→</span>
                       </span>
                     </div>
-                  </button>
+                  </Link>
                 </motion.div>
               );
             })}
           </motion.div>
+
+          {/* ================= FSSAI LOGO (Centered, no background, no divider, no text) ================= */}
+          <div className="mt-10 sm:mt-12 md:mt-14 flex justify-center items-center">
+            <a
+              href="/FSSAI.png"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="FSSAI Registration - Lic. No. 11512018001447"
+              className="inline-block transition-transform hover:scale-105"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/FSSAI.png"
+                alt="FSSAI Registration - Lic. No. 11512018001447"
+                className="h-14 sm:h-16 md:h-20 w-auto object-contain"
+                loading="lazy"
+              />
+            </a>
+          </div>
         </div>
       </section>
 
@@ -1082,16 +1100,6 @@ export default function HomePageClient({
           </motion.div>
         </motion.div>
       </section>
-
-      {/* ================= HEALTH GOAL POPUP MODAL ================= */}
-      <HealthGoalModal
-        isOpen={!!selectedGoalId}
-        onClose={() => setSelectedGoalId(null)}
-        currentGoal={currentModalGoal}
-        allGoals={effectiveHealthGoals}
-        onSelectGoal={(id) => setSelectedGoalId(id)}
-        allProducts={allProducts || []}
-      />
     </main>
   );
 }

@@ -244,11 +244,11 @@ export default function ProductListClient({
     setNewsletterStatus('loading');
     setNewsletterMessage('');
     try {
-      // 1. Obtain invisible captcha token before sending request to backend
+      // 1. Obtain captcha token before sending request to backend
       const captchaToken = await getNewsletterCaptchaToken();
       if (!captchaToken) {
         setNewsletterStatus('error');
-        setNewsletterMessage('Security check in progress. Please try again in a moment.');
+        setNewsletterMessage('Please complete the security check to continue.');
         return;
       }
 
@@ -345,8 +345,8 @@ export default function ProductListClient({
         productsByCategory[cat] = sortProductsForCategory(prods, cat);
       }
     });
-    // Add any products whose category is not in initialCategories
-    const remaining = initialProducts.filter((p) => !p.categories?.some((c) => categories.includes(c)));
+    // Add any products without any assigned category
+    const remaining = initialProducts.filter((p) => !p.categories || p.categories.length === 0);
     if (remaining.length > 0) {
       productsByCategory['other'] = sortProductsForCategory(remaining, 'other');
     }
@@ -472,6 +472,14 @@ export default function ProductListClient({
               {cat.replace(/-/g, ' ')}
             </button>
           ))}
+
+          {/* Rightmost: Shop By Health Goal */}
+          <Link
+            href="/products/health-goals"
+            className="flex-shrink-0 font-mono text-xs tracking-wider uppercase font-bold px-4 py-2 rounded-full border border-[#1C3F2D] text-[#1C3F2D] bg-[#F1EDE3] hover:bg-[#1C3F2D] hover:text-[#FFFDF8] transition-all shadow-xs ml-auto cursor-pointer"
+          >
+            Shop By Health Goal
+          </Link>
         </div>
       </nav>
 
@@ -494,14 +502,16 @@ export default function ProductListClient({
 
               {/* Carousel Container */}
               <div className="relative">
-                {/* Arrow Left */}
-                <button
-                  onClick={() => scrollTrack(catKey, 'left')}
-                  className="hidden sm:flex absolute left-[-16px] top-[32%] z-10 w-10 h-10 rounded-full bg-[#FFFDF8] border border-[#E4DDC8] items-center justify-center text-[#122A1F] hover:bg-[#1C3F2D] hover:text-[#FFFDF8] hover:border-[#1C3F2D] transition-all shadow-md"
-                  aria-label="Previous products"
-                >
-                  ‹
-                </button>
+                {/* Arrow Left (only show if more than 4 products) */}
+                {prods.length > 4 && (
+                  <button
+                    onClick={() => scrollTrack(catKey, 'left')}
+                    className="hidden sm:flex absolute left-[-16px] top-[32%] z-10 w-10 h-10 rounded-full bg-[#FFFDF8] border border-[#E4DDC8] items-center justify-center text-[#122A1F] hover:bg-[#1C3F2D] hover:text-[#FFFDF8] hover:border-[#1C3F2D] transition-all shadow-md"
+                    aria-label="Previous products"
+                  >
+                    ‹
+                  </button>
+                )}
 
                 {/* Track */}
                 <div
@@ -671,14 +681,16 @@ export default function ProductListClient({
                   })}
                 </div>
 
-                {/* Arrow Right */}
-                <button
-                  onClick={() => scrollTrack(catKey, 'right')}
-                  className="hidden sm:flex absolute right-[-16px] top-[32%] z-10 w-10 h-10 rounded-full bg-[#FFFDF8] border border-[#E4DDC8] items-center justify-center text-[#122A1F] hover:bg-[#1C3F2D] hover:text-[#FFFDF8] hover:border-[#1C3F2D] transition-all shadow-md"
-                  aria-label="Next products"
-                >
-                  ›
-                </button>
+                {/* Arrow Right (only show if more than 4 products) */}
+                {prods.length > 4 && (
+                  <button
+                    onClick={() => scrollTrack(catKey, 'right')}
+                    className="hidden sm:flex absolute right-[-16px] top-[32%] z-10 w-10 h-10 rounded-full bg-[#FFFDF8] border border-[#E4DDC8] items-center justify-center text-[#122A1F] hover:bg-[#1C3F2D] hover:text-[#FFFDF8] hover:border-[#1C3F2D] transition-all shadow-md"
+                    aria-label="Next products"
+                  >
+                    ›
+                  </button>
+                )}
               </div>
             </section>
           );
@@ -1140,19 +1152,6 @@ export default function ProductListClient({
                   : (content.newsletter_button_text || 'Sign Up')}
               </button>
             </form>
-            {/* Invisible Captcha container — zero visual footprint to preserve exact design */}
-            <div
-              ref={newsletterCaptchaRef}
-              style={{
-                position: 'absolute',
-                width: 0,
-                height: 0,
-                overflow: 'hidden',
-                opacity: 0,
-                pointerEvents: 'none',
-              }}
-              aria-hidden="true"
-            />
             {newsletterMessage && (
               <p
                 className={`text-xs mt-2.5 ${
@@ -1165,6 +1164,21 @@ export default function ProductListClient({
             <p className="text-[11px] text-[#FFFDF8]/40 mt-2.5">
               {content.newsletter_disclaimer || 'No spam. Unsubscribe anytime.'}
             </p>
+
+            {/* Invisible Turnstile container — offscreen to preserve exact layout without dimension failures */}
+            <div
+              ref={newsletterCaptchaRef}
+              style={{
+                position: 'fixed',
+                left: -9999,
+                top: -9999,
+                width: 300,
+                height: 65,
+                opacity: 0,
+                pointerEvents: 'none',
+              }}
+              aria-hidden="true"
+            />
           </div>
         </div>
       </section>

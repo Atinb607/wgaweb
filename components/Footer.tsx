@@ -23,11 +23,11 @@ export default function Footer() {
     setStatus('loading');
     setMessage('');
     try {
-      // 1. Obtain invisible captcha token before sending the request to backend
+      // 1. Obtain captcha token before sending the request to backend
       const captchaToken = await getTokenBeforeSubmit();
       if (!captchaToken) {
         setStatus('error');
-        setMessage('Security check in progress. Please try again in a moment.');
+        setMessage('Please complete the security check to continue.');
         return;
       }
 
@@ -156,19 +156,6 @@ export default function Footer() {
                   {status === 'loading' ? '...' : 'Join →'}
                 </button>
               </form>
-              {/* Invisible Captcha container — zero visual footprint to preserve exact design */}
-              <div
-                ref={containerRef}
-                style={{
-                  position: 'absolute',
-                  width: 0,
-                  height: 0,
-                  overflow: 'hidden',
-                  opacity: 0,
-                  pointerEvents: 'none',
-                }}
-                aria-hidden="true"
-              />
               {message && (
                 <p
                   className={`text-xs mt-2.5 ${
@@ -178,6 +165,20 @@ export default function Footer() {
                   {message}
                 </p>
               )}
+              {/* Invisible Turnstile container — offscreen to preserve exact layout without dimension failures */}
+              <div
+                ref={containerRef}
+                style={{
+                  position: 'fixed',
+                  left: -9999,
+                  top: -9999,
+                  width: 300,
+                  height: 65,
+                  opacity: 0,
+                  pointerEvents: 'none',
+                }}
+                aria-hidden="true"
+              />
             </div>
           </div>
 

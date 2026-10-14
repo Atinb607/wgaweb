@@ -48,6 +48,7 @@ export default async function TermsAndConditionsPage() {
       preamble={preamble}
       content={content}
       lastUpdated={lastUpdated}
+      showFssai={true}
     />
   );
 }

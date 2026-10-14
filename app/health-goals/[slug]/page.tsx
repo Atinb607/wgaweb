@@ -152,31 +152,6 @@ async function getGlobalReviews(): Promise<Review[]> {
 
 export default async function HealthGoalPage({ params }: PageProps) {
   const goal = getHealthGoalBySlug(params.slug);
-
-  if (!goal) {
-    notFound();
-  }
-
-  // Canonicalize URL if accessed via an alias (e.g. /health-goals/immunity -> /health-goals/boost-immunity)
-  if (params.slug !== goal.slug) {
-    redirect(`/health-goals/${goal.slug}`);
-  }
-
-  const [products, content, whyChoosePins, reviews] = await Promise.all([
-    getProductsForGoal(goal.slug),
-    getContentMap(),
-    getWhyChoosePins(),
-    getGlobalReviews(),
-  ]);
-
-  return (
-    <HealthGoalClient
-      currentGoal={goal}
-      allGoals={HEALTH_GOALS}
-      products={products}
-      content={content}
-      whyChoosePins={whyChoosePins}
-      reviews={reviews}
-    />
-  );
+  const targetSlug = goal ? goal.slug : params.slug;
+  redirect(`/products/health-goals?goal=${encodeURIComponent(targetSlug)}`);
 }

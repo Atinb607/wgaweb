@@ -1,13 +1,14 @@
+import { isDeliverablePincode, DEFAULT_AVAILABLE_DELIVERY_PINCODES } from './delivery';
+
 /**
  * Delivery serviceable pincodes.
- * Configured for general access across all valid 6-digit postal codes.
+ * Configured for the client's 47 selected deliverable postal codes.
  */
-
-export function isServiceable(pincode: string): boolean {
+export function isServiceable(pincode: string, availableSet?: Set<string> | string[]): boolean {
   if (!pincode || typeof pincode !== 'string') return false;
-  return /^\d{6}$/.test(pincode.trim());
+  return isDeliverablePincode(pincode, availableSet || DEFAULT_AVAILABLE_DELIVERY_PINCODES);
 }
 
 export const SERVICEABLE_PINCODES = {
-  has: (pincode: string) => isServiceable(pincode),
+  has: (pincode: string, availableSet?: Set<string> | string[]) => isServiceable(pincode, availableSet),
 };

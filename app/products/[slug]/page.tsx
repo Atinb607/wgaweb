@@ -100,6 +100,16 @@ export interface RelatedProduct {
   is_bundle?: boolean;
 }
 
+export interface HatTrickVariantData {
+  variantId: string;
+  productSlug: string;
+  productName: string;
+  variantLabel: string;
+  pricePaise: number;
+  maxStock: number;
+  thumbnailUrl: string | null;
+}
+
 async function getProduct(slug: string): Promise<Product | null> {
   try {
     const sql = getSQL();
@@ -256,6 +266,47 @@ async function getProductReviews(productId: string): Promise<Review[]> {
   }
 }
 
+async function getHatTrickVariant(): Promise<HatTrickVariantData | null> {
+  try {
+    const sql = getSQL();
+    const rows = await sql`
+      SELECT pv.id AS variant_id, p.slug AS product_slug, p.name AS product_name,
+             COALESCE(
+               p.thumbnail_url,
+               (SELECT pi.image_url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.display_order ASC LIMIT 1)
+             ) AS thumbnail_url,
+             pv.label AS variant_label, pv.price_paise, pv.stock_qty
+      FROM products p
+      JOIN product_variants pv ON pv.product_id = p.id AND pv.is_active = true
+      WHERE p.slug = 'hat-trick-pack' AND p.is_active = true
+      ORDER BY pv.price_paise ASC
+      LIMIT 1
+    `;
+    if (rows.length === 0) return null;
+    const r = rows[0] as unknown as {
+      variant_id: string;
+      product_slug: string;
+      product_name: string;
+      thumbnail_url: string | null;
+      variant_label: string;
+      price_paise: number;
+      stock_qty: number;
+    };
+    return {
+      variantId: r.variant_id,
+      productSlug: r.product_slug,
+      productName: r.product_name,
+      variantLabel: r.variant_label,
+      pricePaise: r.price_paise,
+      maxStock: r.stock_qty || 20,
+      thumbnailUrl: r.thumbnail_url,
+    };
+  } catch (err) {
+    console.error('Error fetching hat-trick variant:', err);
+    return null;
+  }
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const product = await getProduct(params.slug);
   if (!product) {
@@ -284,11 +335,12 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   const product = await getProduct(params.slug);
   if (!product) notFound();
 
-  const [allOtherProducts, content, reviews, whyChoosePins] = await Promise.all([
+  const [allOtherProducts, content, reviews, whyChoosePins, hatTrickVariant] = await Promise.all([
     getInventoryProducts(params.slug),
     getContentMap(),
     getProductReviews(product.id),
     getWhyChoosePins(),
+    getHatTrickVariant(),
   ]);
 
   const pairedProducts = getPairedProducts(allOtherProducts, product.pairs_well_with);
@@ -304,6 +356,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
       content={content}
       reviews={reviews}
       initialWhyChoosePins={whyChoosePins}
+      hatTrickVariant={hatTrickVariant}
     />
   );
 }

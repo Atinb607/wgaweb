@@ -762,8 +762,8 @@ export default function AdminBlogPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border overflow-x-auto shadow-xs">
+        <table className="w-full min-w-[650px] text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b bg-gray-50">
               <th className="px-4 py-3">Title</th>

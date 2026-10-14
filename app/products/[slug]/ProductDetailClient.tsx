@@ -6,7 +6,17 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
 import { LeafFavicon, Sprout, Shield, Sparkles, CheckCircle, Clock, Utensils, Zap, Droplet, Scissors } from '@/components/icons';
-import { Product, Variant, RelatedProduct, Review, HighlightBadge, WhyChoosePin, ProductFAQ, DetailAccordion } from './page';
+import { Product, Variant, RelatedProduct, Review, HighlightBadge, WhyChoosePin, ProductFAQ, DetailAccordion, HatTrickVariantData } from './page';
+
+const DEFAULT_HAT_TRICK_VARIANT: HatTrickVariantData = {
+  variantId: 'ef7b23d7-1f12-4794-8bef-a4eccbdeb037',
+  productSlug: 'hat-trick-pack',
+  productName: 'Hat Trick Pack',
+  variantLabel: 'Bundle of 3 Live Trays',
+  pricePaise: 450,
+  maxStock: 11,
+  thumbnailUrl: 'https://res.cloudinary.com/qjoihkpr/image/upload/v1791807917/products/hat-trick-pack/thumbnail/thumbnail.png',
+};
 
 const DEFAULT_DETAIL_ACCORDIONS: DetailAccordion[] = [
   {
@@ -333,6 +343,7 @@ export default function ProductDetailClient({
   content = {},
   reviews = [],
   initialWhyChoosePins = [],
+  hatTrickVariant = null,
 }: {
   product: Product;
   relatedProducts?: RelatedProduct[];
@@ -341,6 +352,7 @@ export default function ProductDetailClient({
   content?: Record<string, string>;
   reviews?: Review[];
   initialWhyChoosePins?: WhyChoosePin[];
+  hatTrickVariant?: HatTrickVariantData | null;
 }) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -557,7 +569,7 @@ export default function ProductDetailClient({
         productName: product.name,
         variantLabel: `${selectedVariant.label} (${subWeeks}-Wk Plan · ${subTrays} ${subTrays === 1 ? 'tray' : 'trays'}/wk)`,
         pricePaise: subPricePaise,
-        quantity: qty,
+        quantity: 1,
         maxStock: selectedVariant.stock_qty,
         thumbnailUrl: thumb,
         isSubscription: true,
@@ -599,6 +611,24 @@ export default function ProductDetailClient({
       thumbnailUrl: thumb,
     });
     setIsOpen(true);
+  };
+
+  const [hatTrickAdded, setHatTrickAdded] = useState(false);
+
+  const handleAddHatTrick = () => {
+    const target = hatTrickVariant || DEFAULT_HAT_TRICK_VARIANT;
+    addItem({
+      variantId: target.variantId,
+      productSlug: target.productSlug,
+      productName: target.productName,
+      variantLabel: target.variantLabel || 'Bundle of 3 Live Trays',
+      pricePaise: target.pricePaise,
+      maxStock: target.maxStock || 20,
+      thumbnailUrl: target.thumbnailUrl,
+    });
+    setIsOpen(true);
+    setHatTrickAdded(true);
+    setTimeout(() => setHatTrickAdded(false), 2000);
   };
 
   const handleReasonsScroll = () => {
@@ -845,7 +875,10 @@ export default function ProductDetailClient({
                   </button>
 
                   <button
-                    onClick={() => setPlan('subscription')}
+                    onClick={() => {
+                      setPlan('subscription');
+                      setQty(1);
+                    }}
                     className={`relative text-left p-3.5 rounded-xl border transition-all ${
                       plan === 'subscription'
                         ? 'border-[#1C3F2D] bg-[#F7FAF0] ring-1 ring-[#1C3F2D]'
@@ -859,7 +892,7 @@ export default function ProductDetailClient({
                       Subscribe
                     </span>
                     <span className="block font-mono text-[10px] tracking-wide uppercase text-[#5C6B60]">
-                      Fresh Routine
+                      Weekly
                     </span>
                   </button>
                 </div>
@@ -944,26 +977,30 @@ export default function ProductDetailClient({
 
                 {/* Quantity & Add to Cart */}
                 <div className="flex gap-3 items-stretch mt-4">
-                  {/* Stepper */}
-                  <div className="flex items-center border border-[#E4DDC8] rounded-xl overflow-hidden bg-gray-50 flex-shrink-0">
-                    <button
-                      onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      className="w-9 h-full flex items-center justify-center text-base font-bold text-[#122A1F] hover:bg-[#E4DDC8]/60 transition-colors"
-                    >
-                      -
-                    </button>
-                    <span className="w-8 text-center font-bold text-sm text-[#122A1F]">
-                      {qty}
-                    </span>
-                    <button
-                      onClick={() => setQty((q) => q + 1)}
-                      className="w-9 h-full flex items-center justify-center text-base font-bold text-[#122A1F] hover:bg-[#E4DDC8]/60 transition-colors"
-                    >
-                      +
-                    </button>
-                  </div>
+                  {/* Stepper: only appears while Ordering, not subscribing */}
+                  {plan === 'single' && (
+                    <div className="flex items-center border border-[#E4DDC8] rounded-xl overflow-hidden bg-gray-50 flex-shrink-0">
+                      <button
+                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        className="w-9 h-full flex items-center justify-center text-base font-bold text-[#122A1F] hover:bg-[#E4DDC8]/60 transition-colors"
+                        aria-label="Decrease quantity"
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-bold text-sm text-[#122A1F]">
+                        {qty}
+                      </span>
+                      <button
+                        onClick={() => setQty((q) => q + 1)}
+                        className="w-9 h-full flex items-center justify-center text-base font-bold text-[#122A1F] hover:bg-[#E4DDC8]/60 transition-colors"
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
 
-                  {/* Add to Cart Button */}
+                  {/* Add to Cart / Subscribe Button */}
                   <button
                     onClick={handleAddToCart}
                     className="flex-1 bg-[#122A1F] hover:bg-[#1C3F2D] text-[#FFFDF8] font-bold text-sm tracking-wide py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0"
@@ -982,7 +1019,7 @@ export default function ProductDetailClient({
                         </svg>
                         <span>
                           {plan === 'subscription' ? 'Subscribe · ' : 'Add to Cart · '}
-                          {formatPrice(effectivePrice * qty)}
+                          {formatPrice(effectivePrice * (plan === 'subscription' ? 1 : qty))}
                         </span>
                       </>
                     )}
@@ -1127,12 +1164,20 @@ export default function ProductDetailClient({
               {content.bundle_banner_subtitle ||
                 'Grab the full lineup and save 25%. Three trays, one delivery, zero filler.'}
             </p>
-            <Link
-              href="/products?category=bundle"
-              className="inline-flex items-center justify-center bg-[#111813] text-white font-bold text-[11px] sm:text-xs uppercase tracking-wider px-6 py-2.5 rounded-full hover:bg-black transition-all shadow-sm mt-1"
+            <button
+              type="button"
+              onClick={handleAddHatTrick}
+              className="inline-flex items-center justify-center gap-2 bg-[#111813] text-white font-bold text-[11px] sm:text-xs uppercase tracking-wider px-6 py-2.5 rounded-full hover:bg-black transition-all shadow-sm mt-1 cursor-pointer active:scale-95"
             >
-              {content.bundle_banner_cta_text || 'TRY THE HAT TRICK 3-PACK'}
-            </Link>
+              {hatTrickAdded ? (
+                <>
+                  <span className="text-[#CFFA57]">✓</span>
+                  <span>ADDED TO CART</span>
+                </>
+              ) : (
+                <span>{content.bundle_banner_cta_text || 'TRY THE HAT TRICK 3-PACK'}</span>
+              )}
+            </button>
           </div>
         </div>
       </section>
@@ -1423,17 +1468,19 @@ export default function ProductDetailClient({
 
             {/* Carousel Container */}
             <div className="relative">
-              {/* Left Arrow Button */}
-              <button
-                type="button"
-                onClick={() => scrollOtherGreens('left')}
-                className="absolute -left-3 sm:-left-5 top-[115px] sm:top-[128px] -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#D5CEC0] shadow-[0_4px_14px_rgba(0,0,0,0.12)] flex items-center justify-center text-[#151F19] hover:bg-[#151F19] hover:text-white transition-all cursor-pointer"
-                aria-label="Previous greens"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
+              {/* Left Arrow Button (only show if more than 4 items) */}
+              {displayOtherGreens.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => scrollOtherGreens('left')}
+                  className="absolute -left-3 sm:-left-5 top-[115px] sm:top-[128px] -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#D5CEC0] shadow-[0_4px_14px_rgba(0,0,0,0.12)] flex items-center justify-center text-[#151F19] hover:bg-[#151F19] hover:text-white transition-all cursor-pointer"
+                  aria-label="Previous greens"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
 
               {/* Product Cards Track */}
               <div
@@ -1519,17 +1566,19 @@ export default function ProductDetailClient({
                 })}
               </div>
 
-              {/* Right Arrow Button */}
-              <button
-                type="button"
-                onClick={() => scrollOtherGreens('right')}
-                className="absolute -right-3 sm:-right-5 top-[115px] sm:top-[128px] -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#D5CEC0] shadow-[0_4px_14px_rgba(0,0,0,0.12)] flex items-center justify-center text-[#151F19] hover:bg-[#151F19] hover:text-white transition-all cursor-pointer"
-                aria-label="Next greens"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+              {/* Right Arrow Button (only show if more than 4 items) */}
+              {displayOtherGreens.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => scrollOtherGreens('right')}
+                  className="absolute -right-3 sm:-right-5 top-[115px] sm:top-[128px] -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#D5CEC0] shadow-[0_4px_14px_rgba(0,0,0,0.12)] flex items-center justify-center text-[#151F19] hover:bg-[#151F19] hover:text-white transition-all cursor-pointer"
+                  aria-label="Next greens"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -1749,7 +1798,7 @@ export default function ProductDetailClient({
               <>
                 <span>{plan === 'subscription' ? 'Subscribe' : 'Add to Cart'}</span>
                 <span>·</span>
-                <span>{formatPrice(effectivePrice * qty)}</span>
+                <span>{formatPrice(effectivePrice * (plan === 'subscription' ? 1 : qty))}</span>
               </>
             )}
           </button>

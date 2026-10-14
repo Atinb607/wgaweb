@@ -12,7 +12,7 @@ export async function PUT(
     const sql = getSQL();
     const { id } = params;
     const body = await request.json();
-    const { pincode, area_name, city, notes, is_active } = body;
+    const { pincode, area_name, city, notes, is_active, is_free_delivery } = body;
 
     const cleanPin = pincode !== undefined ? String(pincode).trim() : undefined;
 
@@ -43,6 +43,7 @@ export async function PUT(
         city = CASE WHEN ${city !== undefined} THEN ${city ? String(city).trim() : null} ELSE city END,
         notes = CASE WHEN ${notes !== undefined} THEN ${notes ? String(notes).trim() : null} ELSE notes END,
         is_active = COALESCE(${is_active !== undefined ? Boolean(is_active) : null}, is_active),
+        is_free_delivery = COALESCE(${is_free_delivery !== undefined ? Boolean(is_free_delivery) : null}, is_free_delivery),
         updated_at = now()
       WHERE id = ${id}
       RETURNING *

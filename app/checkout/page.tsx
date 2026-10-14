@@ -6,8 +6,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
-import { calculateDeliveryFee, FREE_DELIVERY_PINCODES } from '@/lib/delivery';
-import { Truck, AlertTriangle, Sprout, Sparkles, Banknote, RotateCcw } from '@/components/icons';
+import {
+  calculateDeliveryFee,
+  FREE_DELIVERY_PINCODES,
+  DEFAULT_AVAILABLE_DELIVERY_PINCODES,
+  isDeliverablePincode,
+} from '@/lib/delivery';
+import { Truck, AlertTriangle, Sprout, Sparkles, Banknote, RotateCcw, WhatsApp } from '@/components/icons';
 import { SlideToConfirm } from '@/components/SlideToConfirm';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 
@@ -15,10 +20,6 @@ declare global {
   interface Window {
     Razorpay: new (options: Record<string, unknown>) => { open: () => void };
   }
-}
-
-function isServiceablePincode(pincode: string): boolean {
-  return /^\d{6}$/.test(pincode.trim());
 }
 
 export default function CheckoutPage() {
@@ -45,7 +46,7 @@ export default function CheckoutPage() {
   // ── Payment Method State ──
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [codConfig, setCodConfig] = useState<{ enabled: boolean; maxOrderPaise: number }>({
-    enabled: process.env.NEXT_PUBLIC_COD_ENABLED === 'true',
+    enabled: process.env.NEXT_PUBLIC_COD_ENABLED !== 'false',
     maxOrderPaise: 500000,
   });
 
@@ -106,6 +107,7 @@ export default function CheckoutPage() {
     }
   }, [mounted, items.length, loading, codSubmitting, orderCompleted, router]);
 
+  const [availablePincodes, setAvailablePincodes] = useState<Set<string>>(DEFAULT_AVAILABLE_DELIVERY_PINCODES);
   const [freePincodes, setFreePincodes] = useState<Set<string>>(FREE_DELIVERY_PINCODES);
 
   useEffect(() => {
@@ -113,8 +115,14 @@ export default function CheckoutPage() {
     fetch('/api/delivery-pincodes')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (active && data?.pincodes && Array.isArray(data.pincodes)) {
-          setFreePincodes(new Set(data.pincodes));
+        if (!active || !data) return;
+        if (Array.isArray(data.availablePincodes) && data.availablePincodes.length > 0) {
+          setAvailablePincodes(new Set(data.availablePincodes));
+        } else if (Array.isArray(data.pincodes) && data.pincodes.length > 0) {
+          setAvailablePincodes(new Set(data.pincodes));
+        }
+        if (Array.isArray(data.freePincodes) && data.freePincodes.length > 0) {
+          setFreePincodes(new Set(data.freePincodes));
         }
       })
       .catch(() => {});
@@ -123,6 +131,12 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  const isPincodeEntered = form.pincode.trim().length === 6;
+  const isDeliverable = useMemo(() => {
+    if (!isPincodeEntered) return true; // neutral until 6 digits entered
+    return isDeliverablePincode(form.pincode, availablePincodes);
+  }, [isPincodeEntered, form.pincode, availablePincodes]);
+
   // Real-time delivery fee calculation based on entered pincode, subtotal, and dynamic free delivery pincodes
   const deliveryCalc = useMemo(() => {
     return calculateDeliveryFee(form.pincode, subtotal, freePincodes);
@@ -130,6 +144,23 @@ export default function CheckoutPage() {
 
   const grandTotal = subtotal + deliveryCalc.deliveryFeePaise;
   const hasSubscription = items.some((i) => i.isSubscription);
+
+  // WhatsApp pre-filled delivery request link
+  const whatsappDeliveryUrl = useMemo(() => {
+    const phone = '918427974445';
+    const customerName = form.name.trim() || 'Valued Customer';
+    const customerPhone = form.phone.trim() || 'Not specified';
+    const customerAddress = form.address.trim() || 'Address not specified';
+    const pin = form.pincode.trim();
+
+    const itemsSummary = items
+      .map((item) => `• ${item.productName} (${item.variantLabel}) x ${item.quantity}`)
+      .join('\n');
+
+    const message = `Hi Wild About Greens Team! 🌱\n\nI would like to request delivery to my location:\n• Pincode: ${pin}\n• Name: ${customerName}\n• Phone: ${customerPhone}\n• Delivery Address: ${customerAddress}\n\n🛒 Order Items:\n${itemsSummary}\n• Cart Subtotal: ${formatPrice(subtotal)}\n\nCould you please check if delivery is possible to my address? Thank you!`;
+
+    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  }, [form.name, form.phone, form.address, form.pincode, items, subtotal]);
 
   // Fetch COD Math Challenge
   const fetchCodChallenge = useCallback(async () => {
@@ -165,38 +196,10 @@ export default function CheckoutPage() {
     setError(null);
   };
 
-  // Open COD Modal with validation
+  // Select Cash on Delivery Payment Method
   const handleSelectCod = () => {
     setPaymentMethod('cod');
-
-    if (
-      !form.name.trim() ||
-      !form.phone.trim() ||
-      !form.email.trim() ||
-      !form.address.trim() ||
-      !form.pincode.trim()
-    ) {
-      setError('Please fill in your delivery details (name, phone, email, address, pincode) before confirming Cash on Delivery.');
-      return;
-    }
-    if (!/^\d{10}$/.test(form.phone.trim())) {
-      setError('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (!isServiceablePincode(form.pincode)) {
-      setError('Please enter a valid 6-digit delivery pincode.');
-      return;
-    }
-
     setError(null);
-    setShowCodModal(true);
-    setCodError(null);
-    setCodAnswer('');
-    fetchCodChallenge();
   };
 
   // Handle COD Order Confirmation from Slider
@@ -339,8 +342,8 @@ export default function CheckoutPage() {
       setError('Please enter a valid email address.');
       return;
     }
-    if (!isServiceablePincode(form.pincode)) {
-      setError('Please enter a valid 6-digit delivery pincode.');
+    if (!isDeliverablePincode(form.pincode, availablePincodes)) {
+      setError(`Delivery is currently not available to pincode ${form.pincode}. Please use the WhatsApp button below to request delivery.`);
       return;
     }
 
@@ -484,8 +487,6 @@ export default function CheckoutPage() {
   };
 
   if (!mounted || items.length === 0) return null;
-
-  const isPincodeEntered = form.pincode.length === 6;
 
   return (
     <main className="min-h-screen bg-white py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
@@ -644,7 +645,11 @@ export default function CheckoutPage() {
                       />
                       <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                         {isPincodeEntered ? (
-                          deliveryCalc.isFreeDelivery ? (
+                          !isDeliverable ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                              Outside Zone
+                            </span>
+                          ) : deliveryCalc.deliveryFeePaise === 0 ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                               ✓ Free Delivery
                             </span>
@@ -662,7 +667,19 @@ export default function CheckoutPage() {
                     {/* Real-Time Delivery Banner */}
                     <div className="mt-2.5">
                       {isPincodeEntered ? (
-                        deliveryCalc.isUnder4Km ? (
+                        !isDeliverable ? (
+                          <div className="p-3.5 bg-amber-50/95 border border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2.5 animate-fadeIn">
+                            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                            <div className="leading-relaxed">
+                              <strong className="font-bold text-amber-950 block">
+                                Pincode {form.pincode}: Outside Standard Delivery Area
+                              </strong>
+                              <span>
+                                Direct automated checkout is unavailable for this pincode. Please request custom delivery below via WhatsApp!
+                              </span>
+                            </div>
+                          </div>
+                        ) : deliveryCalc.isUnder4Km ? (
                           <div className="p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-2.5 animate-fadeIn">
                             <Sprout className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
                             <div className="leading-relaxed">
@@ -725,134 +742,183 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Section 3: Payment Method Choice (Shown only when COD is enabled) */}
-                {codConfig.enabled && (
-                  <div className="space-y-4 pt-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#F0EBE0]">
-                      <span className="w-6 h-6 rounded-full bg-[#1C3F2D] text-white text-xs font-bold flex items-center justify-center">
-                        3
-                      </span>
-                      <h2 className="font-serif text-lg font-bold text-[#151F19]">
-                        Payment Method
-                      </h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                      {/* Option 1: Online Payment */}
-                      <div
-                        onClick={() => setPaymentMethod('online')}
-                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
-                          paymentMethod === 'online'
-                            ? 'border-[#1C3F2D] bg-[#1C3F2D]/5 shadow-sm ring-1 ring-[#1C3F2D]'
-                            : 'border-[#E8E2D2] hover:border-[#C4BAA3] bg-white'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value="online"
-                              checked={paymentMethod === 'online'}
-                              onChange={() => setPaymentMethod('online')}
-                              className="w-4 h-4 text-[#1C3F2D] focus:ring-[#1C3F2D] cursor-pointer"
-                            />
-                            <span className="font-bold text-sm text-[#151F19]">Online Payment</span>
-                          </div>
-                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                            Fast &amp; Instant
-                          </span>
+                {/* When Pincode is outside delivery available areas: Show WhatsApp Request Button */}
+                {isPincodeEntered && !isDeliverable ? (
+                  <div className="pt-4 border-t border-[#F0EBE0] space-y-4">
+                    <div className="p-5 sm:p-6 bg-gradient-to-br from-emerald-50/90 via-[#FBF8EF] to-white border-2 border-[#25D366]/40 rounded-2xl shadow-sm space-y-4 animate-fadeIn">
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-11 h-11 rounded-full bg-[#25D366] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                          <WhatsApp className="w-6 h-6 fill-white" />
                         </div>
-                        <p className="text-xs text-[#5C6B60] leading-relaxed">
-                          Pay securely with UPI (GPay, PhonePe, Paytm), Debit/Credit Cards &amp; NetBanking.
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-serif font-bold text-base sm:text-lg text-[#151F19] leading-snug">
+                              Request Delivery to Pincode {form.pincode}
+                            </h3>
+                            <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                              Special Request
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-[#4A5C50] mt-1 leading-relaxed">
+                            Online checkout &amp; COD are currently restricted to standard delivery areas. Tap below to send your order directly to our farm team via WhatsApp to arrange delivery!
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="bg-white/90 p-3.5 rounded-xl border border-[#25D366]/20 text-xs text-[#2A3F32] space-y-1.5">
+                        <p className="font-bold text-[#151F19] flex items-center gap-1.5">
+                          <span>🌱</span>
+                          <span>How It Works:</span>
+                        </p>
+                        <p className="leading-relaxed">
+                          We will receive your delivery address, pincode ({form.pincode}), and cart items on WhatsApp. Our farm manager will check route feasibility and confirm delivery timing directly with you!
                         </p>
                       </div>
 
-                      {/* Option 2: Cash on Delivery */}
-                      <div
-                        onClick={handleSelectCod}
-                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
-                          paymentMethod === 'cod'
-                            ? 'border-[#1C3F2D] bg-[#1C3F2D]/5 shadow-sm ring-1 ring-[#1C3F2D]'
-                            : 'border-[#E8E2D2] hover:border-[#C4BAA3] bg-white'
-                        }`}
+                      <a
+                        href={whatsappDeliveryUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-4 px-6 bg-[#25D366] hover:bg-[#20BA5A] text-white rounded-xl font-bold text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99] text-center"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value="cod"
-                              checked={paymentMethod === 'cod'}
-                              onChange={handleSelectCod}
-                              className="w-4 h-4 text-[#1C3F2D] focus:ring-[#1C3F2D] cursor-pointer"
-                            />
-                            <span className="font-bold text-sm text-[#151F19]">Cash on Delivery</span>
-                          </div>
-                          <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
-                            Pay at Doorstep
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#5C6B60] leading-relaxed">
-                          Slide to confirm your order now. Pay in cash directly upon doorstep arrival.
-                        </p>
-                      </div>
+                        <WhatsApp className="w-5 h-5 fill-white" />
+                        <span>Request Delivery via WhatsApp</span>
+                        <span>→</span>
+                      </a>
                     </div>
                   </div>
-                )}
+                ) : (
+                  <>
+                    {/* Section 3: Payment Method Choice (Shown only when COD is enabled and area is deliverable) */}
+                    {codConfig.enabled && (
+                      <div className="space-y-4 pt-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-[#F0EBE0]">
+                          <span className="w-6 h-6 rounded-full bg-[#1C3F2D] text-white text-xs font-bold flex items-center justify-center">
+                            3
+                          </span>
+                          <h2 className="font-serif text-lg font-bold text-[#151F19]">
+                            Payment Method
+                          </h2>
+                        </div>
 
-                {/* Submit CTA (Mobile and Desktop) */}
-                <div className="pt-4 border-t border-[#F0EBE0] space-y-3">
-                  <button
-                    type="submit"
-                    disabled={loading || codSubmitting}
-                    className="w-full py-4 px-6 bg-[#1C3F2D] hover:bg-[#122A1F] text-white rounded-xl font-bold text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Preparing Secure Payment...</span>
-                      </>
-                    ) : paymentMethod === 'cod' ? (
-                      <>
-                        <Banknote className="w-5 h-5 shrink-0" />
-                        <span>Confirm COD Order ({formatPrice(isPincodeEntered ? grandTotal : subtotal)})</span>
-                        <span>→</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                        </svg>
-                        <span>Pay {formatPrice(isPincodeEntered ? grandTotal : subtotal)} Securely</span>
-                        <span>→</span>
-                      </>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {/* Option 1: Online Payment */}
+                          <div
+                            onClick={() => setPaymentMethod('online')}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                              paymentMethod === 'online'
+                                ? 'border-[#1C3F2D] bg-[#1C3F2D]/5 shadow-sm ring-1 ring-[#1C3F2D]'
+                                : 'border-[#E8E2D2] hover:border-[#C4BAA3] bg-white'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <input
+                                  type="radio"
+                                  name="paymentMethod"
+                                  value="online"
+                                  checked={paymentMethod === 'online'}
+                                  onChange={() => setPaymentMethod('online')}
+                                  className="w-4 h-4 text-[#1C3F2D] focus:ring-[#1C3F2D] cursor-pointer"
+                                />
+                                <span className="font-bold text-sm text-[#151F19]">Online Payment</span>
+                              </div>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                                Fast &amp; Instant
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#5C6B60] leading-relaxed">
+                              Pay securely with UPI (GPay, PhonePe, Paytm), Debit/Credit Cards &amp; NetBanking.
+                            </p>
+                          </div>
+
+                          {/* Option 2: Cash on Delivery */}
+                          <div
+                            onClick={handleSelectCod}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                              paymentMethod === 'cod'
+                                ? 'border-[#1C3F2D] bg-[#1C3F2D]/5 shadow-sm ring-1 ring-[#1C3F2D]'
+                                : 'border-[#E8E2D2] hover:border-[#C4BAA3] bg-white'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <input
+                                  type="radio"
+                                  name="paymentMethod"
+                                  value="cod"
+                                  checked={paymentMethod === 'cod'}
+                                  onChange={handleSelectCod}
+                                  className="w-4 h-4 text-[#1C3F2D] focus:ring-[#1C3F2D] cursor-pointer"
+                                />
+                                <span className="font-bold text-sm text-[#151F19]">Cash on Delivery</span>
+                              </div>
+                              <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                                Pay at Doorstep
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#5C6B60] leading-relaxed">
+                              Slide to confirm your order now. Pay in cash directly upon doorstep arrival.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  </button>
 
-                  <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-gray-600 pt-1">
-                    <span className="inline-flex items-center gap-1.5 font-medium">
-                      <svg className="w-4 h-4 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                      </svg>
-                      <span>256-Bit SSL Encrypted</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-medium">
-                      <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-                        <rect x="2" y="5" width="20" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <line x1="2" y1="10" x2="22" y2="10" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M6 15h4" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <span>UPI, Cards &amp; Cash Accepted</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-medium">
-                      <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0V12m0 0a3 3 0 1 0-3-3m3 3a3 3 0 1 1 3-3" />
-                      </svg>
-                      <span>100% Live Harvest Guarantee</span>
-                    </span>
-                  </div>
-                </div>
+                    {/* Submit CTA (Mobile and Desktop) */}
+                    <div className="pt-4 border-t border-[#F0EBE0] space-y-3">
+                      <button
+                        type="submit"
+                        disabled={loading || codSubmitting}
+                        className="w-full py-4 px-6 bg-[#1C3F2D] hover:bg-[#122A1F] text-white rounded-xl font-bold text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Preparing Secure Payment...</span>
+                          </>
+                        ) : paymentMethod === 'cod' ? (
+                          <>
+                            <Banknote className="w-5 h-5 shrink-0" />
+                            <span>Confirm COD Order ({formatPrice(isPincodeEntered ? grandTotal : subtotal)})</span>
+                            <span>→</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                            <span>Pay {formatPrice(isPincodeEntered ? grandTotal : subtotal)} Securely</span>
+                            <span>→</span>
+                          </>
+                        )}
+                      </button>
+
+                      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-gray-600 pt-1">
+                        <span className="inline-flex items-center gap-1.5 font-medium">
+                          <svg className="w-4 h-4 text-sky-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                          </svg>
+                          <span>256-Bit SSL Encrypted</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 font-medium">
+                          <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                            <rect x="2" y="5" width="20" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <line x1="2" y1="10" x2="22" y2="10" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M6 15h4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <span>UPI, Cards &amp; Cash Accepted</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 font-medium">
+                          <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0V12m0 0a3 3 0 1 0-3-3m3 3a3 3 0 1 1 3-3" />
+                          </svg>
+                          <span>100% Live Harvest Guarantee</span>
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </form>
             </div>
 
@@ -935,7 +1001,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-600">Farm Direct Delivery</span>
-                      {deliveryCalc.isUnder4Km && isPincodeEntered && (
+                      {deliveryCalc.isUnder4Km && isPincodeEntered && isDeliverable && (
                         <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
                           Local
                         </span>
@@ -945,6 +1011,10 @@ export default function CheckoutPage() {
                       {!isPincodeEntered ? (
                         <span className="text-xs text-[#5C6B60] italic">
                           Enter pincode to check delivery charges
+                        </span>
+                      ) : !isDeliverable ? (
+                        <span className="text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          WhatsApp Request
                         </span>
                       ) : deliveryCalc.deliveryFeePaise === 0 ? (
                         <span className="font-bold text-emerald-700 flex items-center gap-1.5">
@@ -963,14 +1033,22 @@ export default function CheckoutPage() {
                   <div className="pt-3 border-t border-[#E8E2D2] flex justify-between items-baseline">
                     <div>
                       <span className="text-base font-bold text-[#151F19] block">
-                        {paymentMethod === 'cod' ? 'Cash Payable at Doorstep' : 'Total Payable'}
+                        {!isDeliverable && isPincodeEntered
+                          ? 'Cart Subtotal'
+                          : paymentMethod === 'cod'
+                          ? 'Cash Payable at Doorstep'
+                          : 'Total Payable'}
                       </span>
                       <span className="text-[11px] text-[#5C6B60]">
-                        {isPincodeEntered ? 'Inclusive of all taxes & delivery' : 'Delivery calculated on pincode'}
+                        {!isDeliverable && isPincodeEntered
+                          ? 'Delivery arranged via WhatsApp'
+                          : isPincodeEntered
+                          ? 'Inclusive of all taxes & delivery'
+                          : 'Delivery calculated on pincode'}
                       </span>
                     </div>
                     <span className="text-2xl font-extrabold text-[#1C3F2D]">
-                      {formatPrice(isPincodeEntered ? grandTotal : subtotal)}
+                      {formatPrice(!isDeliverable || !isPincodeEntered ? subtotal : grandTotal)}
                     </span>
                   </div>
                 </div>

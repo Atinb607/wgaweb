@@ -1,5 +1,13 @@
 import { redirect } from 'next/navigation';
 
-export default function HealthGoalsRootPage() {
-  redirect('/health-goals/all-trays');
+export const dynamic = 'force-dynamic';
+
+export default function HealthGoalsRootPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const goal = searchParams?.goal;
+  const qs = goal ? `?goal=${encodeURIComponent(Array.isArray(goal) ? goal[0] : goal)}` : '';
+  redirect(`/products/health-goals${qs}`);
 }

@@ -24,6 +24,78 @@ export const WAREHOUSE_CONFIG = {
 } as const;
 
 /**
+ * The exact list of 47 Delivery Available PIN codes configured by the client.
+ */
+export const DEFAULT_AVAILABLE_DELIVERY_PINCODES = new Set<string>([
+  '133301',
+  '133302',
+  '134101',
+  '134103',
+  '134104',
+  '134105',
+  '134107',
+  '134108',
+  '134109',
+  '134112',
+  '134113',
+  '134114',
+  '134115',
+  '134116',
+  '134117',
+  '134118',
+  '140301',
+  '140306',
+  '140307',
+  '140308',
+  '160001',
+  '160002',
+  '160003',
+  '160004',
+  '160009',
+  '160011',
+  '160012',
+  '160014',
+  '160015',
+  '160017',
+  '160018',
+  '160019',
+  '160020',
+  '160022',
+  '160023',
+  '160025',
+  '160030',
+  '160036',
+  '160040',
+  '160043',
+  '160047',
+  '160055',
+  '160059',
+  '160062',
+  '160071',
+  '160103',
+  '160104',
+]);
+
+/**
+ * Checks if a given 6-digit pincode is in the deliverable areas list.
+ */
+export function isDeliverablePincode(
+  pincode: string | undefined | null,
+  availableSet?: Set<string> | string[]
+): boolean {
+  if (!pincode || typeof pincode !== 'string') return false;
+  const clean = pincode.trim();
+  if (!/^\d{6}$/.test(clean)) return false;
+  const set =
+    availableSet instanceof Set
+      ? availableSet
+      : Array.isArray(availableSet)
+      ? new Set(availableSet)
+      : DEFAULT_AVAILABLE_DELIVERY_PINCODES;
+  return set.has(clean);
+}
+
+/**
  * The exact list of PIN codes eligible for Free Delivery on all order amounts.
  */
 export const FREE_DELIVERY_PINCODES = new Set<string>([

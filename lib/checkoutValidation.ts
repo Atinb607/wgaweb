@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { getSQL } from '@/lib/db';
 import { isServiceable } from '@/lib/pincodes';
 import { calculateDeliveryFee, DeliveryCalculation } from '@/lib/delivery';
-import { getFreeDeliveryPincodesFromDb } from '@/lib/deliveryServer';
+import { getFreeDeliveryPincodesFromDb, getAvailableDeliveryPincodesFromDb } from '@/lib/deliveryServer';
 
 const ORDER_NUM_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // 30 unambiguous chars
 
@@ -124,11 +124,12 @@ export async function validateCheckoutPayload(
     return { ok: false, error: 'Too many items in cart', status: 400 };
   }
 
-  // ── Validate pincode ──
-  if (!isServiceable(deliveryPincode)) {
+  // ── Validate pincode against client deliverable areas ──
+  const availablePincodes = await getAvailableDeliveryPincodesFromDb();
+  if (!isServiceable(deliveryPincode, availablePincodes)) {
     return {
       ok: false,
-      error: 'Please provide a valid 6-digit delivery pincode.',
+      error: `Delivery is currently not available to pincode ${deliveryPincode} via automated checkout. Please tap the WhatsApp button to request delivery.`,
       status: 400,
     };
   }

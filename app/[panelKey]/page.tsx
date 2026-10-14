@@ -59,12 +59,12 @@ export default function AdminDashboard() {
       </div>
 
       {stats.low_stock_variants.length > 0 && (
-        <div className="bg-white rounded-xl border p-5">
+        <div className="bg-white rounded-xl border p-4 sm:p-5 overflow-x-auto">
           <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500 inline shrink-0" />
             <span>Low Stock Variants</span>
           </h2>
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[320px] text-sm">
             <thead>
               <tr className="text-left text-gray-500 border-b">
                 <th className="pb-2">Product</th>
