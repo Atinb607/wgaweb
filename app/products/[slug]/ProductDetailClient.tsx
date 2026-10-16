@@ -542,6 +542,10 @@ export default function ProductDetailClient({
 
   const effectivePrice = plan === 'subscription' ? subPricePaise : rawPrice;
 
+  const hatTrickUrl =
+    content.bundle_banner_link ||
+    `/products/${hatTrickVariant?.productSlug || DEFAULT_HAT_TRICK_VARIANT.productSlug}`;
+
   // Sticky bar intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -613,23 +617,6 @@ export default function ProductDetailClient({
     setIsOpen(true);
   };
 
-  const [hatTrickAdded, setHatTrickAdded] = useState(false);
-
-  const handleAddHatTrick = () => {
-    const target = hatTrickVariant || DEFAULT_HAT_TRICK_VARIANT;
-    addItem({
-      variantId: target.variantId,
-      productSlug: target.productSlug,
-      productName: target.productName,
-      variantLabel: target.variantLabel || 'Bundle of 3 Live Trays',
-      pricePaise: target.pricePaise,
-      maxStock: target.maxStock || 20,
-      thumbnailUrl: target.thumbnailUrl,
-    });
-    setIsOpen(true);
-    setHatTrickAdded(true);
-    setTimeout(() => setHatTrickAdded(false), 2000);
-  };
 
   const handleReasonsScroll = () => {
     if (!reasonsTrackRef.current) return;
@@ -1146,14 +1133,18 @@ export default function ProductDetailClient({
       <section className="w-full bg-[#00A234] text-[#FFFDF8] overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 md:h-[310px] lg:h-[330px]">
           {/* Media Side */}
-          <div className="relative bg-[#1C3F2D] h-60 sm:h-72 md:h-full overflow-hidden">
+          <Link
+            href={hatTrickUrl}
+            className="block relative bg-[#1C3F2D] h-60 sm:h-72 md:h-full overflow-hidden group cursor-pointer"
+            aria-label={content.bundle_banner_cta_text || 'Try the Hat Trick Pack'}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={content.bundle_banner_image || '/trio-bundle-banner.png'}
               alt={content.bundle_banner_image_alt || content.bundle_banner_title || 'Classic Trio - Go For All Three'}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
-          </div>
+          </Link>
 
           {/* Copy Side */}
           <div className="flex flex-col justify-center items-center text-center px-6 py-8 sm:px-10 lg:px-12 space-y-3">
@@ -1164,20 +1155,12 @@ export default function ProductDetailClient({
               {content.bundle_banner_subtitle ||
                 'Grab the full lineup and save 25%. Three trays, one delivery, zero filler.'}
             </p>
-            <button
-              type="button"
-              onClick={handleAddHatTrick}
+            <Link
+              href={hatTrickUrl}
               className="inline-flex items-center justify-center gap-2 bg-[#111813] text-white font-bold text-[11px] sm:text-xs uppercase tracking-wider px-6 py-2.5 rounded-full hover:bg-black transition-all shadow-sm mt-1 cursor-pointer active:scale-95"
             >
-              {hatTrickAdded ? (
-                <>
-                  <span className="text-[#CFFA57]">✓</span>
-                  <span>ADDED TO CART</span>
-                </>
-              ) : (
-                <span>{content.bundle_banner_cta_text || 'TRY THE HAT TRICK 3-PACK'}</span>
-              )}
-            </button>
+              <span>{content.bundle_banner_cta_text || 'TRY THE HAT TRICK 3-PACK'}</span>
+            </Link>
           </div>
         </div>
       </section>

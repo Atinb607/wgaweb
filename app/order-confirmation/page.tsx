@@ -23,6 +23,8 @@ interface StoredOrder {
   deliveryPincode: string;
   subtotalPaise?: number;
   deliveryFeePaise?: number;
+  discountPaise?: number;
+  couponCode?: string | null;
   totalPaise: number;
   purchaseType?: string;
   subscriptionFrequency?: string | null;
@@ -243,6 +245,12 @@ function ConfirmationContent() {
                     : 'Free'}
                 </span>
               </div>
+              {storedOrder.discountPaise && storedOrder.discountPaise > 0 ? (
+                <div className="flex justify-between font-semibold text-emerald-700">
+                  <span>Coupon Discount ({storedOrder.couponCode || '15% OFF'})</span>
+                  <span>-₹{(storedOrder.discountPaise / 100).toFixed(2)}</span>
+                </div>
+              ) : null}
               <div className="flex justify-between pt-2 border-t border-gray-200 text-base sm:text-lg font-bold text-[#151F19]">
                 <span>{storedOrder.paymentMethod === 'cod' ? 'Total Payable (COD)' : 'Total Paid'}</span>
                 <span className="text-[#1C3F2D]">{totalAmountFormatted}</span>

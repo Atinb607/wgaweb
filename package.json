@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate": "node --env-file=.env.local scripts/run-migration.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

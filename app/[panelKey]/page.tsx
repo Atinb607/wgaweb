@@ -20,6 +20,7 @@ interface Stats {
   newsletter_subscriber_count: number;
   new_inquiry_count: number;
   stale_pending_orders_count: number;
+  coupon_requests_new_count: number;
 }
 
 export default function AdminDashboard() {
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
     { label: 'Pending Fulfillment', value: stats.pending_fulfillment_count, color: 'bg-amber-50 text-amber-700' },
     { label: 'Low Stock Variants', value: stats.low_stock_variants.length, color: 'bg-red-50 text-red-700' },
     { label: 'Newsletter Subscribers', value: stats.newsletter_subscriber_count, color: 'bg-purple-50 text-purple-700' },
+    { label: 'New Code Requests', value: stats.coupon_requests_new_count ?? 0, color: 'bg-emerald-50 text-emerald-700' },
     { label: 'Stale Pending Orders', value: stats.stale_pending_orders_count, color: 'bg-orange-50 text-orange-700' },
   ];
 

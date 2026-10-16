@@ -1,10 +1,9 @@
 import crypto from 'crypto';
 import { getSQL } from '@/lib/db';
-import { isServiceable } from '@/lib/pincodes';
-import { calculateDeliveryFee, DeliveryCalculation } from '@/lib/delivery';
-import { getFreeDeliveryPincodesFromDb, getAvailableDeliveryPincodesFromDb } from '@/lib/deliveryServer';
+import { calculateDeliveryFee, DeliveryCalculation, isDeliverableCity } from '@/lib/delivery';
+import { getFreeDeliveryPincodesFromDb } from '@/lib/deliveryServer';
 
-const ORDER_NUM_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // 30 unambiguous chars
+export const ORDER_NUM_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // 30 unambiguous chars
 
 export function generateOrderNumber(): string {
   const bytes = crypto.randomBytes(8);
@@ -40,6 +39,10 @@ export interface RawCheckoutBody {
   delivery_address?: string;
   deliveryPincode?: string;
   delivery_pincode?: string;
+  deliveryCity?: string;
+  delivery_city?: string;
+  /** Optional coupon code. Validated and priced server-side only. */
+  couponCode?: string;
 }
 
 export interface ValidatedLineItem {
@@ -72,14 +75,13 @@ export type CheckoutValidationResult =
 export async function validateCheckoutPayload(
   body: RawCheckoutBody
 ): Promise<CheckoutValidationResult> {
-  const sql = getSQL();
-
   const items = body.items || [];
   const customerName = (body.customerName || body.customer_name || '').trim();
   const customerPhone = (body.customerPhone || body.customer_phone || '').trim();
   const customerEmail = (body.customerEmail || body.customer_email || '').trim();
-  const deliveryAddress = (body.deliveryAddress || body.delivery_address || '').trim();
+  let deliveryAddress = (body.deliveryAddress || body.delivery_address || '').trim();
   const deliveryPincode = (body.deliveryPincode || body.delivery_pincode || '').trim();
+  const deliveryCity = (body.deliveryCity || body.delivery_city || '').trim();
   const purchaseType = (body.purchaseType || body.purchase_type) as 'one_time' | 'subscription' | undefined;
   const subscriptionFrequency = (body.subscriptionFrequency || body.subscription_frequency) as
     | 'weekly'
@@ -117,21 +119,76 @@ export async function validateCheckoutPayload(
   if (deliveryAddress.length > 1000) {
     return { ok: false, error: 'Delivery address is too long (max 1000 characters)', status: 400 };
   }
-  if (deliveryPincode.length > 10) {
-    return { ok: false, error: 'Invalid pincode format', status: 400 };
+  if (!/^\d{6}$/.test(deliveryPincode)) {
+    return { ok: false, error: 'Please enter a valid 6-digit delivery pincode.', status: 400 };
   }
   if (items.length > 50) {
     return { ok: false, error: 'Too many items in cart', status: 400 };
   }
 
-  // ── Validate pincode against client deliverable areas ──
-  const availablePincodes = await getAvailableDeliveryPincodesFromDb();
-  if (!isServiceable(deliveryPincode, availablePincodes)) {
-    return {
-      ok: false,
-      error: `Delivery is currently not available to pincode ${deliveryPincode} via automated checkout. Please tap the WhatsApp button to request delivery.`,
-      status: 400,
-    };
+  // ── Validate delivery city (Chandigarh, Panchkula, Mohali) ──
+  if (deliveryCity) {
+    if (!isDeliverableCity(deliveryCity)) {
+      return {
+        ok: false,
+        error:
+          'Automated delivery is only available in Chandigarh, Panchkula, and Mohali. Please tap the WhatsApp button to request delivery.',
+        status: 400,
+      };
+    }
+    // Append city to deliveryAddress if not already present
+    if (!deliveryAddress.toLowerCase().includes(deliveryCity.toLowerCase())) {
+      deliveryAddress = `${deliveryAddress}, ${deliveryCity}`;
+    }
+  }
+
+  // ── Price cart items server-side (shared with the coupon preview endpoint) ──
+  const priced = await priceCartItems(items);
+  if (!priced.ok) return priced;
+  const { lineItems, subtotalPaise } = priced;
+
+  // ── Delivery fee calculation ──
+  const freeDeliveryPincodes = await getFreeDeliveryPincodesFromDb();
+  const deliveryCalc = calculateDeliveryFee(deliveryPincode, subtotalPaise, freeDeliveryPincodes);
+  const deliveryFeePaise = deliveryCalc.deliveryFeePaise;
+  const totalPaise = Math.round(subtotalPaise + deliveryFeePaise);
+
+  return {
+    ok: true,
+    data: {
+      customerName,
+      customerPhone,
+      customerEmail,
+      deliveryAddress,
+      deliveryPincode,
+      purchaseType,
+      subscriptionFrequency: purchaseType === 'subscription' ? subscriptionFrequency || 'weekly' : null,
+      subtotalPaise,
+      deliveryFeePaise,
+      totalPaise,
+      deliveryCalc,
+      lineItems,
+    },
+  };
+}
+
+export type CartPricingResult =
+  | { ok: true; lineItems: ValidatedLineItem[]; subtotalPaise: number }
+  | { ok: false; error: string; status: number };
+
+/**
+ * Prices cart items from DB variant prices (never trusts client prices).
+ * Validates variant IDs, active status and stock. Returns the items subtotal
+ * in paise (before delivery fee and before any coupon discount).
+ */
+export async function priceCartItems(items: RawCartItem[]): Promise<CartPricingResult> {
+  const sql = getSQL();
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return { ok: false, error: 'Cart is empty', status: 400 };
+  }
+  if (items.length > 50) {
+    return { ok: false, error: 'Too many items in cart', status: 400 };
   }
 
   // ── Normalize cart items ──
@@ -251,27 +308,5 @@ export async function validateCheckoutPayload(
 
   subtotalPaise = Math.round(subtotalPaise);
 
-  // ── Delivery fee calculation ──
-  const freeDeliveryPincodes = await getFreeDeliveryPincodesFromDb();
-  const deliveryCalc = calculateDeliveryFee(deliveryPincode, subtotalPaise, freeDeliveryPincodes);
-  const deliveryFeePaise = deliveryCalc.deliveryFeePaise;
-  const totalPaise = Math.round(subtotalPaise + deliveryFeePaise);
-
-  return {
-    ok: true,
-    data: {
-      customerName,
-      customerPhone,
-      customerEmail,
-      deliveryAddress,
-      deliveryPincode,
-      purchaseType,
-      subscriptionFrequency: purchaseType === 'subscription' ? subscriptionFrequency || 'weekly' : null,
-      subtotalPaise,
-      deliveryFeePaise,
-      totalPaise,
-      deliveryCalc,
-      lineItems,
-    },
-  };
+  return { ok: true, lineItems, subtotalPaise };
 }

@@ -13,6 +13,8 @@ interface Order {
   customer_phone: string;
   customer_email: string | null;
   total_paise: number;
+  coupon_code?: string | null;
+  discount_paise?: number;
   payment_method?: string;
   payment_status: string;
   fulfillment_status: string;
@@ -33,6 +35,8 @@ interface OrderDetail extends Order {
   delivery_pincode: string;
   subtotal_paise?: number;
   delivery_fee_paise?: number;
+  discount_paise?: number;
+  coupon_code?: string | null;
   razorpay_order_id: string | null;
   razorpay_payment_id: string | null;
   items: OrderItem[];
@@ -199,6 +203,14 @@ export default function AdminOrdersPage() {
                   : 'Free'}
               </span>
             </div>
+            {detail.discount_paise && detail.discount_paise > 0 ? (
+              <div>
+                <span className="text-gray-500">Coupon Discount:</span>
+                <span className="ml-2 font-medium text-emerald-700">
+                  -{formatPrice(detail.discount_paise)} {detail.coupon_code ? `(${detail.coupon_code})` : ''}
+                </span>
+              </div>
+            ) : null}
             <div>
               <span className="text-gray-500">Total:</span>
               <span className="ml-2 font-bold text-green-700">

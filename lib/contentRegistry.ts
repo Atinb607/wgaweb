@@ -344,6 +344,13 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       defaultValue: 'Try the sampler pack →',
     },
     {
+      key: 'sampler_banner_link',
+      label: 'Sampler Banner CTA Link',
+      type: 'text',
+      defaultValue: '/products/classic-trio-bundle',
+      description: 'Destination URL when the Sampler banner CTA button is clicked.',
+    },
+    {
       key: 'faq_title',
       label: 'FAQ Section Title',
       type: 'text',
@@ -451,6 +458,292 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
     },
   ],
 
+  'health-goals': [
+    // ── Hero Section ──
+    {
+      key: 'health_goals_eyebrow',
+      label: 'Hero Section Eyebrow',
+      type: 'text',
+      defaultValue: 'TARGETED NUTRITION · LIVING HARVEST',
+      description: 'Small uppercase pill badge displayed above the main headline.',
+    },
+    {
+      key: 'health_goals_hero_title',
+      label: 'Hero Section Title / Headline',
+      type: 'text',
+      defaultValue: 'Shop microgreens by *health goal.*',
+      description: 'Main hero headline. Tip: wrap words in *asterisks* to highlight them in lime green italics.',
+    },
+    {
+      key: 'health_goals_hero_subtitle',
+      label: 'Hero Section Subtitle',
+      type: 'textarea',
+      defaultValue:
+        'Living microgreen varieties curated for specific physiological goals. Cut fresh to order on harvest morning for maximum cellular potency.',
+      description: 'Hero section supporting description paragraph.',
+    },
+    {
+      key: 'health_goals_hero_image_url',
+      label: 'Hero Section Background / Side Image',
+      type: 'image_url',
+      defaultValue:
+        'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop',
+      description: 'High-resolution photograph for the hero right column.',
+    },
+
+    // ── Empty State ──
+    {
+      key: 'empty_goal_message',
+      label: 'Empty Goal Notice Message',
+      type: 'text',
+      defaultValue: 'No products currently assigned to this health goal. Check back soon!',
+      description: 'Shown if a selected health goal does not currently have assigned products.',
+    },
+
+    // ── Local Farm Trust Section ("Each tray harvested, near you.") ──
+    {
+      key: 'trust_background_image',
+      label: 'Trust Section Background Image',
+      type: 'image_url',
+      defaultValue:
+        'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop',
+      description: 'Full-bleed background image behind the local farm trust copy.',
+    },
+    {
+      key: 'trust_title',
+      label: 'Trust Section Headline',
+      type: 'text',
+      defaultValue: 'Each tray harvested,\nnear you.',
+      description: 'Main headline. Use \\n to insert a line break (second line renders in lime green italics).',
+    },
+    {
+      key: 'trust_tagline',
+      label: 'Trust Section Handwritten Accent Tagline',
+      type: 'text',
+      defaultValue: 'Grown 10 min away. Cut to order.',
+      description: 'Playful script text next to the hand-drawn checkmark.',
+    },
+    {
+      key: 'trust_bullet_1',
+      label: 'Trust Bullet 1',
+      type: 'text',
+      defaultValue: 'Harvested the day you order, never pulled from cold storage.',
+    },
+    {
+      key: 'trust_bullet_2',
+      label: 'Trust Bullet 2',
+      type: 'text',
+      defaultValue: 'Zero pesticides, ever. Grown indoors on soil-free racks.',
+    },
+    {
+      key: 'trust_bullet_3',
+      label: 'Trust Bullet 3',
+      type: 'text',
+      defaultValue: 'Non-GMO seeds only, sourced and verified before sowing.',
+    },
+    {
+      key: 'trust_bullet_4',
+      label: 'Trust Bullet 4',
+      type: 'text',
+      defaultValue: 'Zero days in transit, harvested fresh on the morning of delivery.',
+    },
+    {
+      key: 'trust_bullet_5',
+      label: 'Trust Bullet 5',
+      type: 'text',
+      defaultValue: 'You can come see the racks your greens grew on.',
+    },
+
+    // ── Why Choose Us ──
+    {
+      key: 'why_choose_title',
+      label: 'Why Choose Section Title',
+      type: 'text',
+      defaultValue: 'Why is this the right choice for you?',
+      description: 'Headline for the 4 quality cards section. "right choice" is underlined in fresh green.',
+    },
+
+    // ── Reviews Section ──
+    {
+      key: 'reviews_title',
+      label: 'Customer Reviews Section Title',
+      type: 'text',
+      defaultValue: 'Straight from the gut.',
+      description: 'Heading displayed above the verified customer feedback cards.',
+    },
+
+    // ── Sampler Banner ("New to microgreens?") ──
+    {
+      key: 'sampler_banner_title',
+      label: 'Sampler Banner Title',
+      type: 'text',
+      defaultValue: 'New to microgreens?',
+      description: 'Headline inside the sliced photography banner.',
+    },
+    {
+      key: 'sampler_banner_subtitle',
+      label: 'Sampler Banner Subtitle',
+      type: 'textarea',
+      defaultValue:
+        'Start small. One sampler tray, different ways to use it, zero commitment.',
+    },
+    {
+      key: 'sampler_banner_cta_text',
+      label: 'Sampler Banner Button Label',
+      type: 'text',
+      defaultValue: 'Try the sampler pack →',
+    },
+    {
+      key: 'sampler_banner_link',
+      label: 'Sampler Banner Button Link',
+      type: 'text',
+      defaultValue: '/products/classic-trio-bundle',
+      description: 'Destination URL when clicking the sampler banner button.',
+    },
+    {
+      key: 'sampler_slice_image_1',
+      label: 'Sampler Banner Sliced Photo 1 (LHS Toast)',
+      type: 'image_url',
+      defaultValue:
+        'https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    },
+    {
+      key: 'sampler_slice_image_2',
+      label: 'Sampler Banner Sliced Photo 2 (Smoothie)',
+      type: 'image_url',
+      defaultValue:
+        'https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    },
+    {
+      key: 'sampler_slice_image_3',
+      label: 'Sampler Banner Sliced Photo 3 (Salad Bowl - Center)',
+      type: 'image_url',
+      defaultValue:
+        'https://images.pexels.com/photos/27400770/pexels-photo-27400770.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    },
+    {
+      key: 'sampler_slice_image_4',
+      label: 'Sampler Banner Sliced Photo 4 (Ramen Bowl)',
+      type: 'image_url',
+      defaultValue:
+        'https://images.unsplash.com/photo-1612927601601-6638404737ce?q=80&w=1600&auto=format&fit=crop',
+    },
+    {
+      key: 'sampler_slice_image_5',
+      label: 'Sampler Banner Sliced Photo 5 (RHS Microgreens Dish)',
+      type: 'image_url',
+      defaultValue:
+        'https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=1600',
+    },
+
+    // ── FAQ Accordion ──
+    {
+      key: 'faq_title',
+      label: 'FAQ Section Title',
+      type: 'text',
+      defaultValue: 'Frequently Asked Questions',
+    },
+    {
+      key: 'faq_q1',
+      label: 'FAQ Question 1',
+      type: 'text',
+      defaultValue: 'How fresh are the greens when they arrive?',
+    },
+    {
+      key: 'faq_a1',
+      label: 'FAQ Answer 1',
+      type: 'textarea',
+      defaultValue:
+        'Every tray is cut after you place your order, not pulled from cold storage. Most orders reach you within a few hours of harvest, freshly packed for peak vitality.',
+    },
+    {
+      key: 'faq_q2',
+      label: 'FAQ Question 2',
+      type: 'text',
+      defaultValue: 'How long do they stay fresh at home?',
+    },
+    {
+      key: 'faq_a2',
+      label: 'FAQ Answer 2',
+      type: 'textarea',
+      defaultValue:
+        "Refrigerated and unwashed, most varieties hold up well for 5–7 days. We'll include specific care instructions with every order.",
+    },
+    {
+      key: 'faq_q3',
+      label: 'FAQ Question 3',
+      type: 'text',
+      defaultValue: 'Are these actually pesticide-free?',
+    },
+    {
+      key: 'faq_a3',
+      label: 'FAQ Answer 3',
+      type: 'textarea',
+      defaultValue:
+        "Yes, grown indoors on soil-free racks, with nothing sprayed at any stage. We're working toward publishing third-party lab results as we scale.",
+    },
+    {
+      key: 'faq_q4',
+      label: 'FAQ Question 4',
+      type: 'text',
+      defaultValue: 'How is delivery handled?',
+    },
+    {
+      key: 'faq_a4',
+      label: 'FAQ Answer 4',
+      type: 'textarea',
+      defaultValue:
+        'We harvest on schedule so every fresh tray reaches your doorstep fresh within hours of harvest.',
+    },
+    {
+      key: 'faq_q5',
+      label: 'FAQ Question 5',
+      type: 'text',
+      defaultValue: 'Can restaurants order in bulk?',
+    },
+    {
+      key: 'faq_a5',
+      label: 'FAQ Answer 5',
+      type: 'textarea',
+      defaultValue:
+        'Yes, we supply top restaurants in Tricity with weekly recurring fresh harvests. Drop us an inquiry through our contact form.',
+    },
+
+    // ── Newsletter Section ──
+    {
+      key: 'newsletter_title',
+      label: 'Newsletter Section Title / Headline',
+      type: 'text',
+      defaultValue: 'Want 15% off and the inside scoop?',
+      description: 'Main headline. Tip: wrap words in *asterisks* to highlight them in lime green italics.',
+    },
+    {
+      key: 'newsletter_subtitle',
+      label: 'Newsletter Section Subtitle / Description',
+      type: 'textarea',
+      defaultValue:
+        'Get 15% off your first order, plus early access to new varieties, growing tips and exclusive seasonal drops.',
+    },
+    {
+      key: 'newsletter_button_text',
+      label: 'Newsletter Button Label',
+      type: 'text',
+      defaultValue: 'Sign Up',
+    },
+    {
+      key: 'newsletter_placeholder',
+      label: 'Newsletter Email Placeholder',
+      type: 'text',
+      defaultValue: 'your@email.com',
+    },
+    {
+      key: 'newsletter_disclaimer',
+      label: 'Newsletter Disclaimer Note',
+      type: 'text',
+      defaultValue: 'No spam. Unsubscribe anytime.',
+    },
+  ],
+
   'product-detail': [
     {
       key: 'subscription_discount_percent',
@@ -484,6 +777,13 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       label: 'Trio Bundle Banner CTA Button',
       type: 'text',
       defaultValue: 'Try the Hat Trick Pack →',
+    },
+    {
+      key: 'bundle_banner_link',
+      label: 'Trio Bundle Banner CTA Link',
+      type: 'text',
+      defaultValue: '/products/hat-trick-pack',
+      description: 'Destination URL when the CTA button or banner image is clicked.',
     },
     {
       key: 'stats_banner_title',
@@ -696,6 +996,13 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       label: 'Sampler Pack CTA Button',
       type: 'text',
       defaultValue: 'Try the sampler pack →',
+    },
+    {
+      key: 'sampler_banner_link',
+      label: 'Sampler Pack CTA Link',
+      type: 'text',
+      defaultValue: '/products/classic-trio-bundle',
+      description: 'Destination URL when the Sampler banner CTA button is clicked.',
     },
     {
       key: 'newsletter_title',

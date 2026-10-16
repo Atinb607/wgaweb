@@ -72,6 +72,13 @@ export async function GET() {
         AND created_at < now() - interval '1 hour'
     `;
 
+    // ── New coupon code requests ──
+    const newCouponRequests = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM coupon_requests
+      WHERE status = 'new'
+    `;
+
     // NOTE: Stock reservation with TTL-based expiry/rollback is intentionally
     // not implemented. Currently stock is decremented only on successful payment,
     // meaning two customers could theoretically both pass the stock check for the
@@ -89,6 +96,7 @@ export async function GET() {
       newsletter_subscriber_count: subscribers[0]?.count ?? 0,
       new_inquiry_count: newInquiries[0]?.count ?? 0,
       stale_pending_orders_count: stalePending[0]?.count ?? 0,
+      coupon_requests_new_count: newCouponRequests[0]?.count ?? 0,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';

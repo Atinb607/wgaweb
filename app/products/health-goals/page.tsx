@@ -109,18 +109,17 @@ async function getContentMap(): Promise<Record<string, string>> {
       WHERE page IN ('health-goals', 'product-listing')
     `;
     const map: Record<string, string> = {};
-    // Load health-goals blocks first
-    for (const b of blocks as unknown as { page: string; key: string; value: string }[]) {
-      if (b.page === 'health-goals') {
+    const rows = blocks as unknown as { page: string; key: string; value: string }[];
+    // 1. Load product-listing as fallbacks
+    for (const b of rows) {
+      if (b.page === 'product-listing') {
         map[b.key] = b.value;
       }
     }
-    // Overlay product-listing blocks (especially FAQs, newsletter, and shared blocks)
-    for (const b of blocks as unknown as { page: string; key: string; value: string }[]) {
-      if (b.page === 'product-listing') {
-        if (b.key.startsWith('faq_') || b.key.startsWith('newsletter_') || !map[b.key]) {
-          map[b.key] = b.value;
-        }
+    // 2. Overlay health-goals overrides
+    for (const b of rows) {
+      if (b.page === 'health-goals') {
+        map[b.key] = b.value;
       }
     }
     return map;

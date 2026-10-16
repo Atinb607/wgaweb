@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
         WHERE razorpay_order_id = ${razorpay_order_id}
           AND payment_status != 'paid'
       `;
+
       return NextResponse.json(
         { error: 'Invalid payment signature' },
         { status: 400 }
@@ -58,7 +59,8 @@ export async function POST(request: NextRequest) {
           razorpay_payment_id = ${razorpay_payment_id}
       WHERE razorpay_order_id = ${razorpay_order_id}
         AND payment_status = 'pending'
-      RETURNING id, order_number, customer_name, customer_email, customer_phone, subtotal_paise, delivery_fee_paise, total_paise
+      RETURNING id, order_number, customer_name, customer_email, customer_phone,
+                subtotal_paise, delivery_fee_paise, total_paise, coupon_code, discount_paise
     `;
 
     let orderId: string;
@@ -68,11 +70,14 @@ export async function POST(request: NextRequest) {
     let totalPaise: number = 0;
     let subtotalPaise: number = 0;
     let deliveryFeePaise: number = 0;
+    let discountPaise: number = 0;
+    let couponCode: string | null = null;
 
     if (result.length === 0) {
       // Check if already processed (e.g. webhook race or client retry)
       const existing = await sql`
-        SELECT id, order_number, customer_name, customer_email, customer_phone, subtotal_paise, delivery_fee_paise, total_paise
+        SELECT id, order_number, customer_name, customer_email, customer_phone,
+               subtotal_paise, delivery_fee_paise, total_paise, coupon_code, discount_paise
         FROM orders
         WHERE razorpay_order_id = ${razorpay_order_id}
           AND payment_status = 'paid'
@@ -85,6 +90,8 @@ export async function POST(request: NextRequest) {
         totalPaise = existing[0].total_paise as number;
         subtotalPaise = (existing[0].subtotal_paise as number) || 0;
         deliveryFeePaise = (existing[0].delivery_fee_paise as number) || 0;
+        discountPaise = (existing[0].discount_paise as number) || 0;
+        couponCode = (existing[0].coupon_code as string) || null;
       } else {
         return NextResponse.json(
           { error: 'Order not found or already processed' },
@@ -99,6 +106,8 @@ export async function POST(request: NextRequest) {
       totalPaise = result[0].total_paise as number;
       subtotalPaise = (result[0].subtotal_paise as number) || 0;
       deliveryFeePaise = (result[0].delivery_fee_paise as number) || 0;
+      discountPaise = (result[0].discount_paise as number) || 0;
+      couponCode = (result[0].coupon_code as string) || null;
 
       // Decrement stock for ordered variants (dedup-guarded via stock_decremented flag)
       decrementStock(orderId).catch((err) =>
@@ -121,6 +130,8 @@ export async function POST(request: NextRequest) {
       customerName,
       subtotalPaise,
       deliveryFeePaise,
+      discountPaise,
+      couponCode,
       totalPaise,
     });
   } catch (error: unknown) {

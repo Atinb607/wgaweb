@@ -32,6 +32,8 @@ interface Order {
   delivery_pincode: string;
   subtotal_paise: number;
   delivery_fee_paise?: number;
+  discount_paise?: number;
+  coupon_code?: string | null;
   total_paise: number;
   purchase_type: string;
   subscription_frequency: string | null;
@@ -696,6 +698,12 @@ function TrackOrderContent() {
                                   : 'Free'}
                               </span>
                             </div>
+                            {typeof order.discount_paise === 'number' && order.discount_paise > 0 && (
+                              <div className="flex justify-between text-[#151F19]/70 text-emerald-700 font-medium">
+                                <span>Coupon Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
+                                <span>-{formatPrice(order.discount_paise)}</span>
+                              </div>
+                            )}
                             <div className="flex justify-between text-sm sm:text-base font-bold text-[#122A1F] pt-2 border-t border-[#E4DDC8]/60">
                               <span>
                                 {order.payment_method === 'cod' && order.payment_status === 'cod_pending'

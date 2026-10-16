@@ -27,6 +27,8 @@ interface OrderForEmail {
   subtotal_paise?: number;
   delivery_fee_paise?: number;
   total_paise: number;
+  coupon_code?: string | null;
+  discount_paise?: number;
   purchase_type: string;
   subscription_frequency: string | null;
 }
@@ -57,7 +59,7 @@ export async function sendOrderConfirmation(
       AND payment_status IN ('paid', 'cod_pending')
     RETURNING id, order_number, customer_name, customer_email, customer_phone,
               delivery_address, delivery_pincode, subtotal_paise, delivery_fee_paise,
-              total_paise, purchase_type, subscription_frequency, created_at
+              total_paise, coupon_code, discount_paise, purchase_type, subscription_frequency, created_at
   `;
 
   if (updated.length === 0) {
@@ -258,6 +260,15 @@ export async function sendOrderConfirmation(
                     ${(order.delivery_fee_paise ?? 0) > 0 ? `₹${((order.delivery_fee_paise ?? 0) / 100).toFixed(2)}` : 'FREE'}
                   </td>
                 </tr>
+                ${(order.discount_paise ?? 0) > 0 ? `
+                <tr>
+                  <td colspan="3" style="padding: 4px 8px 8px; font-size: 13px; color: #166534;">
+                    Coupon Discount (${order.coupon_code || '15% OFF'})
+                  </td>
+                  <td style="padding: 4px 8px 8px; font-size: 13px; font-weight: 600; color: #166534; text-align: right;">
+                    -₹${((order.discount_paise || 0) / 100).toFixed(2)}
+                  </td>
+                </tr>` : ''}
                 <tr style="border-top: 2px solid #1C3F2D;">
                   <td colspan="3" style="padding: 14px 8px 4px; font-size: 15px; font-weight: 700; color: #151F19;">
                     Total Paid

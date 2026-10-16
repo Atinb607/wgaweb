@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
-import { useCartStore } from '@/lib/cartStore';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 import type { SamplerVariantData } from './page';
@@ -54,7 +53,7 @@ export default function OurStoryClient({
       const data = await res.json();
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code.');
+        setMessage(data.message || "Thanks! We'll email your 15% code soon.");
         setEmail('');
       } else {
         setStatus('error');
@@ -498,32 +497,17 @@ export default function OurStoryClient({
                   'Start small. One sampler tray, different ways to use it, zero commitment.'}
               </p>
               <div>
-                {samplerVariant ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      useCartStore.getState().addItem({
-                        variantId: samplerVariant.variantId,
-                        productSlug: samplerVariant.productSlug,
-                        productName: samplerVariant.productName,
-                        variantLabel: samplerVariant.variantLabel,
-                        pricePaise: samplerVariant.pricePaise,
-                        maxStock: samplerVariant.maxStock,
-                      });
-                      useCartStore.getState().setIsOpen(true);
-                    }}
-                    className="inline-flex items-center gap-2 bg-[#151F19] text-[#FFFDF8] font-bold text-xs sm:text-[13.5px] tracking-wider uppercase px-5 py-3 sm:px-6 sm:py-3.5 rounded-full hover:-translate-y-1 transition-transform shadow-lg"
-                  >
-                    {content.sampler_banner_cta_text || 'Try the sampler pack →'}
-                  </button>
-                ) : (
-                  <Link
-                    href="/products?category=bundle"
-                    className="inline-flex items-center gap-2 bg-[#151F19] text-[#FFFDF8] font-bold text-xs sm:text-[13.5px] tracking-wider uppercase px-5 py-3 sm:px-6 sm:py-3.5 rounded-full hover:-translate-y-1 transition-transform shadow-lg"
-                  >
-                    {content.sampler_banner_cta_text || 'Try the sampler pack →'}
-                  </Link>
-                )}
+                <Link
+                  href={
+                    content.sampler_banner_link ||
+                    (samplerVariant?.productSlug
+                      ? `/products/${samplerVariant.productSlug}`
+                      : '/products/classic-trio-bundle')
+                  }
+                  className="inline-flex items-center gap-2 bg-[#151F19] text-[#FFFDF8] font-bold text-xs sm:text-[13.5px] tracking-wider uppercase px-5 py-3 sm:px-6 sm:py-3.5 rounded-full hover:-translate-y-1 transition-transform shadow-lg cursor-pointer"
+                >
+                  {content.sampler_banner_cta_text || 'Try the sampler pack →'}
+                </Link>
               </div>
             </div>
           </div>
@@ -568,7 +552,15 @@ export default function OurStoryClient({
                   name="website"
                   value={honeypot}
                   onChange={(e) => setHoneypot(e.target.value)}
-                  style={{ display: 'none' }}
+                  style={{
+                    position: 'absolute',
+                    left: '-9999px',
+                    top: '-9999px',
+                    width: 0,
+                    height: 0,
+                    opacity: 0,
+                    pointerEvents: 'none',
+                  }}
                   tabIndex={-1}
                   autoComplete="off"
                   aria-hidden="true"

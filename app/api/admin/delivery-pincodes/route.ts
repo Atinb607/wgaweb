@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     if (existing.length > 0) {
       return NextResponse.json(
-        { error: `Pincode ${cleanPin} is already registered in the deliverable areas list.` },
+        { error: `Pincode ${cleanPin} is already registered in the free delivery pincodes list.` },
         { status: 409 }
       );
     }
@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
       VALUES (
         ${cleanPin},
         ${area_name ? String(area_name).trim() : null},
-        ${city ? String(city).trim() : 'Mohali / Chandigarh'},
+        ${city ? String(city).trim() : 'Mohali'},
         ${notes ? String(notes).trim() : null},
         ${is_active !== undefined ? Boolean(is_active) : true},
-        ${is_free_delivery !== undefined ? Boolean(is_free_delivery) : false}
+        ${is_free_delivery !== undefined ? Boolean(is_free_delivery) : true}
       )
       RETURNING *
     `;

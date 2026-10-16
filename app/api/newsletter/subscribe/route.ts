@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { normalizeEmail, PROMO_BANNER_SOURCES } from '@/lib/coupons';
+import { sendNewsletterWelcome } from '@/lib/email';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PROMO_SUCCESS_MESSAGE = "Thanks! We'll email your 15% code soon.";
 
 export async function POST(request: NextRequest) {
   try {
-    // ── Rate limit: 3 requests per IP per 10 minutes ──
-    const rateLimited = await checkRateLimit(request, 'newsletter/subscribe', 3, 600);
+    // ── Rate limit: 10 requests per IP per 10 minutes ──
+    const rateLimited = await checkRateLimit(request, 'newsletter/subscribe', 10, 600);
     if (rateLimited) return rateLimited;
 
     const sql = getSQL();
     const body = await request.json();
-    const { email, source, turnstileToken, website, hp_field } = body;
+    const { email, source, turnstileToken, website, hp_field, honeypot } = body;
 
-    // ── Anti-bot Honeypot trap ──
-    if (website || hp_field) {
-      // Silently return success to bot without database insertion
-      return NextResponse.json({ message: 'Thanks for subscribing!' });
-    }
+    const safeSource = typeof source === 'string' ? source.slice(0, 100) : null;
+    const isPromoBanner = Boolean(
+      safeSource &&
+        (PROMO_BANNER_SOURCES.has(safeSource) || safeSource.startsWith('health_goal_'))
+    );
 
     // ── Require Turnstile token ──
     if (!turnstileToken) {
@@ -64,43 +67,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!email || !EMAIL_REGEX.test(email)) {
+    // ── Validate email (syntax, length at most 254) ──
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
       return NextResponse.json(
         { error: 'A valid email address is required' },
         { status: 400 }
       );
     }
 
-    if (email.length > 254) {
+    if (email.trim().length > 254) {
       return NextResponse.json({ error: 'Email is too long' }, { status: 400 });
     }
 
-    const safeSource = typeof source === 'string' ? source.slice(0, 100) : null;
+    // ── Extra rate limit for promo banner branch: 5 requests per IP per 24 hours ──
+    if (isPromoBanner) {
+      const promoRateLimited = await checkRateLimit(
+        request,
+        'newsletter/coupon-request',
+        5,
+        86400
+      );
+      if (promoRateLimited) return promoRateLimited;
+    }
 
-    // Insert with ON CONFLICT to silently handle re-subscriptions.
-    // Use RETURNING to detect if this was a new signup (for welcome email).
-    // Don't reveal whether the email was already subscribed (privacy).
+    // ── Anti-bot Honeypot trap ──
+    if (website || hp_field || honeypot) {
+      // Silently return normal success message without database insertion
+      return NextResponse.json({
+        message: isPromoBanner ? PROMO_SUCCESS_MESSAGE : 'Thanks for subscribing!',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Insert into newsletter_subscribers with ON CONFLICT to silently handle re-subscriptions.
     const result = await sql`
       INSERT INTO newsletter_subscribers (email, source)
-      VALUES (${email.toLowerCase().trim()}, ${safeSource})
+      VALUES (${cleanEmail}, ${safeSource})
       ON CONFLICT (email) DO NOTHING
       RETURNING id
     `;
 
-    // Send welcome email only for genuinely new signups, fire-and-forget
-    if (result.length > 0) {
-      // Import at top of file
-      const { sendNewsletterWelcome } = await import('@/lib/email');
-      sendNewsletterWelcome(email.toLowerCase().trim()).catch(() => {
+    // Send general welcome email only for genuinely new non-promo signups, fire-and-forget
+    if (result.length > 0 && !isPromoBanner) {
+      sendNewsletterWelcome(cleanEmail).catch(() => {
         // Silently ignore: email failure shouldn't affect the signup response
       });
     }
 
-    // TODO: The design mentions "15% off" for signing up, but there's no
-    // coupon/discount system built yet. When a discount code mechanism is
-    // implemented (likely a `discount_codes` table + checkout integration),
-    // this endpoint should generate and return a unique code, or trigger
-    // an email with the code. For now we just capture the email.
+    // ── Banner Code Request (Step 4) ──
+    if (isPromoBanner) {
+      const normEmail = normalizeEmail(cleanEmail);
+
+      await sql`
+        INSERT INTO coupon_requests (email, email_normalized, source, status)
+        VALUES (${cleanEmail}, ${normEmail}, ${safeSource}, 'new')
+        ON CONFLICT (email_normalized) DO NOTHING
+      `;
+
+      return NextResponse.json({
+        message: PROMO_SUCCESS_MESSAGE,
+      });
+    }
 
     return NextResponse.json({
       message: 'Thanks for subscribing!',

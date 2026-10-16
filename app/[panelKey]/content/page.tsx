@@ -6,7 +6,7 @@ import ImageField from '@/components/admin/ImageField';
 import CartMascot from '@/components/CartMascot';
 import { formatPrice } from '@/lib/format';
 import { CONTENT_REGISTRY } from '@/lib/contentRegistry';
-import { ShoppingBag, FileText, Sprout } from '@/components/icons';
+import { ShoppingBag, FileText, Sprout, Target } from '@/components/icons';
 
 interface ContentBlock {
   id: string;
@@ -38,6 +38,7 @@ interface ProductItem {
 const PAGES = [
   { value: 'homepage', label: 'Homepage' },
   { value: 'product-listing', label: 'Product Listing' },
+  { value: 'health-goals', label: 'Health Goals (Shop by Health Goal)' },
   { value: 'product-detail', label: 'Product Detail' },
   { value: 'cart-drawer', label: 'Cart Slider & Recommendations' },
   { value: 'recipe', label: 'Recipe' },
@@ -200,6 +201,32 @@ export default function AdminContentPage() {
           </button>
         ))}
       </div>
+
+      {/* Health Goals Banner if active */}
+      {activePage === 'health-goals' && (
+        <div className="bg-[#FAF8F2] border border-[#E4DDC8] rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3">
+            <Target className="w-6 h-6 text-[#1C3F2D] shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-serif font-bold text-sm text-[#1C3F2D]">
+                Health Goals Page Content
+              </h4>
+              <p className="text-xs text-[#5C6B60] mt-0.5 leading-relaxed">
+                Customize the hero headline, hero image, trust section, quality why-choose pillars, reviews title, sampler pack banner, and FAQs for <code className="text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded font-mono text-[11px]">/products/health-goals</code>.
+              </p>
+            </div>
+          </div>
+          <a
+            href="/products/health-goals"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 px-3 py-1.5 rounded-lg border border-[#1C3F2D] text-[#1C3F2D] hover:bg-[#1C3F2D] hover:text-white text-xs font-semibold font-mono transition-colors flex items-center gap-1.5"
+          >
+            <span>View Live Page</span>
+            <span>↗</span>
+          </a>
+        </div>
+      )}
 
       {/* Cart Drawer Banner if active */}
       {activePage === 'cart-drawer' && (

@@ -229,7 +229,7 @@ export default function HealthGoalClient({
       const data = await res.json();
       if (res.ok) {
         setNewsletterStatus('success');
-        setNewsletterMessage(data.message || 'Thanks for signing up! Check your inbox for your 15% off code.');
+        setNewsletterMessage(data.message || "Thanks! We'll email your 15% code soon.");
         setNewsletterEmail('');
       } else {
         setNewsletterStatus('error');
@@ -813,7 +813,15 @@ export default function HealthGoalClient({
                   name="website"
                   value={newsletterHoneypot}
                   onChange={(e) => setNewsletterHoneypot(e.target.value)}
-                  style={{ display: 'none' }}
+                  style={{
+                    position: 'absolute',
+                    left: '-9999px',
+                    top: '-9999px',
+                    width: 0,
+                    height: 0,
+                    opacity: 0,
+                    pointerEvents: 'none',
+                  }}
                   tabIndex={-1}
                   autoComplete="off"
                   aria-hidden="true"

@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     // COD orders require payment_status IN ('cod_pending', 'paid').
     const orders = await sql`
       SELECT id, order_number, customer_name, customer_phone, customer_email, delivery_address, delivery_pincode,
-             subtotal_paise, delivery_fee_paise, total_paise, purchase_type, subscription_frequency,
+             subtotal_paise, delivery_fee_paise, discount_paise, coupon_code, total_paise, purchase_type, subscription_frequency,
              payment_method, payment_status, fulfillment_status, created_at
       FROM orders
       WHERE UPPER(TRIM(order_number)) = ${orderNumber.toUpperCase()}

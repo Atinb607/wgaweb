@@ -134,14 +134,33 @@ export async function POST(request: NextRequest) {
       subscriptionFrequency,
       subtotalPaise,
       deliveryFeePaise,
-      totalPaise,
+      totalPaise: baseTotalPaise,
       deliveryCalc,
       lineItems,
     } = validation.data;
 
+    // ── Coupon handling ──
+    const rawCoupon = typeof body.couponCode === 'string' ? body.couponCode.trim().toUpperCase() : '';
+    let appliedCouponCode: string | null = null;
+    let discountPaise = 0;
+    let finalTotalPaise = baseTotalPaise;
+
+    if (rawCoupon) {
+      const { validateActiveCoupon, computeDiscountPaise } = await import('@/lib/coupons');
+
+      const couponCheck = await validateActiveCoupon(rawCoupon);
+      if (!couponCheck.ok) {
+        return NextResponse.json({ error: couponCheck.error }, { status: 400 });
+      }
+
+      appliedCouponCode = couponCheck.coupon.code;
+      discountPaise = computeDiscountPaise(subtotalPaise, couponCheck.coupon.percentOff);
+      finalTotalPaise = Math.max(0, Math.round(subtotalPaise + deliveryFeePaise - discountPaise));
+    }
+
     // ── 7. Verify order total does not exceed COD_MAX_ORDER_PAISE ──
     const maxOrderPaise = getCodMaxOrderPaise();
-    if (totalPaise > maxOrderPaise) {
+    if (finalTotalPaise > maxOrderPaise) {
       const maxRupees = Math.floor(maxOrderPaise / 100);
       return NextResponse.json(
         {
@@ -168,13 +187,15 @@ export async function POST(request: NextRequest) {
             delivery_address, delivery_pincode,
             purchase_type, subscription_frequency,
             subtotal_paise, delivery_fee_paise, total_paise,
+            coupon_code, discount_paise,
             payment_status, payment_method
           ) VALUES (
             ${orderNumber},
             ${customerName}, ${phoneDigits}, ${customerEmail || null},
             ${deliveryAddress}, ${deliveryPincode},
             ${purchaseType}, ${subscriptionFrequency || null},
-            ${subtotalPaise}, ${deliveryFeePaise}, ${totalPaise},
+            ${subtotalPaise}, ${deliveryFeePaise}, ${finalTotalPaise},
+            ${appliedCouponCode}, ${discountPaise},
             'cod_pending', 'cod'
           )
           RETURNING id
@@ -234,7 +255,9 @@ export async function POST(request: NextRequest) {
       deliveryPincode,
       subtotalPaise,
       deliveryFeePaise,
-      totalPaise,
+      discountPaise,
+      couponCode: appliedCouponCode,
+      totalPaise: finalTotalPaise,
       deliveryCalc,
       purchaseType,
       subscriptionFrequency,

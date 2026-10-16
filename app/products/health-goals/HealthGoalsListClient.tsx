@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -226,7 +226,24 @@ export default function HealthGoalsListClient({
   const searchParams = useSearchParams();
   const goalQueryParam = searchParams.get('goal');
 
-  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
+  // Active goals list memoized so array reference remains stable across re-renders
+  const activeGoals = useMemo(
+    () => initialGoals.filter((g) => g.is_active),
+    [initialGoals]
+  );
+
+  // Initialize selectedGoal from query param on first render without flash
+  const [selectedGoal, setSelectedGoal] = useState<string | null>(() => {
+    if (!goalQueryParam) return null;
+    const match = initialGoals.find(
+      (g) => g.is_active && (g.slug === goalQueryParam || g.id === goalQueryParam || g.slug.includes(goalQueryParam))
+    );
+    return match ? match.slug : null;
+  });
+
+  const lastSyncedGoalRef = useRef<string | null>(goalQueryParam);
+  const initialScrollDoneRef = useRef(false);
+
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
   const [whyChoosePins, setWhyChoosePins] = useState<WhyChoosePin[]>(initialWhyChoosePins);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -242,24 +259,71 @@ export default function HealthGoalsListClient({
     reset: resetNewsletterCaptcha,
   } = useInvisibleTurnstile();
 
-  // Active goals list
-  const activeGoals = initialGoals.filter((g) => g.is_active);
-
-  // Sync with URL query parameter
+  // Initial scroll to catalog when arriving with a goal param
   useEffect(() => {
-    if (goalQueryParam) {
-      const match = activeGoals.find(
-        (g) => g.slug === goalQueryParam || g.id === goalQueryParam || g.slug.includes(goalQueryParam)
-      );
-      if (match) {
-        setSelectedGoal(match.slug);
+    if (goalQueryParam && !initialScrollDoneRef.current) {
+      initialScrollDoneRef.current = true;
+      const el = document.getElementById('goals-catalog');
+      if (el) {
         setTimeout(() => {
-          const el = document.getElementById('goals-catalog');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
+          el.scrollIntoView({ behavior: 'smooth' });
         }, 120);
       }
     }
+  }, [goalQueryParam]);
+
+  // Sync if goalQueryParam changes via external router navigation
+  useEffect(() => {
+    if (goalQueryParam !== lastSyncedGoalRef.current) {
+      lastSyncedGoalRef.current = goalQueryParam;
+      if (goalQueryParam) {
+        const match = activeGoals.find(
+          (g) => g.slug === goalQueryParam || g.id === goalQueryParam || g.slug.includes(goalQueryParam)
+        );
+        if (match) {
+          setSelectedGoal(match.slug);
+        }
+      } else {
+        setSelectedGoal(null);
+      }
+    }
   }, [goalQueryParam, activeGoals]);
+
+  // Listen for browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const current = params.get('goal');
+      lastSyncedGoalRef.current = current;
+      if (current) {
+        const match = activeGoals.find(
+          (g) => g.slug === current || g.id === current || g.slug.includes(current)
+        );
+        setSelectedGoal(match ? match.slug : null);
+      } else {
+        setSelectedGoal(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeGoals]);
+
+  const handleSelectGoal = (slug: string | null) => {
+    setSelectedGoal(slug);
+    lastSyncedGoalRef.current = slug;
+
+    try {
+      const url = new URL(window.location.href);
+      if (slug) {
+        url.searchParams.set('goal', slug);
+      } else {
+        url.searchParams.delete('goal');
+      }
+      window.history.replaceState({}, '', url.pathname + url.search);
+    } catch {
+      // ignore
+    }
+  };
 
   // Load pins if empty
   useEffect(() => {
@@ -344,7 +408,7 @@ export default function HealthGoalsListClient({
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setNewsletterStatus('success');
-        setNewsletterMessage(data.message || 'Thank you for subscribing! Check your inbox soon.');
+        setNewsletterMessage(data.message || "Thanks! We'll email your 15% code soon.");
         setNewsletterEmail('');
       } else {
         setNewsletterStatus('error');
@@ -385,7 +449,17 @@ export default function HealthGoalsListClient({
 
           <h1 className="font-serif font-medium text-4xl sm:text-5xl lg:text-6xl leading-[1.06] tracking-tight max-w-lg mb-6">
             {content.health_goals_hero_title ? (
-              content.health_goals_hero_title
+              content.health_goals_hero_title.includes('*') ? (
+                <>
+                  {content.health_goals_hero_title.split('*')[0]}
+                  <em className="italic text-[#CFFA57] font-normal">
+                    {content.health_goals_hero_title.split('*')[1]}
+                  </em>
+                  {content.health_goals_hero_title.split('*')[2] || ''}
+                </>
+              ) : (
+                content.health_goals_hero_title
+              )
             ) : (
               <>
                 Shop microgreens by{' '}
@@ -432,7 +506,7 @@ export default function HealthGoalsListClient({
       >
         <div className="max-w-[1180px] mx-auto flex gap-2.5 overflow-x-auto scrollbar-none items-center">
           <button
-            onClick={() => setSelectedGoal(null)}
+            onClick={() => handleSelectGoal(null)}
             className={`flex-shrink-0 font-mono text-xs tracking-wider uppercase font-semibold px-4 py-2 rounded-full border transition-all cursor-pointer ${
               selectedGoal === null
                 ? 'bg-[#CFFA57] text-[#122A1F] border-[#CFFA57] font-bold shadow-sm'
@@ -449,7 +523,7 @@ export default function HealthGoalsListClient({
             return (
               <button
                 key={goal.id}
-                onClick={() => setSelectedGoal(goal.slug)}
+                onClick={() => handleSelectGoal(selectedGoal === goal.slug ? null : goal.slug)}
                 className={`flex-shrink-0 font-mono text-xs tracking-wider uppercase font-semibold px-4 py-2 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-[#1C3F2D] text-[#FFFDF8] border-[#1C3F2D] shadow-sm'
@@ -468,11 +542,33 @@ export default function HealthGoalsListClient({
               </button>
             );
           })}
+
+          {/* Reciprocal link to main products page (All Greens by Category) */}
+          <Link
+            href="/products"
+            className="flex-shrink-0 font-mono text-xs tracking-wider uppercase font-bold px-4 py-2 rounded-full bg-[#1C3F2D] text-[#CFFA57] border border-[#1C3F2D] hover:bg-[#122A1F] transition-all ml-auto flex items-center gap-1.5 shadow-sm"
+          >
+            <Sprout className="w-3.5 h-3.5 text-[#CFFA57]" />
+            <span>All Greens (By Category)</span>
+          </Link>
         </div>
       </nav>
 
       {/* ================= SECTION 3: PRODUCT CATALOG CAROUSELS / GRIDS ================= */}
       <div className="py-14 space-y-16">
+        {selectedGoal !== null && (
+          <div className="max-w-[1180px] mx-auto px-4 sm:px-8 -mt-6 mb-8 flex items-center justify-between flex-wrap gap-3">
+            <p className="text-xs sm:text-sm text-[#5C6B60]">
+              Showing filtered goal: <span className="font-semibold text-[#1C3F2D]">{activeGoals.find((g) => g.slug === selectedGoal)?.title || selectedGoal}</span>
+            </p>
+            <button
+              onClick={() => handleSelectGoal(null)}
+              className="text-xs font-mono uppercase tracking-wider font-bold text-[#1C3F2D] hover:underline flex items-center gap-1 cursor-pointer bg-[#CFFA57]/30 hover:bg-[#CFFA57]/50 px-3 py-1.5 rounded-full border border-[#CFFA57]"
+            >
+              <span>✕ Show All Health Goals</span>
+            </button>
+          </div>
+        )}
         {activeGoals
           .filter((goal) => selectedGoal === null || selectedGoal === goal.slug)
           .map((goal) => {
@@ -508,7 +604,7 @@ export default function HealthGoalsListClient({
 
                 {prods.length === 0 ? (
                   <div className="p-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-sm text-gray-500">
-                    No products currently assigned to this health goal. Check back soon!
+                    {content.empty_goal_message || 'No products currently assigned to this health goal. Check back soon!'}
                   </div>
                 ) : (
                   /* Carousel Container */
@@ -715,8 +811,10 @@ export default function HealthGoalsListClient({
         <div
           className="absolute inset-0 z-0 bg-cover bg-center"
           style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop')",
+            backgroundImage: `url('${
+              content.trust_background_image ||
+              'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop'
+            }')`,
           }}
         />
         <div
@@ -955,7 +1053,10 @@ export default function HealthGoalsListClient({
               <div
                 className="cimg"
                 style={{
-                  backgroundImage: `url('https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                  backgroundImage: `url('${
+                    content.sampler_slice_image_1 ||
+                    'https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=1600'
+                  }')`,
                 }}
               />
             </div>
@@ -963,7 +1064,10 @@ export default function HealthGoalsListClient({
               <div
                 className="cimg"
                 style={{
-                  backgroundImage: `url('https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                  backgroundImage: `url('${
+                    content.sampler_slice_image_2 ||
+                    'https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=1600'
+                  }')`,
                 }}
               />
             </div>
@@ -971,7 +1075,10 @@ export default function HealthGoalsListClient({
               <div
                 className="cimg"
                 style={{
-                  backgroundImage: `url('https://images.pexels.com/photos/27400770/pexels-photo-27400770.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                  backgroundImage: `url('${
+                    content.sampler_slice_image_3 ||
+                    'https://images.pexels.com/photos/27400770/pexels-photo-27400770.jpeg?auto=compress&cs=tinysrgb&w=1600'
+                  }')`,
                 }}
               />
             </div>
@@ -979,7 +1086,10 @@ export default function HealthGoalsListClient({
               <div
                 className="cimg"
                 style={{
-                  backgroundImage: `url('https://images.unsplash.com/photo-1612927601601-6638404737ce?q=80&w=1600&auto=format&fit=crop')`,
+                  backgroundImage: `url('${
+                    content.sampler_slice_image_4 ||
+                    'https://images.unsplash.com/photo-1612927601601-6638404737ce?q=80&w=1600&auto=format&fit=crop'
+                  }')`,
                 }}
               />
             </div>
@@ -987,7 +1097,10 @@ export default function HealthGoalsListClient({
               <div
                 className="cimg"
                 style={{
-                  backgroundImage: `url('https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                  backgroundImage: `url('${
+                    content.sampler_slice_image_5 ||
+                    'https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=1600'
+                  }')`,
                 }}
               />
             </div>
@@ -1014,44 +1127,17 @@ export default function HealthGoalsListClient({
                 'Start small. One sampler tray, different ways to use it, zero commitment.'}
             </p>
             <div>
-              <button
-                type="button"
-                onClick={() => {
-                  const trio = initialProducts.find((p) => p.slug === 'classic-trio-bundle');
-                  const target = samplerVariant
-                    ? {
-                        variantId: samplerVariant.variantId,
-                        productSlug: samplerVariant.productSlug,
-                        productName: samplerVariant.productName,
-                        variantLabel: samplerVariant.variantLabel,
-                        pricePaise: samplerVariant.pricePaise,
-                        maxStock: samplerVariant.maxStock,
-                        thumbnailUrl: trio?.thumbnail_url || 'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=jpg&q=80&w=800&auto=format&fit=crop',
-                      }
-                    : (() => {
-                        const v = trio?.variants?.[0];
-                        return trio && v
-                          ? {
-                              variantId: v.id,
-                              productSlug: trio.slug,
-                              productName: trio.name,
-                              variantLabel: v.label || '3 trays',
-                              pricePaise: v.price_paise || 24900,
-                              maxStock: v.stock_qty || 20,
-                              thumbnailUrl: trio.thumbnail_url || 'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=jpg&q=80&w=800&auto=format&fit=crop',
-                            }
-                          : null;
-                      })();
-
-                  if (target) {
-                    useCartStore.getState().addItem(target);
-                    useCartStore.getState().setIsOpen(true);
-                  }
-                }}
+              <Link
+                href={
+                  content.sampler_banner_link ||
+                  (samplerVariant?.productSlug
+                    ? `/products/${samplerVariant.productSlug}`
+                    : '/products/classic-trio-bundle')
+                }
                 className="inline-flex items-center gap-2 bg-[#151F19] text-[#FFFDF8] font-bold text-xs sm:text-[13.5px] tracking-wider uppercase px-5 py-3 sm:px-6 sm:py-3.5 rounded-full hover:-translate-y-1 transition-transform shadow-lg cursor-pointer"
               >
                 {content.sampler_banner_cta_text || 'Try the sampler pack →'}
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -1162,7 +1248,15 @@ export default function HealthGoalsListClient({
                 name="website"
                 value={newsletterHoneypot}
                 onChange={(e) => setNewsletterHoneypot(e.target.value)}
-                style={{ display: 'none' }}
+                style={{
+                  position: 'absolute',
+                  left: '-9999px',
+                  top: '-9999px',
+                  width: 0,
+                  height: 0,
+                  opacity: 0,
+                  pointerEvents: 'none',
+                }}
                 tabIndex={-1}
                 autoComplete="off"
                 aria-hidden="true"

@@ -9,8 +9,8 @@ import { formatPrice } from '@/lib/format';
 import {
   calculateDeliveryFee,
   FREE_DELIVERY_PINCODES,
-  DEFAULT_AVAILABLE_DELIVERY_PINCODES,
-  isDeliverablePincode,
+  CHECKOUT_CITY_OPTIONS,
+  isDeliverableCity,
 } from '@/lib/delivery';
 import { Truck, AlertTriangle, Sprout, Sparkles, Banknote, RotateCcw, WhatsApp } from '@/components/icons';
 import { SlideToConfirm } from '@/components/SlideToConfirm';
@@ -38,6 +38,7 @@ export default function CheckoutPage() {
     email: '',
     address: '',
     pincode: '',
+    city: 'Chandigarh',
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,6 +62,13 @@ export default function CheckoutPage() {
   const [sliderResetKey, setSliderResetKey] = useState(0);
 
   const [orderCompleted, setOrderCompleted] = useState(false);
+
+  // ── Coupon State (Step 6) ──
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; percentOff: number; discountPaise: number } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponSuccessMessage, setCouponSuccessMessage] = useState<string | null>(null);
 
   // ── Invisible Turnstile Hook ──
   const {
@@ -107,7 +115,6 @@ export default function CheckoutPage() {
     }
   }, [mounted, items.length, loading, codSubmitting, orderCompleted, router]);
 
-  const [availablePincodes, setAvailablePincodes] = useState<Set<string>>(DEFAULT_AVAILABLE_DELIVERY_PINCODES);
   const [freePincodes, setFreePincodes] = useState<Set<string>>(FREE_DELIVERY_PINCODES);
 
   useEffect(() => {
@@ -116,13 +123,10 @@ export default function CheckoutPage() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active || !data) return;
-        if (Array.isArray(data.availablePincodes) && data.availablePincodes.length > 0) {
-          setAvailablePincodes(new Set(data.availablePincodes));
-        } else if (Array.isArray(data.pincodes) && data.pincodes.length > 0) {
-          setAvailablePincodes(new Set(data.pincodes));
-        }
-        if (Array.isArray(data.freePincodes) && data.freePincodes.length > 0) {
+        if (Array.isArray(data.freePincodes)) {
           setFreePincodes(new Set(data.freePincodes));
+        } else if (Array.isArray(data.pincodes)) {
+          setFreePincodes(new Set(data.pincodes));
         }
       })
       .catch(() => {});
@@ -133,17 +137,72 @@ export default function CheckoutPage() {
 
   const isPincodeEntered = form.pincode.trim().length === 6;
   const isDeliverable = useMemo(() => {
-    if (!isPincodeEntered) return true; // neutral until 6 digits entered
-    return isDeliverablePincode(form.pincode, availablePincodes);
-  }, [isPincodeEntered, form.pincode, availablePincodes]);
+    return isDeliverableCity(form.city);
+  }, [form.city]);
 
   // Real-time delivery fee calculation based on entered pincode, subtotal, and dynamic free delivery pincodes
   const deliveryCalc = useMemo(() => {
     return calculateDeliveryFee(form.pincode, subtotal, freePincodes);
   }, [form.pincode, subtotal, freePincodes]);
 
-  const grandTotal = subtotal + deliveryCalc.deliveryFeePaise;
+  // Real-time discount calculation: 15% of items subtotal only (not delivery fee), rounded down
+  const discountPaise = useMemo(() => {
+    if (!appliedCoupon) return 0;
+    return Math.floor((subtotal * appliedCoupon.percentOff) / 100);
+  }, [appliedCoupon, subtotal]);
+
+  const grandTotal = Math.max(0, subtotal + deliveryCalc.deliveryFeePaise - discountPaise);
   const hasSubscription = items.some((i) => i.isSubscription);
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    setCouponSuccessMessage(null);
+    try {
+      const res = await fetch('/api/checkout/coupon/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          items: items.map((i) => ({
+            variantId: i.variantId,
+            quantity: i.quantity,
+            isSubscription: Boolean(i.isSubscription),
+            subscriptionTrays: i.subscriptionTrays,
+            subscriptionWeeks: i.subscriptionWeeks,
+          })),
+          subtotalPaise: subtotal,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedCoupon({
+          code: data.code,
+          percentOff: data.percentOff,
+          discountPaise: data.discountPaise,
+        });
+        setCouponSuccessMessage(`${data.percentOff}% off coupon applied!`);
+        setCouponError(null);
+      } else {
+        setCouponError(data.error || 'Invalid or inactive code');
+        setAppliedCoupon(null);
+      }
+    } catch {
+      setCouponError('Failed to validate code. Please try again.');
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
+    setCouponSuccessMessage(null);
+  };
 
   // WhatsApp pre-filled delivery request link
   const whatsappDeliveryUrl = useMemo(() => {
@@ -151,16 +210,17 @@ export default function CheckoutPage() {
     const customerName = form.name.trim() || 'Valued Customer';
     const customerPhone = form.phone.trim() || 'Not specified';
     const customerAddress = form.address.trim() || 'Address not specified';
-    const pin = form.pincode.trim();
+    const pin = form.pincode.trim() || 'Not specified';
+    const cityLabel = form.city || 'Others';
 
     const itemsSummary = items
       .map((item) => `• ${item.productName} (${item.variantLabel}) x ${item.quantity}`)
       .join('\n');
 
-    const message = `Hi Wild About Greens Team! 🌱\n\nI would like to request delivery to my location:\n• Pincode: ${pin}\n• Name: ${customerName}\n• Phone: ${customerPhone}\n• Delivery Address: ${customerAddress}\n\n🛒 Order Items:\n${itemsSummary}\n• Cart Subtotal: ${formatPrice(subtotal)}\n\nCould you please check if delivery is possible to my address? Thank you!`;
+    const message = `Hi Wild About Greens Team! 🌱\n\nI would like to request delivery to my location:\n• City: ${cityLabel}\n• Pincode: ${pin}\n• Name: ${customerName}\n• Phone: ${customerPhone}\n• Delivery Address: ${customerAddress}\n\n🛒 Order Items:\n${itemsSummary}\n• Cart Subtotal: ${formatPrice(subtotal)}\n\nCould you please check if delivery is possible to my address? Thank you!`;
 
     return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-  }, [form.name, form.phone, form.address, form.pincode, items, subtotal]);
+  }, [form.name, form.phone, form.address, form.pincode, form.city, items, subtotal]);
 
   // Fetch COD Math Challenge
   const fetchCodChallenge = useCallback(async () => {
@@ -181,7 +241,9 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     // For pincode, only allow digits up to 6 chars
     if (name === 'pincode') {
@@ -244,9 +306,11 @@ export default function CheckoutPage() {
           customerEmail: form.email.trim(),
           deliveryAddress: form.address.trim(),
           deliveryPincode: form.pincode.trim(),
+          deliveryCity: form.city,
           challengeToken: challenge.token,
           challengeAnswer: codAnswer.trim(),
           turnstileToken: acquiredTurnstileToken,
+          couponCode: appliedCoupon?.code || undefined,
         }),
       });
 
@@ -289,10 +353,12 @@ export default function CheckoutPage() {
             customerName: data.customerName || form.name.trim(),
             customerEmail: customerEmail,
             customerPhone: form.phone.trim(),
-            deliveryAddress: form.address.trim(),
+            deliveryAddress: `${form.address.trim()}, ${form.city}`,
             deliveryPincode: form.pincode.trim(),
             subtotalPaise: data.subtotalPaise ?? subtotal,
             deliveryFeePaise: data.deliveryFeePaise ?? deliveryCalc.deliveryFeePaise,
+            discountPaise: data.discountPaise ?? discountPaise,
+            couponCode: data.couponCode ?? appliedCoupon?.code ?? null,
             totalPaise: data.totalPaise ?? grandTotal,
             purchaseType: hasSubscription ? 'subscription' : 'one_time',
             subscriptionFrequency: hasSubscription ? 'weekly' : null,
@@ -342,8 +408,12 @@ export default function CheckoutPage() {
       setError('Please enter a valid email address.');
       return;
     }
-    if (!isDeliverablePincode(form.pincode, availablePincodes)) {
-      setError(`Delivery is currently not available to pincode ${form.pincode}. Please use the WhatsApp button below to request delivery.`);
+    if (!/^\d{6}$/.test(form.pincode.trim())) {
+      setError('Please enter a valid 6-digit delivery pincode.');
+      return;
+    }
+    if (!isDeliverableCity(form.city)) {
+      setError('Direct online checkout is only available for Chandigarh, Panchkula, and Mohali. Please use the WhatsApp button below to request delivery.');
       return;
     }
 
@@ -379,6 +449,8 @@ export default function CheckoutPage() {
           customerEmail: form.email.trim(),
           deliveryAddress: form.address.trim(),
           deliveryPincode: form.pincode.trim(),
+          deliveryCity: form.city,
+          couponCode: appliedCoupon?.code || undefined,
         }),
       });
 
@@ -437,8 +509,10 @@ export default function CheckoutPage() {
                     customerPhone: form.phone.trim(),
                     deliveryAddress: form.address.trim(),
                     deliveryPincode: form.pincode.trim(),
-                    subtotalPaise: verifyData.subtotalPaise ?? subtotal,
-                    deliveryFeePaise: verifyData.deliveryFeePaise ?? deliveryCalc.deliveryFeePaise,
+                    subtotalPaise: verifyData.subtotalPaise ?? data.subtotalPaise ?? subtotal,
+                    deliveryFeePaise: verifyData.deliveryFeePaise ?? data.deliveryFeePaise ?? deliveryCalc.deliveryFeePaise,
+                    discountPaise: verifyData.discountPaise ?? data.discountPaise ?? discountPaise,
+                    couponCode: verifyData.couponCode ?? data.couponCode ?? appliedCoupon?.code ?? null,
                     totalPaise: verifyData.totalPaise || data.amount || grandTotal,
                     purchaseType: hasSubscription ? 'subscription' : 'one_time',
                     subscriptionFrequency: hasSubscription ? 'weekly' : null,
@@ -644,12 +718,12 @@ export default function CheckoutPage() {
                         placeholder="6-digit pincode"
                       />
                       <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                        {isPincodeEntered ? (
-                          !isDeliverable ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                              Outside Zone
-                            </span>
-                          ) : deliveryCalc.deliveryFeePaise === 0 ? (
+                        {!isDeliverable ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                            Outside Zone
+                          </span>
+                        ) : isPincodeEntered ? (
+                          deliveryCalc.deliveryFeePaise === 0 ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                               ✓ Free Delivery
                             </span>
@@ -663,23 +737,46 @@ export default function CheckoutPage() {
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* City Dropdown (Chandigarh, Panchkula, Mohali, Others) */}
+                  <div>
+                    <div className="mb-1.5">
+                      <label htmlFor="city" className="block text-xs font-semibold uppercase tracking-wider text-[#151F19]">
+                        Delivery City <span className="text-red-500">*</span>
+                      </label>
+                    </div>
+                    <select
+                      id="city"
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 bg-gray-50/50 border border-[#DCD6C5] rounded-xl text-sm text-gray-900 focus:bg-white focus:border-[#1C3F2D] focus:ring-1 focus:ring-[#1C3F2D] outline-none transition-all cursor-pointer"
+                    >
+                      {CHECKOUT_CITY_OPTIONS.map((cityOption) => (
+                        <option key={cityOption} value={cityOption}>
+                          {cityOption}
+                        </option>
+                      ))}
+                    </select>
 
                     {/* Real-Time Delivery Banner */}
                     <div className="mt-2.5">
-                      {isPincodeEntered ? (
-                        !isDeliverable ? (
-                          <div className="p-3.5 bg-amber-50/95 border border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2.5 animate-fadeIn">
-                            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-                            <div className="leading-relaxed">
-                              <strong className="font-bold text-amber-950 block">
-                                Pincode {form.pincode}: Outside Standard Delivery Area
-                              </strong>
-                              <span>
-                                Direct automated checkout is unavailable for this pincode. Please request custom delivery below via WhatsApp!
-                              </span>
-                            </div>
+                      {!isDeliverable ? (
+                        <div className="p-3.5 bg-amber-50/95 border border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2.5 animate-fadeIn">
+                          <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                          <div className="leading-relaxed">
+                            <strong className="font-bold text-amber-950 block">
+                              Outside Standard Delivery Area (Chandigarh, Panchkula &amp; Mohali)
+                            </strong>
+                            <span>
+                              Direct automated checkout is only available in Chandigarh, Panchkula, and Mohali. Please request custom delivery below via WhatsApp!
+                            </span>
                           </div>
-                        ) : deliveryCalc.isUnder4Km ? (
+                        </div>
+                      ) : isPincodeEntered ? (
+                        deliveryCalc.isUnder4Km ? (
                           <div className="p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-2.5 animate-fadeIn">
                             <Sprout className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
                             <div className="leading-relaxed">
@@ -742,8 +839,8 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* When Pincode is outside delivery available areas: Show WhatsApp Request Button */}
-                {isPincodeEntered && !isDeliverable ? (
+                {/* When City is Others (outside Chandigarh, Panchkula, Mohali): Show WhatsApp Request Button */}
+                {!isDeliverable ? (
                   <div className="pt-4 border-t border-[#F0EBE0] space-y-4">
                     <div className="p-5 sm:p-6 bg-gradient-to-br from-emerald-50/90 via-[#FBF8EF] to-white border-2 border-[#25D366]/40 rounded-2xl shadow-sm space-y-4 animate-fadeIn">
                       <div className="flex items-start gap-3.5">
@@ -753,14 +850,14 @@ export default function CheckoutPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-serif font-bold text-base sm:text-lg text-[#151F19] leading-snug">
-                              Request Delivery to Pincode {form.pincode}
+                              Request Delivery{form.pincode.trim() ? ` to Pincode ${form.pincode}` : ''}
                             </h3>
                             <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
                               Special Request
                             </span>
                           </div>
                           <p className="text-xs sm:text-sm text-[#4A5C50] mt-1 leading-relaxed">
-                            Online checkout &amp; COD are currently restricted to standard delivery areas. Tap below to send your order directly to our farm team via WhatsApp to arrange delivery!
+                            Online checkout &amp; COD are currently available in Chandigarh, Panchkula, and Mohali. Tap below to send your order directly to our farm team via WhatsApp to arrange delivery!
                           </p>
                         </div>
                       </div>
@@ -771,7 +868,7 @@ export default function CheckoutPage() {
                           <span>How It Works:</span>
                         </p>
                         <p className="leading-relaxed">
-                          We will receive your delivery address, pincode ({form.pincode}), and cart items on WhatsApp. Our farm manager will check route feasibility and confirm delivery timing directly with you!
+                          We will receive your delivery address{form.pincode.trim() ? `, pincode (${form.pincode}),` : ''} and cart items on WhatsApp. Our farm manager will check route feasibility and confirm delivery timing directly with you!
                         </p>
                       </div>
 
@@ -880,7 +977,7 @@ export default function CheckoutPage() {
                         ) : paymentMethod === 'cod' ? (
                           <>
                             <Banknote className="w-5 h-5 shrink-0" />
-                            <span>Confirm COD Order ({formatPrice(isPincodeEntered ? grandTotal : subtotal)})</span>
+                            <span>Confirm COD Order ({formatPrice(isPincodeEntered ? grandTotal : Math.max(0, subtotal - discountPaise))})</span>
                             <span>→</span>
                           </>
                         ) : (
@@ -888,7 +985,7 @@ export default function CheckoutPage() {
                             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                             </svg>
-                            <span>Pay {formatPrice(isPincodeEntered ? grandTotal : subtotal)} Securely</span>
+                            <span>Pay {formatPrice(isPincodeEntered ? grandTotal : Math.max(0, subtotal - discountPaise))} Securely</span>
                             <span>→</span>
                           </>
                         )}
@@ -991,12 +1088,86 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                {/* Have a coupon? Section */}
+                <div className="pt-3 border-t border-[#F0EBE0] space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-[#151F19]">Have a coupon?</span>
+                    {appliedCoupon && (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        {appliedCoupon.percentOff}% OFF
+                      </span>
+                    )}
+                  </div>
+
+                  {!appliedCoupon ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => {
+                          setCouponInput(e.target.value.toUpperCase());
+                          setCouponError(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleApplyCoupon();
+                          }
+                        }}
+                        placeholder="Enter coupon code"
+                        disabled={couponLoading}
+                        className="flex-1 min-w-0 bg-[#F9FAFB] border border-[#E8E2D2] rounded-xl px-3 py-2 text-xs uppercase font-mono tracking-wider outline-none focus:border-[#1C3F2D] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponInput.trim()}
+                        className="px-4 py-2 bg-[#1C3F2D] hover:bg-[#122A1F] text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                      >
+                        {couponLoading ? 'Applying...' : 'Apply'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-emerald-900 tracking-wider">
+                          {appliedCoupon.code}
+                        </span>
+                        <span className="text-[11px] text-emerald-700 font-medium">
+                          (-{appliedCoupon.percentOff}%)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-xs text-rose-600 hover:text-rose-800 font-semibold underline transition-colors cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+
+                  {couponError && (
+                    <p className="text-xs text-rose-600 font-medium">{couponError}</p>
+                  )}
+                  {couponSuccessMessage && !couponError && (
+                    <p className="text-xs text-emerald-700 font-medium">{couponSuccessMessage}</p>
+                  )}
+                </div>
+
                 {/* Cost Breakdown */}
                 <div className="pt-3 border-t border-[#F0EBE0] space-y-2.5 text-sm">
                   <div className="flex justify-between text-gray-600">
                     <span>Items Subtotal</span>
                     <span className="font-semibold text-gray-900">{formatPrice(subtotal)}</span>
                   </div>
+
+                  {discountPaise > 0 && (
+                    <div className="flex justify-between items-center text-emerald-700 font-semibold">
+                      <span>Coupon Discount ({appliedCoupon?.code || '15% OFF'})</span>
+                      <span>-{formatPrice(discountPaise)}</span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1.5">
@@ -1008,13 +1179,13 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     <div>
-                      {!isPincodeEntered ? (
-                        <span className="text-xs text-[#5C6B60] italic">
-                          Enter pincode to check delivery charges
-                        </span>
-                      ) : !isDeliverable ? (
+                      {!isDeliverable ? (
                         <span className="text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                           WhatsApp Request
+                        </span>
+                      ) : !isPincodeEntered ? (
+                        <span className="text-xs text-[#5C6B60] italic">
+                          Enter pincode to check delivery charges
                         </span>
                       ) : deliveryCalc.deliveryFeePaise === 0 ? (
                         <span className="font-bold text-emerald-700 flex items-center gap-1.5">
@@ -1033,14 +1204,14 @@ export default function CheckoutPage() {
                   <div className="pt-3 border-t border-[#E8E2D2] flex justify-between items-baseline">
                     <div>
                       <span className="text-base font-bold text-[#151F19] block">
-                        {!isDeliverable && isPincodeEntered
+                        {!isDeliverable
                           ? 'Cart Subtotal'
                           : paymentMethod === 'cod'
                           ? 'Cash Payable at Doorstep'
                           : 'Total Payable'}
                       </span>
                       <span className="text-[11px] text-[#5C6B60]">
-                        {!isDeliverable && isPincodeEntered
+                        {!isDeliverable
                           ? 'Delivery arranged via WhatsApp'
                           : isPincodeEntered
                           ? 'Inclusive of all taxes & delivery'
@@ -1048,7 +1219,7 @@ export default function CheckoutPage() {
                       </span>
                     </div>
                     <span className="text-2xl font-extrabold text-[#1C3F2D]">
-                      {formatPrice(!isDeliverable || !isPincodeEntered ? subtotal : grandTotal)}
+                      {formatPrice(!isDeliverable || !isPincodeEntered ? Math.max(0, subtotal - discountPaise) : grandTotal)}
                     </span>
                   </div>
                 </div>
@@ -1116,8 +1287,8 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex items-center justify-between pb-2 border-b border-[#E8E2D2]/60">
                   <span className="text-gray-600 font-medium">Address:</span>
-                  <span className="font-medium text-gray-800 text-right max-w-[240px] truncate" title={form.address}>
-                    {form.address}, {form.pincode}
+                  <span className="font-medium text-gray-800 text-right max-w-[240px] truncate" title={`${form.address}, ${form.city}`}>
+                    {form.address}, {form.city} - {form.pincode}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pb-2 border-b border-[#E8E2D2]/60">
@@ -1132,7 +1303,7 @@ export default function CheckoutPage() {
                     <span className="text-[10px] text-[#5C6B60]">Please keep exact cash ready</span>
                   </div>
                   <span className="text-2xl font-black text-[#1C3F2D]">
-                    {formatPrice(isPincodeEntered ? grandTotal : subtotal)}
+                    {formatPrice(isPincodeEntered ? grandTotal : Math.max(0, subtotal - discountPaise))}
                   </span>
                 </div>
               </div>

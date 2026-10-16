@@ -1,14 +1,13 @@
-import { isDeliverablePincode, DEFAULT_AVAILABLE_DELIVERY_PINCODES } from './delivery';
-
 /**
- * Delivery serviceable pincodes.
- * Configured for the client's 47 selected deliverable postal codes.
+ * Validates that a pincode is a 6-digit Indian postal code.
+ * Automated delivery eligibility is determined by the city selection
+ * (Chandigarh, Panchkula, Mohali vs Others).
  */
-export function isServiceable(pincode: string, availableSet?: Set<string> | string[]): boolean {
+export function isServiceable(pincode: string): boolean {
   if (!pincode || typeof pincode !== 'string') return false;
-  return isDeliverablePincode(pincode, availableSet || DEFAULT_AVAILABLE_DELIVERY_PINCODES);
+  return /^\d{6}$/.test(pincode.trim());
 }
 
 export const SERVICEABLE_PINCODES = {
-  has: (pincode: string, availableSet?: Set<string> | string[]) => isServiceable(pincode, availableSet),
+  has: (pincode: string) => isServiceable(pincode),
 };

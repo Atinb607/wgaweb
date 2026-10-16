@@ -24,15 +24,11 @@ export async function GET() {
     `) as unknown as PincodeRow[];
 
     if (rows && rows.length > 0) {
-      const availablePincodes = rows.map((r) => String(r.pincode).trim());
-      const freePincodes = rows
-        .filter((r) => Boolean(r.is_free_delivery))
-        .map((r) => String(r.pincode).trim());
+      const freePincodes = rows.map((r) => String(r.pincode).trim());
 
       return NextResponse.json({
-        availablePincodes,
-        freePincodes: freePincodes.length > 0 ? freePincodes : Array.from(FREE_DELIVERY_PINCODES),
-        pincodes: availablePincodes,
+        freePincodes,
+        pincodes: freePincodes,
         items: rows,
       });
     }
@@ -42,18 +38,15 @@ export async function GET() {
 
   // Fallback to defaults
   const defaults = Array.from(FREE_DELIVERY_PINCODES);
-  const { DEFAULT_AVAILABLE_DELIVERY_PINCODES } = await import('@/lib/delivery');
-  const availableDefaults = Array.from(DEFAULT_AVAILABLE_DELIVERY_PINCODES);
 
   return NextResponse.json({
-    availablePincodes: availableDefaults,
     freePincodes: defaults,
-    pincodes: availableDefaults,
-    items: availableDefaults.map((pin) => ({
+    pincodes: defaults,
+    items: defaults.map((pin) => ({
       pincode: pin,
-      area_name: 'Tricity Delivery Zone',
-      city: 'Mohali / Chandigarh / Panchkula',
-      is_free_delivery: defaults.includes(pin),
+      area_name: 'Immediate Farm Zone',
+      city: 'Mohali',
+      is_free_delivery: true,
     })),
   });
 }

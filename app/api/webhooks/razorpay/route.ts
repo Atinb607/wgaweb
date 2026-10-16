@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
           WHERE razorpay_order_id = ${razorpayOrderId}
             AND payment_status != 'paid'
         `;
+
         console.log(`[webhook] payment.failed for razorpay_order_id: ${razorpayOrderId}`);
       }
     }

@@ -33,16 +33,35 @@ export async function POST(request: NextRequest) {
       subscriptionFrequency,
       subtotalPaise,
       deliveryFeePaise,
-      totalPaise,
+      totalPaise: baseTotalPaise,
       deliveryCalc,
       lineItems,
     } = validation.data;
+
+    // ── Coupon handling ──
+    const rawCoupon = typeof body.couponCode === 'string' ? body.couponCode.trim().toUpperCase() : '';
+    let appliedCouponCode: string | null = null;
+    let discountPaise = 0;
+    let finalTotalPaise = baseTotalPaise;
+
+    if (rawCoupon) {
+      const { validateActiveCoupon, computeDiscountPaise } = await import('@/lib/coupons');
+
+      const couponCheck = await validateActiveCoupon(rawCoupon);
+      if (!couponCheck.ok) {
+        return NextResponse.json({ error: couponCheck.error }, { status: 400 });
+      }
+
+      appliedCouponCode = couponCheck.coupon.code;
+      discountPaise = computeDiscountPaise(subtotalPaise, couponCheck.coupon.percentOff);
+      finalTotalPaise = Math.max(0, Math.round(subtotalPaise + deliveryFeePaise - discountPaise));
+    }
 
     // ── Create Razorpay order ──
     let razorpayOrder;
     try {
       razorpayOrder = await getRazorpay().orders.create({
-        amount: totalPaise,
+        amount: finalTotalPaise,
         currency: 'INR',
         receipt: `wga_${Date.now()}`,
         notes: {
@@ -88,13 +107,15 @@ export async function POST(request: NextRequest) {
             delivery_address, delivery_pincode,
             purchase_type, subscription_frequency,
             subtotal_paise, delivery_fee_paise, total_paise,
+            coupon_code, discount_paise,
             razorpay_order_id, payment_status, payment_method
           ) VALUES (
             ${orderNumber},
             ${customerName}, ${customerPhone}, ${customerEmail || null},
             ${deliveryAddress}, ${deliveryPincode},
             ${purchaseType}, ${subscriptionFrequency || null},
-            ${subtotalPaise}, ${deliveryFeePaise}, ${totalPaise},
+            ${subtotalPaise}, ${deliveryFeePaise}, ${finalTotalPaise},
+            ${appliedCouponCode}, ${discountPaise},
             ${razorpayOrder.id}, 'pending', 'online'
           )
           RETURNING id
@@ -102,7 +123,6 @@ export async function POST(request: NextRequest) {
         orderId = orderRows[0].id as string;
         break;
       } catch (insertErr: unknown) {
-        // Check for unique constraint violation on order_number
         const pgCode = (insertErr as { code?: string })?.code;
         if (pgCode === '23505' && attempt < MAX_RETRIES - 1) {
           console.warn(`[create-order] order_number collision on ${orderNumber}, retrying...`);
@@ -138,7 +158,10 @@ export async function POST(request: NextRequest) {
       subtotalPaise,
       deliveryFeePaise,
       deliveryCalc,
-      amount: totalPaise,
+      discountPaise,
+      couponCode: appliedCouponCode,
+      amount: finalTotalPaise,
+      totalPaise: finalTotalPaise,
       currency: 'INR',
     });
   } catch (error: unknown) {

@@ -19,10 +19,10 @@ export interface DeliveryPincode {
 const emptyForm = {
   pincode: '',
   area_name: '',
-  city: 'Mohali / Chandigarh',
+  city: 'Mohali',
   notes: '',
   is_active: true,
-  is_free_delivery: false,
+  is_free_delivery: true,
 };
 
 export default function AdminDeliveryPincodesPage() {
@@ -42,7 +42,7 @@ export default function AdminDeliveryPincodesPage() {
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
   const [bulkArea, setBulkArea] = useState('');
-  const [bulkCity, setBulkCity] = useState('Mohali / Chandigarh');
+  const [bulkCity, setBulkCity] = useState('Mohali');
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ added: number; skipped: number; errors: string[] } | null>(null);
 
@@ -64,10 +64,10 @@ export default function AdminDeliveryPincodesPage() {
         setPincodes(data.pincodes || []);
       } else {
         const err = await res.json().catch(() => ({}));
-        showFeedback('error', err.error || 'Failed to load delivery pincodes.');
+        showFeedback('error', err.error || 'Failed to load free delivery pincodes.');
       }
     } catch {
-      showFeedback('error', 'Network error while loading delivery pincodes.');
+      showFeedback('error', 'Network error while loading free delivery pincodes.');
     } finally {
       setLoading(false);
     }
@@ -109,10 +109,10 @@ export default function AdminDeliveryPincodesPage() {
     setForm({
       pincode: item.pincode,
       area_name: item.area_name || '',
-      city: item.city || 'Mohali / Chandigarh',
+      city: item.city || 'Mohali',
       notes: item.notes || '',
       is_active: item.is_active,
-      is_free_delivery: Boolean(item.is_free_delivery),
+      is_free_delivery: true,
     });
     setFormError(null);
     setIsModalOpen(true);
@@ -142,13 +142,13 @@ export default function AdminDeliveryPincodesPage() {
             city: form.city.trim() || null,
             notes: form.notes.trim() || null,
             is_active: form.is_active,
-            is_free_delivery: Boolean(form.is_free_delivery),
+            is_free_delivery: true,
           }),
         });
 
         const data = await res.json();
         if (res.ok) {
-          showFeedback('success', `Pincode ${cleanPin} updated successfully.`);
+          showFeedback('success', `Free delivery pincode ${cleanPin} updated successfully.`);
           setIsModalOpen(false);
           loadPincodes();
         } else {
@@ -165,13 +165,13 @@ export default function AdminDeliveryPincodesPage() {
             city: form.city.trim() || null,
             notes: form.notes.trim() || null,
             is_active: form.is_active,
-            is_free_delivery: Boolean(form.is_free_delivery),
+            is_free_delivery: true,
           }),
         });
 
         const data = await res.json();
         if (res.ok) {
-          showFeedback('success', `Pincode ${cleanPin} added to deliverable list.`);
+          showFeedback('success', `Pincode ${cleanPin} added to free delivery list.`);
           setIsModalOpen(false);
           loadPincodes();
         } else {
@@ -324,15 +324,15 @@ export default function AdminDeliveryPincodesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">Delivery Available Areas</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Free Delivery Pincodes</h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-              Live Gate Active
+              Complimentary Farm Zone
             </span>
           </div>
           <p className="text-sm text-gray-600 mt-1 max-w-3xl leading-relaxed">
-            Only customers delivering to an active pincode in this list can checkout via <strong>Pay Securely</strong> or <strong>COD</strong>.
-            Standard delivery rules apply (<strong>₹69 fee under ₹500</strong>, and <strong>FREE delivery on ₹500+ orders</strong>).
-            For any other pincode outside this list, payment options are hidden and a <strong>WhatsApp Delivery Request</strong> button is shown.
+            Manage pincodes where delivery is always <strong>FREE (₹0 on all orders)</strong>.
+            Standard automated delivery is available across <strong>Chandigarh, Mohali, and Panchkula</strong> (<strong>₹69 fee under ₹500</strong>, and <strong>FREE delivery on ₹500+ orders</strong>).
+            Customers selecting <strong>Others</strong> at checkout are routed to the <strong>WhatsApp Delivery Request</strong> flow.
           </p>
         </div>
 
@@ -355,7 +355,7 @@ export default function AdminDeliveryPincodesPage() {
             className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-medium transition-colors shadow-xs flex items-center gap-1.5"
           >
             <span>+</span>
-            <span>Add Area</span>
+            <span>Add Free Pincode</span>
           </button>
         </div>
       </div>
@@ -363,24 +363,24 @@ export default function AdminDeliveryPincodesPage() {
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white border rounded-xl p-4 shadow-2xs">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Areas</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Pincodes</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{pincodes.length}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Configured postal codes</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Configured free-delivery codes</p>
         </div>
         <div className="bg-white border rounded-xl p-4 shadow-2xs">
-          <p className="text-xs font-medium text-emerald-700 uppercase tracking-wider">Deliverable Areas</p>
+          <p className="text-xs font-medium text-emerald-700 uppercase tracking-wider">Active Free Pincodes</p>
           <p className="text-2xl font-bold text-emerald-700 mt-1">{activeCount}</p>
-          <p className="text-[11px] text-emerald-600/80 mt-0.5">Active for checkout</p>
+          <p className="text-[11px] text-emerald-600/80 mt-0.5">₹0 delivery on all orders</p>
         </div>
         <div className="bg-white border rounded-xl p-4 shadow-2xs">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Standard Fee</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tricity Standard Fee</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">₹69</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Orders under ₹500</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Other Tricity pincodes &lt; ₹500</p>
         </div>
         <div className="bg-white border rounded-xl p-4 shadow-2xs">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Free Threshold</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">₹500</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Free for all available areas</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Free across Chandigarh, Mohali &amp; Panchkula</p>
         </div>
       </div>
 
@@ -448,7 +448,7 @@ export default function AdminDeliveryPincodesPage() {
                 onClick={handleOpenAdd}
                 className="mt-4 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold"
               >
-                + Add Pincode
+                + Add Free Pincode
               </button>
             )}
           </div>
@@ -460,7 +460,7 @@ export default function AdminDeliveryPincodesPage() {
                   <th className="py-3 px-4">Pincode</th>
                   <th className="py-3 px-4">Locality / Area</th>
                   <th className="py-3 px-4">City</th>
-                  <th className="py-3 px-4">Delivery Rate</th>
+                  <th className="py-3 px-4">Delivery Benefit</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -480,15 +480,9 @@ export default function AdminDeliveryPincodesPage() {
                       {pin.city || <span className="text-gray-400 text-xs italic">—</span>}
                     </td>
                     <td className="py-3.5 px-4">
-                      {pin.is_free_delivery ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          Always Free (Farm Zone)
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-700">
-                          ₹69 · Free on ₹500+
-                        </span>
-                      )}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        Always Free (₹0 on all orders)
+                      </span>
                     </td>
                     <td className="py-3.5 px-4">
                       <button
@@ -499,14 +493,14 @@ export default function AdminDeliveryPincodesPage() {
                             ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
-                        title="Click to toggle active deliverable status"
+                        title="Click to toggle free delivery eligibility"
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             pin.is_active ? 'bg-emerald-600' : 'bg-gray-400'
                           }`}
                         />
-                        {pin.is_active ? 'Deliverable' : 'Disabled'}
+                        {pin.is_active ? 'Active (Free)' : 'Disabled'}
                       </button>
                     </td>
                     <td className="py-3.5 px-4 text-right space-x-2">
@@ -539,7 +533,7 @@ export default function AdminDeliveryPincodesPage() {
           <div className="bg-white rounded-2xl border shadow-xl max-w-md w-full overflow-hidden">
             <div className="p-5 border-b flex items-center justify-between bg-gray-50">
               <h2 className="font-bold text-gray-900 text-lg">
-                {editingItem ? `Edit Pincode: ${editingItem.pincode}` : 'Add Free Delivery Pincode'}
+                {editingItem ? `Edit Free Delivery Pincode: ${editingItem.pincode}` : 'Add Free Delivery Pincode'}
               </h2>
               <button
                 type="button"
@@ -617,34 +611,19 @@ export default function AdminDeliveryPincodesPage() {
                 />
               </div>
 
-              <div className="pt-2 space-y-3">
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-gray-800">
+              <div className="pt-2">
+                <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-emerald-950">
                     <input
                       type="checkbox"
                       checked={form.is_active}
                       onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                       className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
                     />
-                    <span>Active Deliverable Area</span>
-                  </label>
-                  <p className="text-[11px] text-gray-500 ml-6 mt-0.5 leading-relaxed">
-                    When active, customers at this pincode can checkout normally. If inactive, online payment &amp; COD are hidden and WhatsApp request is shown.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-emerald-950">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(form.is_free_delivery)}
-                      onChange={(e) => setForm({ ...form, is_free_delivery: e.target.checked })}
-                      className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
-                    />
-                    <span>Always Free Farm Delivery (₹0 on all orders)</span>
+                    <span>Active Free Delivery Pincode (₹0 on all orders)</span>
                   </label>
                   <p className="text-[11px] text-emerald-800/80 ml-6 mt-0.5 leading-relaxed">
-                    Enable this only for immediate local farm zones. If unchecked, standard rules apply (₹69 fee under ₹500, Free on orders ₹500+).
+                    When active, customers at this pincode get complimentary ₹0 delivery on every order. If unchecked, standard Tricity rules apply (₹69 fee under ₹500, Free on orders ₹500+).
                   </p>
                 </div>
               </div>

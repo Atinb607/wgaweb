@@ -1,7 +1,13 @@
 /**
  * Warehouse and Delivery Calculation Service
  *
- * Eligible Free Delivery Pincodes (Immediate Local Farm Zone):
+ * Automated checkout delivery is available in:
+ *   - Chandigarh
+ *   - Panchkula
+ *   - Mohali
+ * (Selecting "Others" directs the customer to request delivery via WhatsApp.)
+ *
+ * Eligible Free Delivery Pincodes (managed in Admin -> Free Delivery Pincodes):
  *   - 140306: Mohali Sectors 81, 82, 83, Manauli, Aerocity area
  *   - 160062: Chandigarh Sectors 61, 62, 65, 67 / Mohali-side areas
  *   - 160071: Mohali Sector 71
@@ -9,8 +15,8 @@
  *   - 160055: Chandigarh/Mohali-side Sectors 55, 56 and Balongi area
  *
  * Rules:
- *   1. Pincodes in the list above are eligible for FREE Delivery (₹0) on all orders.
- *   2. Any other pincode:
+ *   1. Pincodes in the active Free Delivery Pincodes list get FREE Delivery (₹0) on all orders.
+ *   2. Any other pincode in Chandigarh, Panchkula, or Mohali:
  *      - If order subtotal is below ₹500 -> Fixed ₹69 delivery fee.
  *      - If order subtotal is ₹500 or above -> FREE Delivery (₹0).
  */
@@ -23,80 +29,23 @@ export const WAREHOUSE_CONFIG = {
   standardFeePaise: 6900, // ₹69.00
 } as const;
 
-/**
- * The exact list of 47 Delivery Available PIN codes configured by the client.
- */
-export const DEFAULT_AVAILABLE_DELIVERY_PINCODES = new Set<string>([
-  '133301',
-  '133302',
-  '134101',
-  '134103',
-  '134104',
-  '134105',
-  '134107',
-  '134108',
-  '134109',
-  '134112',
-  '134113',
-  '134114',
-  '134115',
-  '134116',
-  '134117',
-  '134118',
-  '140301',
-  '140306',
-  '140307',
-  '140308',
-  '160001',
-  '160002',
-  '160003',
-  '160004',
-  '160009',
-  '160011',
-  '160012',
-  '160014',
-  '160015',
-  '160017',
-  '160018',
-  '160019',
-  '160020',
-  '160022',
-  '160023',
-  '160025',
-  '160030',
-  '160036',
-  '160040',
-  '160043',
-  '160047',
-  '160055',
-  '160059',
-  '160062',
-  '160071',
-  '160103',
-  '160104',
-]);
+export const DELIVERABLE_CITIES = ['Chandigarh', 'Panchkula', 'Mohali'] as const;
+export const CHECKOUT_CITY_OPTIONS = ['Chandigarh', 'Panchkula', 'Mohali', 'Others'] as const;
+export type DeliverableCity = (typeof DELIVERABLE_CITIES)[number];
+export type CheckoutCitySelection = DeliverableCity | 'Others' | '';
 
-/**
- * Checks if a given 6-digit pincode is in the deliverable areas list.
- */
-export function isDeliverablePincode(
-  pincode: string | undefined | null,
-  availableSet?: Set<string> | string[]
-): boolean {
-  if (!pincode || typeof pincode !== 'string') return false;
-  const clean = pincode.trim();
-  if (!/^\d{6}$/.test(clean)) return false;
-  const set =
-    availableSet instanceof Set
-      ? availableSet
-      : Array.isArray(availableSet)
-      ? new Set(availableSet)
-      : DEFAULT_AVAILABLE_DELIVERY_PINCODES;
-  return set.has(clean);
+export function isDeliverableCity(city: string | undefined | null): boolean {
+  if (!city || typeof city !== 'string') return false;
+  const normalized = city.trim().toLowerCase();
+  return (
+    normalized === 'chandigarh' ||
+    normalized === 'panchkula' ||
+    normalized === 'mohali'
+  );
 }
 
 /**
- * The exact list of PIN codes eligible for Free Delivery on all order amounts.
+ * Default PIN codes eligible for Free Delivery on all order amounts.
  */
 export const FREE_DELIVERY_PINCODES = new Set<string>([
   '140306', // Mohali Sectors 81, 82, 83, Manauli, Aerocity
@@ -122,15 +71,15 @@ export interface DeliveryCalculation {
 export function calculateDeliveryFee(
   pincode: string | undefined | null,
   subtotalPaise: number,
-  eligiblePincodes?: Set<string> | string[]
+  eligibleFreePincodes?: Set<string> | string[]
 ): DeliveryCalculation {
   const cleanPin = pincode ? pincode.trim() : '';
   const safeSubtotal = Math.max(0, Number(subtotalPaise) || 0);
   const eligibleSet =
-    eligiblePincodes instanceof Set
-      ? eligiblePincodes
-      : Array.isArray(eligiblePincodes)
-      ? new Set(eligiblePincodes)
+    eligibleFreePincodes instanceof Set
+      ? eligibleFreePincodes
+      : Array.isArray(eligibleFreePincodes)
+      ? new Set(eligibleFreePincodes)
       : FREE_DELIVERY_PINCODES;
 
   // If pincode is incomplete / not yet 6 digits
@@ -145,14 +94,17 @@ export function calculateDeliveryFee(
       message: isFree
         ? 'Free Delivery! Order qualifies for free delivery (₹500+).'
         : 'Enter your 6-digit delivery pincode to calculate delivery charges.',
-      freeDeliveryThresholdRemainingPaise: Math.max(0, WAREHOUSE_CONFIG.freeThresholdPaise - safeSubtotal),
+      freeDeliveryThresholdRemainingPaise: Math.max(
+        0,
+        WAREHOUSE_CONFIG.freeThresholdPaise - safeSubtotal
+      ),
     };
   }
 
   // Check if pincode is one of the eligible free delivery pincodes
   const isEligibleFreePincode = eligibleSet.has(cleanPin);
 
-  // Rule 1: Eligible Pincode -> FREE Delivery regardless of order price
+  // Rule 1: Eligible Free Pincode -> FREE Delivery regardless of order price
   if (isEligibleFreePincode) {
     return {
       deliveryFeePaise: 0,
@@ -165,7 +117,7 @@ export function calculateDeliveryFee(
     };
   }
 
-  // Rule 2: Outside eligible pincodes, but order subtotal is ₹500 or above -> FREE Delivery
+  // Rule 2: Outside free-delivery pincodes, but order subtotal is ₹500 or above -> FREE Delivery
   if (safeSubtotal >= WAREHOUSE_CONFIG.freeThresholdPaise) {
     return {
       deliveryFeePaise: 0,
@@ -178,7 +130,7 @@ export function calculateDeliveryFee(
     };
   }
 
-  // Rule 3: Outside eligible pincodes and order subtotal is below ₹500 -> ₹69 delivery fee
+  // Rule 3: Outside free-delivery pincodes and order subtotal is below ₹500 -> ₹69 delivery fee
   const remainingPaise = WAREHOUSE_CONFIG.freeThresholdPaise - safeSubtotal;
   return {
     deliveryFeePaise: WAREHOUSE_CONFIG.standardFeePaise,
