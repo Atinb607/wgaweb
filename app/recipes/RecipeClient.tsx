@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Utensils } from '@/components/icons';
+import { cldUrl } from '@/lib/cloudinary';
 
 export interface RecipeItem {
   id: string;
@@ -11,7 +12,7 @@ export interface RecipeItem {
   excerpt: string | null;
   cover_image_url: string | null;
   cover_image_alt_text?: string | null;
-  recipe_categories: string[] | null;
+  recipe_categories?: string[] | null;
   published_at: string | null;
 }
 
@@ -30,7 +31,7 @@ export default function RecipeClient({
 }: RecipeClientProps) {
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  const heroImage = content.hero_image_url?.trim() || DEFAULT_HERO_IMAGE;
+  const heroImage = cldUrl(content.hero_image_url?.trim() || DEFAULT_HERO_IMAGE, 1600);
   const heroTitle = content.hero_title?.trim() || 'All Recipes';
   const heroSubtitle = content.hero_subtitle?.trim() || '';
 
@@ -49,7 +50,12 @@ export default function RecipeClient({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={heroImage}
-          alt={heroTitle}
+          alt={content.hero_image_url_alt?.trim() || `${heroTitle} · Wild About Greens`}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          width={2000}
+          height={600}
           className="w-full h-full object-cover object-center"
         />
       </div>
@@ -134,8 +140,12 @@ export default function RecipeClient({
                     {post.cover_image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={post.cover_image_url}
-                        alt={post.cover_image_alt_text || post.title}
+                        src={cldUrl(post.cover_image_url, 640)}
+                        alt={post.cover_image_alt_text?.trim() || `${post.title} · microgreens recipe`}
+                        loading="lazy"
+                        decoding="async"
+                        width={640}
+                        height={400}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       />
                     ) : (

@@ -1,22 +1,20 @@
 import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import RecipeClient, { RecipeItem } from './RecipeClient';
+import JsonLd from '@/components/JsonLd';
+import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Recipe Khazana · Wild About Greens',
-  description: 'Fresh, vibrant, and effortless culinary ideas to snip fresh microgreens into your daily meals.',
-  openGraph: {
-    title: 'Recipe Khazana · Wild About Greens',
-    description: 'Fresh, vibrant, and effortless culinary ideas to snip fresh microgreens into your daily meals.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Recipe Khazana · Wild About Greens',
-    description: 'Effortless culinary ideas with fresh microgreens.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Recipe Khazana · Fresh Microgreen Recipes',
+    description:
+      'Discover easy, delicious chef-crafted recipes using fresh microgreens, from vibrant salads and smoothies to everyday Indian meals, sandwiches and wraps.',
+    path: '/recipes',
+    imageAlt: 'Recipe Khazana · Fresh Microgreen Recipes',
+  });
+}
 
 async function getRecipes(): Promise<RecipeItem[]> {
   try {
@@ -81,11 +79,19 @@ export default async function RecipePage() {
     getContentMap(),
   ]);
 
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Recipes', path: '/recipes' },
+  ]);
+
   return (
-    <RecipeClient
-      recipes={recipes}
-      categories={categories}
-      content={content}
-    />
+    <>
+      <JsonLd data={breadcrumbJsonLd} />
+      <RecipeClient
+        recipes={recipes}
+        categories={categories}
+        content={content}
+      />
+    </>
   );
 }

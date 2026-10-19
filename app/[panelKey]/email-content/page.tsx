@@ -245,7 +245,7 @@ export default function AdminEmailContentPage() {
             <p className="text-xs text-[#5C6B60] mt-0.5">
               Emails are sent automatically through <strong>Resend</strong> using your verified domain sender{' '}
               <code className="bg-white/80 px-1.5 py-0.5 rounded text-[#1C3F2D] font-mono text-[11px] border border-[#D5CEC0]">
-                wildaboutgreens@gmail.com
+                info@wildaboutgreens.com
               </code>
             </p>
           </div>
@@ -418,7 +418,7 @@ export default function AdminEmailContentPage() {
               <div className="bg-gray-100 border-b border-gray-200 px-4 py-3 text-xs space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">From:</span>
-                  <span className="text-gray-900 font-medium">Wild About Greens &lt;wildaboutgreens@gmail.com&gt;</span>
+                  <span className="text-gray-900 font-medium">Wild About Greens &lt;info@wildaboutgreens.com&gt;</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">To:</span>
@@ -648,7 +648,7 @@ export default function AdminEmailContentPage() {
               <div className="bg-gray-100 border-b border-gray-200 px-4 py-3 text-xs space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">From:</span>
-                  <span className="text-gray-900 font-medium">Wild About Greens &lt;wildaboutgreens@gmail.com&gt;</span>
+                  <span className="text-gray-900 font-medium">Wild About Greens &lt;info@wildaboutgreens.com&gt;</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500 font-semibold w-12">To:</span>

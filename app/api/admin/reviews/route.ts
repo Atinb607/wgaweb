@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateReviews } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,7 +82,19 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
-    return NextResponse.json(result[0], { status: 201 });
+    const inserted = result[0];
+    if (inserted?.product_id) {
+      try {
+        const p = await sql`SELECT slug FROM products WHERE id = ${inserted.product_id} LIMIT 1`;
+        revalidateReviews(p[0]?.slug);
+      } catch {
+        revalidateReviews();
+      }
+    } else {
+      revalidateReviews();
+    }
+
+    return NextResponse.json(inserted, { status: 201 });
   } catch (error: unknown) {
     console.error('admin create review error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';

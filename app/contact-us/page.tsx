@@ -319,8 +319,8 @@ export default function ContactUsPage() {
               </div>
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-[#1C3F2D]">Phone &amp; WhatsApp</span>
-                <a href="tel:+918427974445" className="text-sm font-bold text-[#122A1F] hover:underline font-mono">
-                  +91 84279 74445
+                <a href="tel:+918427254445" className="text-sm font-bold text-[#122A1F] hover:underline font-mono">
+                  +91 84272 54445
                 </a>
               </div>
             </div>
@@ -331,8 +331,8 @@ export default function ContactUsPage() {
               </div>
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-[#1C3F2D]">Email Support</span>
-                <a href="mailto:wildaboutgreens@gmail.com" className="text-sm font-semibold text-[#122A1F] hover:underline">
-                  wildaboutgreens@gmail.com
+                <a href="mailto:info@wildaboutgreens.com" className="text-sm font-semibold text-[#122A1F] hover:underline">
+                  info@wildaboutgreens.com
                 </a>
               </div>
             </div>

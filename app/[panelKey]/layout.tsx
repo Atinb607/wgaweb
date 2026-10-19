@@ -7,6 +7,10 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Wild About Greens Admin Panel',
   description: 'Wild About Greens Admin Panel',
+  robots: {
+    index: false,
+    follow: false,
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

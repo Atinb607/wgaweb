@@ -1,11 +1,37 @@
+import { cache } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import RecipeShareButtons from '@/components/RecipeShareButtons';
 import JoinRevolutionSection from '@/components/JoinRevolutionSection';
+import JsonLd from '@/components/JsonLd';
+import {
+  absoluteUrl,
+  buildBreadcrumbJsonLd,
+  buildPageMetadata,
+  cloudinaryImage,
+  DEFAULT_SITE_NAME,
+  parseIsoDuration,
+  siteUrl,
+  truncate,
+} from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  try {
+    const sql = getSQL();
+    const rows = await sql`
+      SELECT slug
+      FROM blog_posts
+      WHERE is_published = true AND post_type = 'recipe'
+    `;
+    return (rows as unknown as { slug: string }[]).map((r) => ({ slug: r.slug }));
+  } catch {
+    return [];
+  }
+}
 
 interface RecipePost {
   id: string;
@@ -19,6 +45,7 @@ interface RecipePost {
   is_published: boolean;
   published_at: string | null;
   created_at: string;
+  updated_at?: string | null;
   recipe_ingredients?: string[] | null;
   recipe_method_steps?: string[] | null;
   recipe_prep_time?: string | null;
@@ -26,17 +53,15 @@ interface RecipePost {
   recipe_difficulty?: string | null;
   recipe_serves?: string | null;
   recipe_categories?: string[] | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
 }
 
-async function getRecipe(slug: string): Promise<RecipePost | null> {
+const getRecipe = cache(async (slug: string): Promise<RecipePost | null> => {
   try {
     const sql = getSQL();
     const posts = await sql`
-      SELECT
-        id, slug, title, content, excerpt, cover_image_url, cover_image_alt_text,
-        post_type, is_published, published_at, created_at,
-        recipe_ingredients, recipe_method_steps, recipe_prep_time,
-        recipe_cook_time, recipe_difficulty, recipe_serves, recipe_categories
+      SELECT *
       FROM blog_posts
       WHERE slug = ${slug} AND is_published = true AND post_type = 'recipe'
       LIMIT 1
@@ -47,7 +72,7 @@ async function getRecipe(slug: string): Promise<RecipePost | null> {
     console.error('Error fetching recipe:', err);
     return null;
   }
-}
+});
 
 export async function generateMetadata({
   params,
@@ -56,26 +81,29 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const post = await getRecipe(params.slug);
   if (!post) {
-    return { title: 'Recipe Not Found · Wild About Greens' };
+    return {
+      title: 'Recipe Not Found',
+      robots: { index: false, follow: false },
+    };
   }
-  const siteTitle = `${post.title} · Recipe Khazana`;
+  const title = post.seo_title?.trim() || `${post.title} · Recipe Khazana`;
+  const rawDescription =
+    post.seo_description?.trim() ||
+    post.excerpt?.trim() ||
+    post.content ||
+    `Learn how to make ${post.title} with fresh microgreens from Wild About Greens.`;
+  const description = truncate(rawDescription, 158);
+  const imageAlt = post.cover_image_alt_text?.trim() || `${post.title} · Fresh Microgreens Recipe`;
 
-  return {
-    title: siteTitle,
-    description: post.excerpt || `Recipe for ${post.title}`,
-    openGraph: {
-      title: siteTitle,
-      description: post.excerpt || `Recipe for ${post.title}`,
-      type: 'article',
-      ...(post.cover_image_url ? { images: [{ url: post.cover_image_url }] } : {}),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: siteTitle,
-      description: post.excerpt || `Recipe for ${post.title}`,
-      ...(post.cover_image_url ? { images: [post.cover_image_url] } : {}),
-    },
-  };
+  return buildPageMetadata({
+    title,
+    description,
+    path: `/recipes/${post.slug}`,
+    image: post.cover_image_url,
+    imageAlt,
+    type: 'article',
+    publishedTime: post.published_at || post.created_at,
+  });
 }
 
 const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=2000&q=85';
@@ -108,14 +136,72 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
 
   const bannerImage = post.cover_image_url?.trim() || DEFAULT_BANNER;
 
+  const cleanIngredients = ingredients.map((i) => (i ? i.trim() : '')).filter(Boolean);
+  const cleanSteps = methodSteps.map((s) => (s ? s.trim() : '')).filter(Boolean);
+  const cleanCategories = Array.isArray(post.recipe_categories)
+    ? post.recipe_categories.map((c) => (c ? c.trim() : '')).filter(Boolean)
+    : [];
+  const prepIso = parseIsoDuration(post.recipe_prep_time);
+  const cookIso = parseIsoDuration(post.recipe_cook_time);
+  const publishedDate = post.published_at || post.created_at;
+  const desc = post.excerpt?.trim() || truncate(post.content, 160);
+
+  const recipeJsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Recipe',
+    name: post.title,
+    ...(desc ? { description: desc } : {}),
+    ...(post.cover_image_url?.trim()
+      ? { image: [absoluteUrl(post.cover_image_url.trim())] }
+      : {}),
+    ...(cleanIngredients.length > 0 ? { recipeIngredient: cleanIngredients } : {}),
+    ...(cleanSteps.length > 0
+      ? {
+          recipeInstructions: cleanSteps.map((step, idx) => ({
+            '@type': 'HowToStep',
+            position: idx + 1,
+            text: step,
+          })),
+        }
+      : {}),
+    ...(post.recipe_serves?.trim() ? { recipeYield: post.recipe_serves.trim() } : {}),
+    ...(cleanCategories.length > 0
+      ? {
+          recipeCategory:
+            cleanCategories.length === 1 ? cleanCategories[0] : cleanCategories,
+        }
+      : {}),
+    author: {
+      '@type': 'Organization',
+      name: DEFAULT_SITE_NAME,
+      url: siteUrl(),
+    },
+    ...(publishedDate ? { datePublished: new Date(publishedDate).toISOString() } : {}),
+    ...(prepIso ? { prepTime: prepIso } : {}),
+    ...(cookIso ? { cookTime: cookIso } : {}),
+  };
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Recipes', path: '/recipes' },
+    { name: post.title, path: `/recipes/${post.slug}` },
+  ]);
+
   return (
     <div className="bg-white min-h-screen pt-[64px] lg:pt-[70px]">
+      <JsonLd data={recipeJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       {/* 1. Full-Width Edge-to-Edge Panoramic Hero Banner */}
       <div className="w-full relative overflow-hidden bg-[#EAE8E1] h-[220px] sm:h-[300px] md:h-[380px] lg:h-[440px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={bannerImage}
-          alt={post.cover_image_alt_text || post.title}
+          src={cloudinaryImage(bannerImage, 1600)}
+          alt={post.cover_image_alt_text?.trim() || post.title}
+          width={1600}
+          height={440}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover object-center"
         />
       </div>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
-import { cloudinary, extractPublicIdFromUrl } from '@/lib/cloudinary';
+import { extractPublicIdFromUrl } from '@/lib/cloudinary';
+import { cloudinary } from '@/lib/cloudinaryServer';
+import { revalidateCarousel } from '@/lib/revalidate';
 
 // PUT /api/admin/carousel/[id]: update a slide
 export async function PUT(
@@ -44,6 +46,7 @@ export async function PUT(
       RETURNING *
     `;
 
+    revalidateCarousel();
     return NextResponse.json(result[0]);
   } catch (error: unknown) {
     console.error('admin update carousel slide error:', error);
@@ -81,6 +84,7 @@ export async function DELETE(
       }
     }
 
+    revalidateCarousel();
     return NextResponse.json({ message: 'Slide deleted' });
   } catch (error: unknown) {
     console.error('admin delete carousel slide error:', error);

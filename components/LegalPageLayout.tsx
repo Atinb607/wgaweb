@@ -223,6 +223,10 @@ export default function LegalPageLayout({
                 <img
                   src="/FSSAI.png"
                   alt="FSSAI Registration - Lic. No. 11512018001447"
+                  width={160}
+                  height={80}
+                  loading="lazy"
+                  decoding="async"
                   className="h-16 sm:h-20 w-auto object-contain group-hover:scale-105 transition-transform"
                 />
               </a>

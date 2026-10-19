@@ -7,6 +7,65 @@ export interface ContentFieldDef {
 }
 
 export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
+  site: [
+    {
+      key: 'site_name',
+      label: 'Site Name',
+      type: 'text',
+      defaultValue: 'Wild About Greens',
+      description: 'Brand name used in page titles, Open Graph metadata, and Organization JSON-LD.',
+    },
+    {
+      key: 'default_meta_description',
+      label: 'Default Meta Description',
+      type: 'textarea',
+      defaultValue:
+        'Fresh microgreens grown indoors with pure mineral RO water and zero pesticides. Cut to order and delivered fresh across Chandigarh, Mohali and Panchkula.',
+      description: 'Site-wide fallback meta description (target 150–160 characters).',
+    },
+    {
+      key: 'default_og_image',
+      label: 'Default Open Graph Image',
+      type: 'image_url',
+      defaultValue: '',
+      description: 'Default social sharing image (1200×630 recommended). Used when a page does not specify its own image.',
+    },
+    {
+      key: 'business_phone',
+      label: 'Business Phone',
+      type: 'text',
+      defaultValue: '+91 84272 54445',
+      description: 'Included in Organization/Store JSON-LD structured data only when filled in.',
+    },
+    {
+      key: 'business_email',
+      label: 'Business Email',
+      type: 'text',
+      defaultValue: '',
+      description: 'Included in Organization/Store JSON-LD structured data only when filled in.',
+    },
+    {
+      key: 'business_address',
+      label: 'Business Address',
+      type: 'textarea',
+      defaultValue: '',
+      description: 'Physical address included in Organization/Store JSON-LD structured data only when filled in.',
+    },
+    {
+      key: 'instagram_url',
+      label: 'Instagram Profile URL',
+      type: 'text',
+      defaultValue: '',
+      description: 'Included in Organization/Store JSON-LD sameAs array when filled in.',
+    },
+    {
+      key: 'facebook_url',
+      label: 'Facebook Page URL',
+      type: 'text',
+      defaultValue: '',
+      description: 'Included in Organization/Store JSON-LD sameAs array when filled in.',
+    },
+  ],
   homepage: [
     {
       key: 'hero_eyebrow',
@@ -1336,14 +1395,14 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       key: 'track_support_phone',
       label: 'Support Phone / WhatsApp Number',
       type: 'text',
-      defaultValue: '+91 84279 74445',
+      defaultValue: '+91 84272 54445',
       description: 'Phone or WhatsApp number displayed in the help and delivery inquiries section.',
     },
     {
       key: 'track_support_email',
       label: 'Support Email Address',
       type: 'text',
-      defaultValue: 'wildaboutgreens@gmail.com',
+      defaultValue: 'info@wildaboutgreens.com',
       description: 'Contact email displayed in the customer help section.',
     },
     {
@@ -1429,8 +1488,8 @@ These Terms of Service and any separate agreements whereby we provide you Servic
 SECTION 12 - CONTACT INFORMATION
 Questions about the Terms of Service should be sent to us at:
 Wild About Greens Customer Care
-Email: wildaboutgreens@gmail.com
-WhatsApp / Phone: +91 84279 74445
+Email: info@wildaboutgreens.com
+WhatsApp / Phone: +91 84272 54445
 Operating Hours: Monday – Sunday, 7:00 AM – 7:00 PM`,
       description:
         'Full legal content. All-caps lines automatically become bold uppercase underlined section headers. Lines starting with "-" or "*" become bullet points.',
@@ -1534,8 +1593,8 @@ SECTION 10 - CONTACT INFORMATION & GRIEVANCE OFFICER
 If you have any questions, concerns, or requests regarding this Privacy Policy or the handling of your personal data, please contact our Grievance Officer:
 Wild About Greens
 Attn: Privacy & Grievance Officer
-Email: wildaboutgreens@gmail.com
-WhatsApp / Phone: +91 84279 74445
+Email: info@wildaboutgreens.com
+WhatsApp / Phone: +91 84272 54445
 Operating Hours: Monday – Sunday, 7:00 AM – 7:00 PM`,
       description:
         'Full privacy policy content. All-caps lines automatically become bold uppercase underlined section headers. Lines starting with "-" or "*" become bullet points.',
@@ -1622,8 +1681,8 @@ SECTION 7 - ORDER CANCELLATIONS & SUBSCRIPTION MODIFICATIONS
 SECTION 8 - CUSTOMER SUPPORT CONTACT
 To request a replacement, refund, or delivery inquiry:
 Wild About Greens Customer Care
-Email: wildaboutgreens@gmail.com
-WhatsApp / Phone: +91 84279 74445
+Email: info@wildaboutgreens.com
+WhatsApp / Phone: +91 84272 54445
 Operating Hours: Monday – Sunday, 7:00 AM – 7:00 PM`,
       description:
         'Full shipping and returns policy content. All-caps lines automatically become bold uppercase underlined section headers. Lines starting with "-" or "*" become bullet points.',

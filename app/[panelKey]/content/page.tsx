@@ -36,6 +36,7 @@ interface ProductItem {
 }
 
 const PAGES = [
+  { value: 'site', label: 'Site & SEO' },
   { value: 'homepage', label: 'Homepage' },
   { value: 'product-listing', label: 'Product Listing' },
   { value: 'health-goals', label: 'Health Goals (Shop by Health Goal)' },

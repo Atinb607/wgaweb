@@ -18,11 +18,7 @@ export function getSQL(): NeonQueryFunction<false, false> {
         'DATABASE_URL is not set. Copy .env.local.example to .env.local and fill in your Neon connection string.'
       );
     }
-    _sql = neon(process.env.DATABASE_URL, {
-      fetchOptions: {
-        cache: 'no-store',
-      },
-    });
+    _sql = neon(process.env.DATABASE_URL);
   }
   return _sql;
 }

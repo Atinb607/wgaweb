@@ -251,6 +251,8 @@ export function LeafFavicon({ className = 'w-3.5 h-3.5' }: { className?: string 
       alt=""
       width={16}
       height={16}
+      loading="lazy"
+      decoding="async"
       aria-hidden="true"
       className={`${className} object-contain shrink-0 inline-block align-middle`}
     />

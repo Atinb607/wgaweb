@@ -1,22 +1,20 @@
 import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import PathshalaClient, { ArticleItem } from './PathshalaClient';
+import JsonLd from '@/components/JsonLd';
+import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Pathshala · Wild About Greens',
-  description: 'Explore microgreens growing guides, science backed wellness tips, and farm updates from Wild About Greens.',
-  openGraph: {
-    title: 'Pathshala · Wild About Greens',
-    description: 'Explore microgreens growing guides, science backed wellness tips, and farm updates from Wild About Greens.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Pathshala · Wild About Greens',
-    description: 'Microgreens growing guides, wellness tips, and farm updates.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Pathshala · Microgreen Nutrition & Farming Guides',
+    description:
+      'Explore Pathshala by Wild About Greens: science-backed articles on microgreen nutrition, sulforaphane benefits, indoor vertical farming and healthy living.',
+    path: '/pathshala',
+    imageAlt: 'Pathshala · Microgreen Nutrition & Farming Guides',
+  });
+}
 
 async function getArticles(): Promise<ArticleItem[]> {
   try {
@@ -81,11 +79,19 @@ export default async function PathshalaPage() {
     getContentMap(),
   ]);
 
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Pathshala', path: '/pathshala' },
+  ]);
+
   return (
-    <PathshalaClient
-      posts={posts}
-      categories={categories}
-      content={content}
-    />
+    <>
+      <JsonLd data={breadcrumbJsonLd} />
+      <PathshalaClient
+        posts={posts}
+        categories={categories}
+        content={content}
+      />
+    </>
   );
 }

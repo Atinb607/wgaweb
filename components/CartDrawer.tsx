@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore, getProductThumbnail } from '@/lib/cartStore';
 import { isAdminPath } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
+import { cldUrl } from '@/lib/cloudinary';
 import { X, Plus, Minus, Subscription } from './icons';
 import CartMascot from './CartMascot';
 import {
@@ -229,8 +230,12 @@ export default function CartDrawer() {
 
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={prod.photo}
+                                  src={cldUrl(prod.photo, 240)}
                                   alt={prod.name}
+                                  width={120}
+                                  height={120}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
                                 />
                               </div>
@@ -302,8 +307,12 @@ export default function CartDrawer() {
                         <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-[#E4DDC8] relative">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={thumb}
+                            src={cldUrl(thumb, 160)}
                             alt={item.productName}
+                            width={80}
+                            height={80}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -393,8 +402,12 @@ export default function CartDrawer() {
                           <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-[#E4DDC8] bg-gray-50">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={prod.photo}
+                              src={cldUrl(prod.photo, 100)}
                               alt={prod.name}
+                              width={48}
+                              height={48}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover"
                             />
                           </div>

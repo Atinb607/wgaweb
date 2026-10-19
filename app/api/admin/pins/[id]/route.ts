@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateContentPins } from '@/lib/revalidate';
 
 // PUT /api/admin/pins/[id]: update a pin
 export async function PUT(
@@ -31,6 +32,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Pin not found' }, { status: 404 });
     }
 
+    revalidateContentPins();
     return NextResponse.json(result[0]);
   } catch (error: unknown) {
     console.error('admin update pin error:', error);
@@ -58,6 +60,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Pin not found' }, { status: 404 });
     }
 
+    revalidateContentPins();
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('admin delete pin error:', error);

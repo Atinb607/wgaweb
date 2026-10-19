@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateProducts } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,12 +54,27 @@ export async function GET() {
   }
 }
 
+function normalizeTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of raw) {
+    const cleaned = String(item ?? '').trim().toLowerCase();
+    if (cleaned && !seen.has(cleaned)) {
+      seen.add(cleaned);
+      out.push(cleaned);
+      if (out.length >= 10) break;
+    }
+  }
+  return out;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const sql = getSQL();
     const body = await request.json();
 
-    const { slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, detail_highlight_badges, faqs, detail_accordions, pairs_well_with } = body;
+    const { slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, detail_highlight_badges, faqs, detail_accordions, pairs_well_with, seo_title, seo_description } = body;
 
     if (!slug || !name || !categories || !Array.isArray(categories) || categories.length === 0) {
       return NextResponse.json(
@@ -77,7 +93,7 @@ export async function POST(request: NextRequest) {
           : 0);
 
     const formattedHealthGoals = Array.isArray(health_goals) ? health_goals : [];
-    const formattedTags = Array.isArray(tags) ? tags : [];
+    const formattedTags = normalizeTags(tags);
     const formattedBadges = Array.isArray(detail_highlight_badges)
       ? JSON.stringify(detail_highlight_badges)
       : JSON.stringify([
@@ -89,13 +105,30 @@ export async function POST(request: NextRequest) {
     const formattedFaqs = Array.isArray(faqs) ? JSON.stringify(faqs) : JSON.stringify([]);
     const formattedAccordions = Array.isArray(detail_accordions) ? JSON.stringify(detail_accordions) : JSON.stringify([]);
     const formattedPairs = Array.isArray(pairs_well_with) ? JSON.stringify(pairs_well_with) : JSON.stringify([]);
+    const cleanSeoTitle = typeof seo_title === 'string' && seo_title.trim() ? seo_title.trim() : null;
+    const cleanSeoDescription = typeof seo_description === 'string' && seo_description.trim() ? seo_description.trim() : null;
 
-    const result = await sql`
-      INSERT INTO products (slug, name, categories, category_orders, display_order, health_goals, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, detail_highlight_badges, faqs, detail_accordions, pairs_well_with)
-      VALUES (${slug}, ${name}, ${categories}, ${formattedCategoryOrders}::jsonb, ${resolvedDisplayOrder}, ${formattedHealthGoals}, ${description || null}, ${description_lead || null}, ${description_highlight || null}, ${nutrition_notes || null}, ${is_bundle || false}, ${thumbnail_url || null}, ${thumbnail_alt_text || null}, ${formattedTags}, ${badge_label || null}, ${highlight_1 || null}, ${highlight_2 || null}, ${formattedBadges}::jsonb, ${formattedFaqs}::jsonb, ${formattedAccordions}::jsonb, ${formattedPairs}::jsonb)
-      RETURNING *
-    `;
+    let result;
+    try {
+      result = await sql`
+        INSERT INTO products (slug, name, categories, category_orders, display_order, health_goals, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, detail_highlight_badges, faqs, detail_accordions, pairs_well_with, seo_title, seo_description, updated_at)
+        VALUES (${slug}, ${name}, ${categories}, ${formattedCategoryOrders}::jsonb, ${resolvedDisplayOrder}, ${formattedHealthGoals}, ${description || null}, ${description_lead || null}, ${description_highlight || null}, ${nutrition_notes || null}, ${is_bundle || false}, ${thumbnail_url || null}, ${thumbnail_alt_text || null}, ${formattedTags}, ${badge_label || null}, ${highlight_1 || null}, ${highlight_2 || null}, ${formattedBadges}::jsonb, ${formattedFaqs}::jsonb, ${formattedAccordions}::jsonb, ${formattedPairs}::jsonb, ${cleanSeoTitle}, ${cleanSeoDescription}, NOW())
+        RETURNING *
+      `;
+    } catch (dbErr: unknown) {
+      const msg = dbErr instanceof Error ? dbErr.message : '';
+      if (msg.includes('seo_title') || msg.includes('seo_description') || msg.includes('updated_at')) {
+        result = await sql`
+          INSERT INTO products (slug, name, categories, category_orders, display_order, health_goals, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, detail_highlight_badges, faqs, detail_accordions, pairs_well_with)
+          VALUES (${slug}, ${name}, ${categories}, ${formattedCategoryOrders}::jsonb, ${resolvedDisplayOrder}, ${formattedHealthGoals}, ${description || null}, ${description_lead || null}, ${description_highlight || null}, ${nutrition_notes || null}, ${is_bundle || false}, ${thumbnail_url || null}, ${thumbnail_alt_text || null}, ${formattedTags}, ${badge_label || null}, ${highlight_1 || null}, ${highlight_2 || null}, ${formattedBadges}::jsonb, ${formattedFaqs}::jsonb, ${formattedAccordions}::jsonb, ${formattedPairs}::jsonb)
+          RETURNING *
+        `;
+      } else {
+        throw dbErr;
+      }
+    }
 
+    revalidateProducts(result[0]?.slug);
     return NextResponse.json(result[0], { status: 201 });
   } catch (error: unknown) {
     console.error('admin create product error:', error);

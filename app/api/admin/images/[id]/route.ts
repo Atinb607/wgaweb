@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
-import { cloudinary, extractPublicIdFromUrl } from '@/lib/cloudinary';
+import { extractPublicIdFromUrl } from '@/lib/cloudinary';
+import { cloudinary } from '@/lib/cloudinaryServer';
+import { revalidateProducts } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +45,7 @@ export async function PUT(
       RETURNING *
     `;
 
+    revalidateProducts();
     return NextResponse.json(result[0]);
   } catch (error: unknown) {
     console.error('admin update image error:', error);
@@ -79,6 +82,7 @@ export async function DELETE(
       }
     }
 
+    revalidateProducts();
     return NextResponse.json({ message: 'Image deleted', image: deletedImage });
   } catch (error: unknown) {
     console.error('admin delete image error:', error);

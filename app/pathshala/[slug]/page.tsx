@@ -1,11 +1,36 @@
+import { cache } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import RecipeShareButtons from '@/components/RecipeShareButtons';
 import JoinRevolutionSection from '@/components/JoinRevolutionSection';
+import JsonLd from '@/components/JsonLd';
+import {
+  absoluteUrl,
+  buildBreadcrumbJsonLd,
+  buildPageMetadata,
+  cloudinaryImage,
+  DEFAULT_SITE_NAME,
+  siteUrl,
+  truncate,
+} from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  try {
+    const sql = getSQL();
+    const rows = await sql`
+      SELECT slug
+      FROM blog_posts
+      WHERE is_published = true AND post_type = 'article'
+    `;
+    return (rows as unknown as { slug: string }[]).map((r) => ({ slug: r.slug }));
+  } catch {
+    return [];
+  }
+}
 
 interface ArticlePost {
   id: string;
@@ -19,16 +44,17 @@ interface ArticlePost {
   is_published: boolean;
   published_at: string | null;
   created_at: string;
+  updated_at?: string | null;
   recipe_categories?: string[] | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
 }
 
-async function getArticle(slug: string): Promise<ArticlePost | null> {
+const getArticle = cache(async (slug: string): Promise<ArticlePost | null> => {
   try {
     const sql = getSQL();
     const posts = await sql`
-      SELECT
-        id, slug, title, content, excerpt, cover_image_url, cover_image_alt_text,
-        post_type, is_published, published_at, created_at, recipe_categories
+      SELECT *
       FROM blog_posts
       WHERE slug = ${slug} AND is_published = true AND post_type = 'article'
       LIMIT 1
@@ -39,7 +65,7 @@ async function getArticle(slug: string): Promise<ArticlePost | null> {
     console.error('Error fetching article:', err);
     return null;
   }
-}
+});
 
 export async function generateMetadata({
   params,
@@ -48,26 +74,29 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const post = await getArticle(params.slug);
   if (!post) {
-    return { title: 'Article Not Found · Wild About Greens' };
+    return {
+      title: 'Article Not Found',
+      robots: { index: false, follow: false },
+    };
   }
-  const siteTitle = `${post.title} · Wild About Greens`;
+  const title = post.seo_title?.trim() || post.title;
+  const rawDescription =
+    post.seo_description?.trim() ||
+    post.excerpt?.trim() ||
+    post.content ||
+    `${post.title} · read microgreen nutrition and farming insights on Pathshala by Wild About Greens.`;
+  const description = truncate(rawDescription, 158);
+  const imageAlt = post.cover_image_alt_text?.trim() || `${post.title} · Pathshala Article`;
 
-  return {
-    title: siteTitle,
-    description: post.excerpt || 'Read the latest insights from Wild About Greens.',
-    openGraph: {
-      title: siteTitle,
-      description: post.excerpt || 'Read the latest insights from Wild About Greens.',
-      type: 'article',
-      ...(post.cover_image_url ? { images: [{ url: post.cover_image_url }] } : {}),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: siteTitle,
-      description: post.excerpt || 'Read the latest insights from Wild About Greens.',
-      ...(post.cover_image_url ? { images: [post.cover_image_url] } : {}),
-    },
-  };
+  return buildPageMetadata({
+    title,
+    description,
+    path: `/pathshala/${post.slug}`,
+    image: post.cover_image_url,
+    imageAlt,
+    type: 'article',
+    publishedTime: post.published_at || post.created_at,
+  });
 }
 
 const DEFAULT_ARTICLE_BANNER = 'https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=2000&q=85';
@@ -95,14 +124,63 @@ export default async function PathshalaDetailPage({ params }: { params: { slug: 
   const leftCol = paragraphs.slice(0, midPoint);
   const rightCol = paragraphs.slice(midPoint);
 
+  const canonicalUrl = absoluteUrl(`/pathshala/${post.slug}`);
+  const publishedDate = post.published_at || post.created_at;
+  const modifiedDate = post.updated_at || publishedDate;
+  const desc = post.excerpt?.trim() || truncate(post.content, 160);
+
+  const blogPostingJsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    name: post.title,
+    ...(desc ? { description: desc } : {}),
+    ...(post.cover_image_url?.trim()
+      ? { image: [absoluteUrl(post.cover_image_url.trim())] }
+      : {}),
+    author: {
+      '@type': 'Organization',
+      name: DEFAULT_SITE_NAME,
+      url: siteUrl(),
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: DEFAULT_SITE_NAME,
+      url: siteUrl(),
+      logo: {
+        '@type': 'ImageObject',
+        url: absoluteUrl('/logo-white-bg.png'),
+      },
+    },
+    ...(publishedDate ? { datePublished: new Date(publishedDate).toISOString() } : {}),
+    ...(modifiedDate ? { dateModified: new Date(modifiedDate).toISOString() } : {}),
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': canonicalUrl,
+    },
+  };
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Pathshala', path: '/pathshala' },
+    { name: post.title, path: `/pathshala/${post.slug}` },
+  ]);
+
   return (
     <div className="bg-white min-h-screen pt-[64px] lg:pt-[70px]">
+      <JsonLd data={blogPostingJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       {/* 1. Full-Width Edge-to-Edge Panoramic Hero Banner */}
       <div className="w-full relative overflow-hidden bg-[#EAE8E1] h-[220px] sm:h-[300px] md:h-[380px] lg:h-[440px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={bannerImage}
-          alt={post.cover_image_alt_text || post.title}
+          src={cloudinaryImage(bannerImage, 1600)}
+          alt={post.cover_image_alt_text?.trim() || post.title}
+          width={1600}
+          height={440}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover object-center"
         />
       </div>

@@ -25,6 +25,8 @@ interface Post {
   recipe_difficulty?: string | null;
   recipe_serves?: string | null;
   recipe_categories?: string[] | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
 }
 
 const emptyPost = {
@@ -44,6 +46,8 @@ const emptyPost = {
   recipe_difficulty: '',
   recipe_serves: '',
   recipe_categories: [] as string[],
+  seo_title: '',
+  seo_description: '',
 };
 
 export default function AdminBlogPage() {
@@ -109,6 +113,8 @@ export default function AdminBlogPage() {
         recipe_difficulty: data.recipe_difficulty || '',
         recipe_serves: data.recipe_serves || '',
         recipe_categories: Array.isArray(data.recipe_categories) ? data.recipe_categories : [],
+        seo_title: data.seo_title || '',
+        seo_description: data.seo_description || '',
       });
     }
   };
@@ -567,6 +573,46 @@ export default function AdminBlogPage() {
               </div>
             </div>
           )}
+
+          {/* Search Engine Optimization (SEO) */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 mt-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Search Engine Optimization (SEO)</h3>
+              <p className="text-xs text-gray-500">
+                Optional overrides for search engines and social previews. Leave blank to automatically fall back to the post title and excerpt/body.
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">SEO Title</label>
+                <span className={`text-xs font-mono ${(form.seo_title?.length || 0) > 60 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                  {form.seo_title?.length || 0} / 60
+                </span>
+              </div>
+              <input
+                type="text"
+                value={form.seo_title}
+                onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
+                placeholder={form.title || 'Automatic fallback: Post Title'}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">SEO Description</label>
+                <span className={`text-xs font-mono ${(form.seo_description?.length || 0) > 155 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                  {form.seo_description?.length || 0} / 155
+                </span>
+              </div>
+              <textarea
+                rows={2}
+                value={form.seo_description}
+                onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
+                placeholder={form.excerpt || 'Automatic fallback: truncated post excerpt or body (155 chars)'}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+              />
+            </div>
+          </div>
 
           <label className="flex items-center gap-2 text-sm pt-2">
             <input

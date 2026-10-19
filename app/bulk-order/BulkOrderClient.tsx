@@ -253,7 +253,7 @@ export default function BulkOrderClient({ initialProducts = [] }: BulkOrderClien
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <a
-                    href={`https://wa.me/918427974445?text=${encodeURIComponent(
+                    href={`https://wa.me/918427254445?text=${encodeURIComponent(
                       `Hello Wild About Greens, I just submitted a bulk order request #${ticketNumber} for ${traysCount} trays. Would love to discuss pricing & harvest timeline.`
                     )}`}
                     target="_blank"

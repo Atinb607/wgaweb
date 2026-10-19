@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Clipboard, Sprout } from '@/components/icons';
+import { cldUrl } from '@/lib/cloudinary';
 
 export interface ArticleItem {
   id: string;
@@ -30,7 +31,7 @@ export default function PathshalaClient({
 }: PathshalaClientProps) {
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  const heroImage = content.hero_image_url?.trim() || DEFAULT_BLOG_HERO;
+  const heroImage = cldUrl(content.hero_image_url?.trim() || DEFAULT_BLOG_HERO, 1600);
   const heroTitle = content.hero_title?.trim() || 'Pathshala';
   const heroSubtitle = content.hero_subtitle?.trim() || '';
 
@@ -49,7 +50,12 @@ export default function PathshalaClient({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={heroImage}
-          alt={heroTitle}
+          alt={content.hero_image_url_alt?.trim() || `${heroTitle} · Wild About Greens`}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          width={2000}
+          height={600}
           className="w-full h-full object-cover object-center"
         />
       </div>
@@ -142,8 +148,12 @@ export default function PathshalaClient({
                     {post.cover_image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={post.cover_image_url}
-                        alt={post.cover_image_alt_text || post.title}
+                        src={cldUrl(post.cover_image_url, 640)}
+                        alt={post.cover_image_alt_text?.trim() || `${post.title} · Pathshala article`}
+                        loading="lazy"
+                        decoding="async"
+                        width={640}
+                        height={400}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       />
                     ) : (

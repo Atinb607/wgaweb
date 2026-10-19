@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
+import { isCanonicalHost } from '@/lib/seo';
 
 // ── Security headers applied to ALL responses ──
 const securityHeaders: Record<string, string> = {
@@ -9,19 +10,35 @@ const securityHeaders: Record<string, string> = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://challenges.cloudflare.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://challenges.cloudflare.com https://www.googletagmanager.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://images.pexels.com https://*.pexels.com",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://images.pexels.com https://*.pexels.com https://www.google-analytics.com https://www.googletagmanager.com",
     "media-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://images.pexels.com https://*.pexels.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://api.razorpay.com https://challenges.cloudflare.com https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com",
+    "connect-src 'self' https://api.razorpay.com https://challenges.cloudflare.com https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
     "frame-src https://api.razorpay.com https://challenges.cloudflare.com",
   ].join('; '),
 };
 
-function applySecurityHeaders(response: NextResponse): NextResponse {
+function shouldAddNoIndexHeader(request: NextRequest): boolean {
+  try {
+    const requestHost =
+      request.headers.get('x-forwarded-host') ||
+      request.headers.get('host') ||
+      request.nextUrl.host ||
+      '';
+    return !isCanonicalHost(requestHost);
+  } catch {
+    return true;
+  }
+}
+
+function applySecurityHeaders(response: NextResponse, request: NextRequest): NextResponse {
   for (const [key, value] of Object.entries(securityHeaders)) {
     response.headers.set(key, value);
+  }
+  if (shouldAddNoIndexHeader(request)) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
   return response;
 }
@@ -35,21 +52,23 @@ export async function middleware(request: NextRequest) {
 
     if (!token) {
       return applySecurityHeaders(
-        NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+        request
       );
     }
 
     const isValid = await verifyToken(token);
     if (!isValid) {
       return applySecurityHeaders(
-        NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+        request
       );
     }
   }
 
   // Apply security headers to all responses
   const response = NextResponse.next();
-  return applySecurityHeaders(response);
+  return applySecurityHeaders(response, request);
 }
 
 export const config = {

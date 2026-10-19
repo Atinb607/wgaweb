@@ -24,6 +24,19 @@ const nextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/((?!_next/).*\\.(?:ico|png|jpg|jpeg|svg|webp|avif|mp4|webm|woff|woff2|ttf|otf))',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       {

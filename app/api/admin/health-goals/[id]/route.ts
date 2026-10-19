@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateHealthGoals } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,6 +73,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Health goal not found' }, { status: 404 });
     }
 
+    revalidateHealthGoals();
     return NextResponse.json(result[0]);
   } catch (error: unknown) {
     console.error('admin update health-goal error:', error);

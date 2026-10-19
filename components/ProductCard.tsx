@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { formatPrice } from '@/lib/format';
 import { Sprout } from './icons';
+import { cldUrl } from '@/lib/cloudinary';
 
 interface Variant {
   id: string;
@@ -44,8 +45,12 @@ export default function ProductCard({
         {thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={thumbnail_url}
-            alt={thumbnail_alt_text || name}
+            src={cldUrl(thumbnail_url, 600)}
+            alt={thumbnail_alt_text?.trim() || `${name} fresh microgreens`}
+            loading="lazy"
+            decoding="async"
+            width={600}
+            height={600}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (

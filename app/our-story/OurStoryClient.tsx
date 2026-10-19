@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
+import { cldUrl } from '@/lib/cloudinary';
 import type { SamplerVariantData } from './page';
 
 export default function OurStoryClient({
@@ -161,81 +162,108 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/3296644/pexels-photo-3296644.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/3296644/pexels-photo-3296644.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Top-down view of a tray of thriving green microgreens"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/15874889/pexels-photo-15874889.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/15874889/pexels-photo-15874889.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Close-up macro shot of beetroot microgreens, pink and red stems"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.unsplash.com/photo-1593629718347-283811841101?q=80&w=1200&auto=format&fit=crop"
+                  src="https://images.unsplash.com/photo-1593629718347-283811841101?q=80&w=400&auto=format&fit=crop"
                   alt="Microgreens falling into a white ceramic bowl"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Open-faced avocado toast topped with fresh microgreens and radishes"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/29168411/pexels-photo-29168411.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/29168411/pexels-photo-29168411.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Gourmet salad with microgreens and edible flowers in a rustic ceramic bowl"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/32095425/pexels-photo-32095425.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/32095425/pexels-photo-32095425.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Open-faced multigrain sandwich topped with fresh microgreens and cucumber"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Colorful salad with beets, pecans, goat cheese and microgreen sprouts"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Gourmet salad plated with edible flowers, radish, herbs and microgreens"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/29122091/pexels-photo-29122091.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                  src="https://images.pexels.com/photos/29122091/pexels-photo-29122091.jpeg?auto=compress&cs=tinysrgb&w=400"
                   alt="Vibrant gourmet dish topped with colorful microgreens and an edible flower"
+                  width={150}
+                  height={150}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
               </div>
@@ -376,11 +404,14 @@ export default function OurStoryClient({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={
-                content.belief_image ||
+                cldUrl(content.belief_image, 1200) ||
                 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1600&auto=format&fit=crop'
               }
-              alt="Poached egg with vegetables and tomatoes on a blue plate"
+              alt={content.belief_image_alt?.trim() || 'Poached egg with vegetables and tomatoes on a blue plate'}
+              width={1200}
+              height={800}
               loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover block"
             />
           </div>

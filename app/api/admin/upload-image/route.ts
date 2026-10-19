@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cloudinary } from '@/lib/cloudinary';
+import { cloudinary } from '@/lib/cloudinaryServer';
 import type { UploadApiOptions } from 'cloudinary';
 
 const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5 MB Netlify payload safety limit

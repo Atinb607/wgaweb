@@ -2,13 +2,18 @@ import { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import LegalPageLayout from '@/components/LegalPageLayout';
 import { CONTENT_REGISTRY } from '@/lib/contentRegistry';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Shipping & Returns | Wild About Greens',
-  description: 'Morning harvest delivery policies and 24-hour return & exchange guidelines for Wild About Greens.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Shipping & Returns Policy',
+    description:
+      'Details on harvest-day delivery across Chandigarh, Mohali and Panchkula, shipping fees, order cutoffs and our 24-hour freshness replacement policy.',
+    path: '/shipping-and-returns',
+  });
+}
 
 async function getPolicyContent() {
   try {

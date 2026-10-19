@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { isAdminPath } from '@/lib/adminAuth';
 import { WhatsApp } from '@/components/icons';
 
-const DEFAULT_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918427974445';
+const DEFAULT_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918427254445';
 
 export default function WhatsAppButton() {
   const pathname = usePathname();

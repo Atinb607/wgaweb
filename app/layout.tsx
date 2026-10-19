@@ -1,61 +1,110 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import './globals.css';
+import dynamic from 'next/dynamic';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import CartDrawer from '@/components/CartDrawer';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import { fontVariables } from '@/lib/fonts';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://wildaboutgreens.com';
+const CartDrawer = dynamic(() => import('@/components/CartDrawer'), { ssr: false });
+import {
+  absoluteUrl,
+  cloudinaryOgImage,
+  DEFAULT_META_DESCRIPTION,
+  DEFAULT_OG_IMAGE_PATH,
+  DEFAULT_SITE_NAME,
+  getSiteSettings,
+  siteUrl,
+} from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Wild About Greens · Microgreens Delivered Fresh',
-  description:
-    'Grown on vertical indoor racks. Pure mineral water, non GMO seeds, zero pesticides. Harvested fresh and delivered to your doorstep.',
-  openGraph: {
-    type: 'website',
-    siteName: 'Wild About Greens',
-    title: 'Wild About Greens · Microgreens Delivered Fresh',
-    description: 'Grown on vertical indoor racks. Pure mineral water, non GMO seeds, zero pesticides. Cut to order and delivered fresh.',
-    url: siteUrl,
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Wild About Greens · Microgreens Delivered Fresh',
-    description: 'Grown on vertical indoor racks. Pure mineral water, non GMO seeds, zero pesticides. Cut to order and delivered fresh.',
-  },
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.png', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const base = siteUrl();
+  const settings = await getSiteSettings();
+  const siteName = settings.site_name || DEFAULT_SITE_NAME;
+  const defaultDesc = settings.default_meta_description || DEFAULT_META_DESCRIPTION;
+  const rawOgImg = settings.default_og_image || DEFAULT_OG_IMAGE_PATH;
+  const transformedOgImg = cloudinaryOgImage(rawOgImg);
+  const ogImageUrl = /^https?:\/\//i.test(transformedOgImg)
+    ? transformedOgImg
+    : absoluteUrl(transformedOgImg);
+  const ogImageAlt =
+    settings.default_og_image_alt || `${siteName} · Fresh Microgreens Delivered in Tricity`;
+  const googleVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+  return {
+    metadataBase: new URL(base),
+    title: {
+      default: `${siteName} · Fresh Microgreens Delivered in Tricity`,
+      template: `%s | ${siteName}`,
+    },
+    description: defaultDesc,
+    openGraph: {
+      type: 'website',
+      siteName,
+      locale: 'en_IN',
+      title: `${siteName} · Fresh Microgreens Delivered in Tricity`,
+      description: defaultDesc,
+      url: base,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: ogImageAlt,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${siteName} · Fresh Microgreens Delivered in Tricity`,
+      description: defaultDesc,
+      images: [
+        {
+          url: ogImageUrl,
+          alt: ogImageAlt,
+        },
+      ],
+    },
+    ...(googleVerification
+      ? {
+          verification: {
+            google: googleVerification,
+          },
+        }
+      : {}),
+    robots: { index: true, follow: true },
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/favicon.png', type: 'image/png' },
+      ],
+      apple: [
+        { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      ],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID?.trim();
+  const allowGa = Boolean(gaId);
+
   return (
-    <html lang="en">
+    <html lang="en-IN" className={fontVariables}>
       <body className="min-h-screen flex flex-col font-sans bg-white text-[#151F19] antialiased">
         <Header />
         <CartDrawer />
         <div className="flex-1">{children}</div>
         <Footer />
         <WhatsAppButton />
-        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-          <Script
-            id="cf-turnstile-script"
-            src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-            strategy="afterInteractive"
-          />
-        )}
+        {allowGa && gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );
 }
+
+

@@ -1,10 +1,18 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import PoliciesClient from './PoliciesClient';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Company Policies | Wild About Greens',
-  description: 'Terms and Conditions, Privacy Policy, and Shipping & Returns guidelines for Wild About Greens.',
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Store Policies · Privacy, Terms & Shipping',
+    description:
+      'Read Wild About Greens policies covering privacy, terms and conditions, shipping, delivery schedules, returns and freshness guarantees in Tricity.',
+    path: '/policies',
+  });
+}
 
 export default function PoliciesPage() {
   return (

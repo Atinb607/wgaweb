@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const sql = getSQL();
     const slides = await sql`
-      SELECT id, image_url, link_url, display_order
+      SELECT id, image_url, link_url, display_order, alt_text
       FROM carousel_slides
       WHERE is_active = true
       ORDER BY display_order ASC

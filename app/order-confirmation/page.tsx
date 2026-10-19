@@ -94,7 +94,7 @@ function ConfirmationContent() {
           <div className="space-y-2">
             <span className="font-mono text-xs uppercase tracking-[0.2em] font-semibold text-[#5C6B60] block">
               {storedOrder?.paymentMethod === 'cod'
-                ? 'Order Placed — Cash on Delivery'
+                ? 'Order Placed · Cash on Delivery'
                 : 'Order Confirmed & Payment Received'}
             </span>
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium text-[#151F19] leading-tight">
@@ -271,7 +271,7 @@ function ConfirmationContent() {
                 </p>
                 <p className="text-xs text-gray-600 mt-1 leading-relaxed">
                   {storedOrder.deliveryAddress}
-                  {storedOrder.deliveryPincode ? ` — PIN: ${storedOrder.deliveryPincode}` : ''}
+                  {storedOrder.deliveryPincode ? ` · PIN: ${storedOrder.deliveryPincode}` : ''}
                 </p>
               </div>
             )}
@@ -288,7 +288,7 @@ function ConfirmationContent() {
           </Link>
 
           <a
-            href={`https://wa.me/918427974445?text=${whatsappMessage}`}
+            href={`https://wa.me/918427254445?text=${whatsappMessage}`}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-6 py-3.5 bg-[#25D366] text-white rounded-full font-semibold text-sm hover:bg-[#20ba59] transition-all flex items-center justify-center gap-2 shadow-sm"

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidatePartnerLogos } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Partner logo not found' }, { status: 404 });
     }
 
+    revalidatePartnerLogos();
     return NextResponse.json(result[0]);
   } catch (error: unknown) {
     console.error('admin update partner logo error:', error);
@@ -53,6 +55,7 @@ export async function DELETE(
       WHERE id = ${id}
     `;
 
+    revalidatePartnerLogos();
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('admin delete partner logo error:', error);

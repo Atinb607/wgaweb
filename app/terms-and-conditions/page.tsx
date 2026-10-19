@@ -2,13 +2,18 @@ import { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import LegalPageLayout from '@/components/LegalPageLayout';
 import { CONTENT_REGISTRY } from '@/lib/contentRegistry';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Terms & Conditions | Wild About Greens',
-  description: 'Terms of service, harvest guidelines, and delivery policies for Wild About Greens.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Terms & Conditions',
+    description:
+      'Review the terms and conditions governing orders, weekly subscriptions, payments and deliveries of fresh microgreens from Wild About Greens in Tricity.',
+    path: '/terms-and-conditions',
+  });
+}
 
 async function getPolicyContent() {
   try {

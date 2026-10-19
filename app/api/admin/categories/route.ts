@@ -5,6 +5,7 @@ import {
   addCategory,
   deleteCategory,
 } from '@/lib/categoryServer';
+import { revalidateProducts } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -49,6 +50,7 @@ export async function PUT(request: NextRequest) {
 
     await updateCategoriesOrderAndVisibility(updates);
     const refreshed = await getAllCategoriesWithCounts();
+    revalidateProducts();
 
     return NextResponse.json({
       success: true,
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
 
     const created = await addCategory(rawName);
     const refreshed = await getAllCategoriesWithCounts();
+    revalidateProducts();
 
     return NextResponse.json({
       success: true,
@@ -116,6 +119,7 @@ export async function DELETE(request: NextRequest) {
 
     await deleteCategory(name.trim().toLowerCase());
     const refreshed = await getAllCategoriesWithCounts();
+    revalidateProducts();
 
     return NextResponse.json({
       success: true,

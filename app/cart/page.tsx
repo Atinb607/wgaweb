@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useCartStore, getProductThumbnail } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
+import { cldUrl } from '@/lib/cloudinary';
 import { Plus, Minus, Scissors, Droplet, Zap, Truck, Sprout, Subscription, Lock } from '@/components/icons';
 import CartMascot from '@/components/CartMascot';
 import {
@@ -171,8 +172,12 @@ export default function CartPage() {
                   <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl overflow-hidden border border-[#E4DDC8] bg-gray-50 relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={getProductThumbnail(item.productSlug, item.thumbnailUrl)}
+                      src={cldUrl(getProductThumbnail(item.productSlug, item.thumbnailUrl), 160)}
                       alt={item.productName}
+                      width={80}
+                      height={80}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -314,8 +319,12 @@ export default function CartPage() {
                       <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#E4DDC8] bg-gray-50">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={addon.photo}
+                          src={cldUrl(addon.photo, 120)}
                           alt={addon.name}
+                          width={56}
+                          height={56}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateCarousel } from '@/lib/revalidate';
 
 // GET /api/admin/carousel: all slides, optionally filter by ?carousel_key=
 export async function GET(request: NextRequest) {
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
+    revalidateCarousel();
     return NextResponse.json(result[0], { status: 201 });
   } catch (error: unknown) {
     console.error('admin create carousel slide error:', error);

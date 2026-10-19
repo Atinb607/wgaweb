@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 export const metadata = {
-  title: 'Returns & Exchanges | Wild About Greens',
+  title: 'Returns & Exchanges',
   description: 'Morning harvest delivery policies and 24-hour return guidelines for Wild About Greens.',
 };
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateProducts } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -64,6 +65,8 @@ export async function PUT(request: NextRequest) {
         value = ${String(cleanPercent)},
         updated_at = now()
     `;
+
+    revalidateProducts();
 
     return NextResponse.json({
       success: true,

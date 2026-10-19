@@ -1,24 +1,19 @@
 import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import BulkOrderClient from './BulkOrderClient';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Bulk Orders & Commercial Supply · Wild About Greens',
-  description:
-    'Order fresh microgreens in bulk trays for restaurants, hotels, cafes, catering, and large events. Harvested fresh on indoor vertical racks.',
-  openGraph: {
-    title: 'Bulk Orders & Commercial Supply · Wild About Greens',
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Bulk Orders & Commercial Supply',
     description:
-      'Order fresh microgreens in bulk trays for restaurants, hotels, cafes, and catering.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Bulk Orders & Commercial Supply · Wild About Greens',
-    description: 'Order fresh microgreens in bulk trays cut to order.',
-  },
-};
+      'Partner with Wild About Greens for bulk and recurring microgreens supply for restaurants, cafes, hotels, cloud kitchens and events across Tricity.',
+    path: '/bulk-order',
+    imageAlt: 'Bulk Microgreens Orders · Wild About Greens',
+  });
+}
 
 async function getActiveProducts(): Promise<{ name: string; slug: string }[]> {
   try {

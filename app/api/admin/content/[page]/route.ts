@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateContentBlocks } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -80,6 +81,7 @@ export async function PUT(
       }
     }
 
+    revalidateContentBlocks(page);
     return NextResponse.json(results);
   } catch (error: unknown) {
     console.error('admin content upsert error:', error);

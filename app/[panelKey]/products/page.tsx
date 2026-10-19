@@ -138,6 +138,8 @@ interface Product {
   faqs?: ProductFAQ[] | null;
   detail_accordions?: DetailAccordion[] | null;
   pairs_well_with?: string[] | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
 }
 
 const emptyProduct = {
@@ -157,6 +159,8 @@ const emptyProduct = {
   badge_label: '',
   highlight_1: '',
   highlight_2: '',
+  seo_title: '',
+  seo_description: '',
   is_bundle: false,
   is_active: true,
 };
@@ -552,6 +556,8 @@ export default function AdminProductsPage() {
         badge_label: data.badge_label || '',
         highlight_1: data.highlight_1 || '',
         highlight_2: data.highlight_2 || '',
+        seo_title: data.seo_title || '',
+        seo_description: data.seo_description || '',
         is_bundle: data.is_bundle ?? false,
         is_active: data.is_active ?? true,
       });
@@ -588,10 +594,14 @@ export default function AdminProductsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const parsedTags = tagString
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
+      const parsedTags = Array.from(
+        new Set(
+          tagString
+            .split(',')
+            .map((t) => t.trim().toLowerCase())
+            .filter(Boolean)
+        )
+      ).slice(0, 10);
 
       const payload = {
         ...form,
@@ -1342,6 +1352,47 @@ export default function AdminProductsPage() {
               className="w-full px-3 py-2 border rounded-lg text-sm"
             />
           </div>
+
+          {/* Search Engine Optimization (SEO) */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Search Engine Optimization (SEO)</h3>
+              <p className="text-xs text-gray-500">
+                Optional overrides for search engines and social previews. Leave blank to automatically fall back to the product name and description.
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">SEO Title</label>
+                <span className={`text-xs font-mono ${(form.seo_title?.length || 0) > 60 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                  {form.seo_title?.length || 0} / 60
+                </span>
+              </div>
+              <input
+                type="text"
+                value={form.seo_title}
+                onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
+                placeholder={form.name || 'Automatic fallback: Product Name'}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">SEO Description</label>
+                <span className={`text-xs font-mono ${(form.seo_description?.length || 0) > 155 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                  {form.seo_description?.length || 0} / 155
+                </span>
+              </div>
+              <textarea
+                rows={2}
+                value={form.seo_description}
+                onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
+                placeholder={form.description || 'Automatic fallback: truncated product description (155 chars)'}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+              />
+            </div>
+          </div>
+
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input

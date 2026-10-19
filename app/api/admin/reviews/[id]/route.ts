@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateReviews } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,7 +76,19 @@ export async function PUT(
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     }
 
-    return NextResponse.json(result[0]);
+    const updated = result[0];
+    if (updated?.product_id) {
+      try {
+        const p = await sql`SELECT slug FROM products WHERE id = ${updated.product_id} LIMIT 1`;
+        revalidateReviews(p[0]?.slug);
+      } catch {
+        revalidateReviews();
+      }
+    } else {
+      revalidateReviews();
+    }
+
+    return NextResponse.json(updated);
   } catch (error: unknown) {
     console.error('admin update review error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -94,14 +107,26 @@ export async function DELETE(
     const result = await sql`
       DELETE FROM product_reviews
       WHERE id = ${id}
-      RETURNING id, reviewer_name
+      RETURNING id, reviewer_name, product_id
     `;
 
     if (result.length === 0) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Review deleted', review: result[0] });
+    const deleted = result[0];
+    if (deleted?.product_id) {
+      try {
+        const p = await sql`SELECT slug FROM products WHERE id = ${deleted.product_id} LIMIT 1`;
+        revalidateReviews(p[0]?.slug);
+      } catch {
+        revalidateReviews();
+      }
+    } else {
+      revalidateReviews();
+    }
+
+    return NextResponse.json({ message: 'Review deleted', review: deleted });
   } catch (error: unknown) {
     console.error('admin delete review error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
+import { cldUrl } from '@/lib/cloudinary';
 import type { HealthGoal } from '@/lib/healthGoals';
 import type { Product, WhyChoosePin, Review } from '@/app/products/page';
 import { LeafFavicon, Target, Sprout, Zap } from '@/components/icons';
@@ -416,10 +417,11 @@ export default function HealthGoalClient({
                 const pricePaise = activeVar ? activeVar.price_paise : 9900;
                 const isAdded = !!addedIds[product.id];
 
-                const cardImage =
+                const rawCardImage =
                   product.thumbnail_url ||
                   product.images?.[0]?.image_url ||
                   meta.photo;
+                const cardImage = cldUrl(rawCardImage, 500);
 
                 return (
                   <div
@@ -450,6 +452,10 @@ export default function HealthGoalClient({
                           <img
                             src={cardImage}
                             alt={product.thumbnail_alt_text || product.name}
+                            width={400}
+                            height={520}
+                            loading="lazy"
+                            decoding="async"
                             className="absolute inset-0 w-full h-full object-cover opacity-95 transition-transform duration-500 group-hover:scale-105"
                           />
                         ) : (
@@ -475,6 +481,10 @@ export default function HealthGoalClient({
                               <img
                                 src={cardImage}
                                 alt={product.thumbnail_alt_text || product.name}
+                                width={200}
+                                height={140}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -669,8 +679,12 @@ export default function HealthGoalClient({
                     <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/70 p-2 mb-4 border border-black/5">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={item.image_url}
+                        src={cldUrl(item.image_url, 120)}
                         alt={item.title}
+                        width={56}
+                        height={56}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-contain"
                       />
                     </div>

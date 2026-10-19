@@ -2,22 +2,20 @@ import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import { getOrderedActiveCategories } from '@/lib/categoryServer';
 import ProductListClient from './ProductListClient';
+import JsonLd from '@/components/JsonLd';
+import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Shop Microgreens · Wild About Greens',
-  description: 'Browse our range of fresh microgreen trays, including broccoli, sunflower, radish and bundles. Cut to order, delivered fresh to your doorstep on harvest morning.',
-  openGraph: {
-    title: 'Shop Microgreens · Wild About Greens',
-    description: 'Browse our range of fresh microgreen trays, including broccoli, sunflower, radish and bundles. Cut to order, delivered on harvest morning.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Shop Microgreens · Wild About Greens',
-    description: 'Browse our range of fresh microgreen trays. Cut to order, delivered on harvest morning.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Shop Fresh Microgreens & Bundles',
+    description:
+      'Explore living microgreens grown indoors with mineral RO water and zero pesticides. Shop broccoli, sunflower, radish and value bundles delivered fresh.',
+    path: '/products',
+    imageAlt: 'Shop Fresh Microgreens & Value Bundles · Wild About Greens',
+  });
+}
 
 export interface Variant {
   id: string;
@@ -253,15 +251,23 @@ export default async function ProductsPage() {
     getSamplerVariant(),
   ]);
 
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Products', path: '/products' },
+  ]);
+
   return (
-    <ProductListClient
-      initialProducts={products}
-      initialCategories={categories}
-      content={content}
-      initialWhyChoosePins={whyChoosePins}
-      reviews={reviews}
-      samplerVariant={samplerVariant}
-    />
+    <>
+      <JsonLd data={breadcrumbJsonLd} />
+      <ProductListClient
+        initialProducts={products}
+        initialCategories={categories}
+        content={content}
+        initialWhyChoosePins={whyChoosePins}
+        reviews={reviews}
+        samplerVariant={samplerVariant}
+      />
+    </>
   );
 }
 

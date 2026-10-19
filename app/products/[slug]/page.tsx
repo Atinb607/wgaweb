@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { getSQL } from '@/lib/db';
 import ProductDetailClient from './ProductDetailClient';
+import JsonLd from '@/components/JsonLd';
+import { absoluteUrl, buildBreadcrumbJsonLd, buildPageMetadata, truncate } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export interface Variant {
   id: string;
@@ -82,6 +85,10 @@ export interface Product {
   faqs?: ProductFAQ[] | null;
   detail_accordions?: DetailAccordion[] | null;
   pairs_well_with?: string[] | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface RelatedProduct {
@@ -110,15 +117,28 @@ export interface HatTrickVariantData {
   thumbnailUrl: string | null;
 }
 
-async function getProduct(slug: string): Promise<Product | null> {
+export async function generateStaticParams() {
+  try {
+    const sql = getSQL();
+    const rows = await sql`
+      SELECT slug
+      FROM products
+      WHERE is_active = true
+    `;
+    return (rows as unknown as { slug: string }[]).map((r) => ({ slug: r.slug }));
+  } catch {
+    return [];
+  }
+}
+
+const getProduct = cache(async (slug: string): Promise<Product | null> => {
   try {
     const sql = getSQL();
     const products = await sql`
-      SELECT id, slug, name, categories, description, description_lead, description_highlight, nutrition_notes,
-             thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2,
-             is_bundle, is_active, detail_highlight_badges, faqs, detail_accordions, pairs_well_with
+      SELECT *
       FROM products
       WHERE slug = ${slug} AND is_active = true
+      LIMIT 1
     `;
     if (products.length === 0) return null;
     const product = products[0];
@@ -146,7 +166,7 @@ async function getProduct(slug: string): Promise<Product | null> {
     console.error('Error fetching product:', err);
     return null;
   }
-}
+});
 
 function shuffleArray<T extends { id: string }>(array: T[]): T[] {
   if (array.length <= 1) return [...array];
@@ -310,25 +330,33 @@ async function getHatTrickVariant(): Promise<HatTrickVariantData | null> {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const product = await getProduct(params.slug);
   if (!product) {
-    return { title: 'Product Not Found · Wild About Greens' };
+    return {
+      title: 'Product Not Found',
+      robots: { index: false, follow: false },
+    };
   }
-  const title = `${product.name} · Wild About Greens`;
-  const description = product.description || `Shop ${product.name}: fresh microgreens cut to order and delivered to your doorstep.`;
-  return {
+  const title = product.seo_title?.trim() || `${product.name} · Fresh Microgreens`;
+  const combinedText = [product.description_lead, product.description, product.nutrition_notes]
+    .filter(Boolean)
+    .join(' ');
+  const rawDescription =
+    product.seo_description?.trim() ||
+    combinedText ||
+    `Shop ${product.name} from Wild About Greens: 100% pesticide-free living microgreens cut to order and delivered fresh in Chandigarh, Mohali and Panchkula.`;
+  const description = truncate(rawDescription, 158);
+  const coverImage = product.thumbnail_url || product.images?.[0]?.image_url || null;
+  const coverAlt =
+    product.thumbnail_alt_text?.trim() ||
+    product.images?.[0]?.alt_text?.trim() ||
+    `${product.name} · Fresh Microgreens Tray`;
+
+  return buildPageMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      ...(product.thumbnail_url ? { images: [{ url: product.thumbnail_url }] } : {}),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      ...(product.thumbnail_url ? { images: [product.thumbnail_url] } : {}),
-    },
-  };
+    path: `/products/${product.slug}`,
+    image: coverImage,
+    imageAlt: coverAlt,
+  });
 }
 
 export default async function ProductDetailPage({ params }: { params: { slug: string } }) {
@@ -346,18 +374,97 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   const pairedProducts = getPairedProducts(allOtherProducts, product.pairs_well_with);
   const otherProducts = shuffleArray(allOtherProducts);
 
+  const canonicalUrl = absoluteUrl(`/products/${product.slug}`);
+  const activeVariants = (product.variants || []).filter((v) => v.is_active);
+  const effectiveVariants = activeVariants.length > 0 ? activeVariants : product.variants || [];
+  const hasStock = effectiveVariants.some((v) => (v.stock_qty ?? 0) > 0);
+  const availability = hasStock
+    ? 'https://schema.org/InStock'
+    : 'https://schema.org/OutOfStock';
+
+  const prices = effectiveVariants
+    .map((v) => v.price_paise)
+    .filter((p): p is number => typeof p === 'number' && p >= 0);
+
+  let offersSchema: Record<string, unknown> | undefined;
+  if (prices.length > 0) {
+    const minPaise = Math.min(...prices);
+    const maxPaise = Math.max(...prices);
+    if (prices.length > 1 && minPaise !== maxPaise) {
+      offersSchema = {
+        '@type': 'AggregateOffer',
+        priceCurrency: 'INR',
+        lowPrice: (minPaise / 100).toFixed(2),
+        highPrice: (maxPaise / 100).toFixed(2),
+        offerCount: effectiveVariants.length,
+        availability,
+        url: canonicalUrl,
+      };
+    } else {
+      offersSchema = {
+        '@type': 'Offer',
+        priceCurrency: 'INR',
+        price: (minPaise / 100).toFixed(2),
+        availability,
+        url: canonicalUrl,
+      };
+    }
+  }
+
+  const imageUrls = Array.from(
+    new Set(
+      [
+        product.thumbnail_url,
+        ...(product.images || []).map((img) => img.image_url),
+      ]
+        .map((u) => (u ? u.trim() : ''))
+        .filter(Boolean)
+        .map((u) => absoluteUrl(u))
+    )
+  );
+
+  const descParts = [product.description_lead, product.description, product.nutrition_notes]
+    .map((s) => (s ? s.trim() : ''))
+    .filter(Boolean)
+    .join(' ');
+
+  const productJsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    ...(descParts ? { description: descParts } : {}),
+    ...(imageUrls.length > 0 ? { image: imageUrls } : {}),
+    sku: product.slug,
+    brand: {
+      '@type': 'Brand',
+      name: 'Wild About Greens',
+    },
+    url: canonicalUrl,
+    ...(offersSchema ? { offers: offersSchema } : {}),
+  };
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Products', path: '/products' },
+    { name: product.name, path: `/products/${product.slug}` },
+  ]);
+
   return (
-    <ProductDetailClient
-      key={product.id}
-      product={product}
-      pairedProducts={pairedProducts}
-      otherProducts={otherProducts}
-      relatedProducts={pairedProducts}
-      content={content}
-      reviews={reviews}
-      initialWhyChoosePins={whyChoosePins}
-      hatTrickVariant={hatTrickVariant}
-    />
+    <>
+      <JsonLd data={productJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <ProductDetailClient
+        key={product.id}
+        product={product}
+        pairedProducts={pairedProducts}
+        otherProducts={otherProducts}
+        relatedProducts={pairedProducts}
+        content={content}
+        reviews={reviews}
+        initialWhyChoosePins={whyChoosePins}
+        hatTrickVariant={hatTrickVariant}
+      />
+    </>
   );
 }
 

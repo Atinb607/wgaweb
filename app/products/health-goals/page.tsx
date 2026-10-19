@@ -4,22 +4,20 @@ import { getSQL } from '@/lib/db';
 import HealthGoalsListClient from './HealthGoalsListClient';
 import type { Product, Variant, ProductImage, WhyChoosePin, Review, SamplerVariantData } from '@/app/products/page';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
+import JsonLd from '@/components/JsonLd';
+import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Shop Microgreens by Health Goal · Fresh Living Microgreens | Wild About Greens',
-  description: 'Targeted cellular nutrition. Discover living microgreens chosen for immunity, weight management, blood sugar balance, kids nutrition, recovery, and healthy aging.',
-  openGraph: {
-    title: 'Shop Microgreens by Health Goal · Fresh Living Microgreens | Wild About Greens',
-    description: 'Targeted cellular nutrition. Discover living microgreens chosen for immunity, weight management, blood sugar balance, kids nutrition, recovery, and healthy aging.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Shop Microgreens by Health Goal · Fresh Living Microgreens | Wild About Greens',
-    description: 'Targeted cellular nutrition. Discover living microgreens chosen for immunity, weight management, blood sugar balance, kids nutrition, recovery, and healthy aging.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Shop Microgreens by Health Goal',
+    description:
+      'Discover nutrient-dense microgreens tailored to your health goals, from immunity and gut wellness to fitness recovery and heart health, cut fresh to order.',
+    path: '/products/health-goals',
+    imageAlt: 'Shop Microgreens by Health Goal · Wild About Greens',
+  });
+}
 
 interface ProductRow {
   id: string;
@@ -208,8 +206,15 @@ export default async function HealthGoalsShopPage() {
       getSamplerVariant(),
     ]);
 
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Products', path: '/products' },
+    { name: 'Shop by Health Goal', path: '/products/health-goals' },
+  ]);
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <JsonLd data={breadcrumbJsonLd} />
       <HealthGoalsListClient
         initialProducts={products}
         initialGoals={healthGoals}

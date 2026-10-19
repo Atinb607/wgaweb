@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateProducts } from '@/lib/revalidate';
 
 export async function POST(
   request: NextRequest,
@@ -33,6 +34,7 @@ export async function POST(
       RETURNING *
     `;
 
+    revalidateProducts();
     return NextResponse.json(result[0], { status: 201 });
   } catch (error: unknown) {
     console.error('admin create variant error:', error);

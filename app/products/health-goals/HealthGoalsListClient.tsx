@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, cloudinaryImage } from '@/lib/format';
 import { LeafFavicon, Sprout, Zap, Target } from '@/components/icons';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
@@ -486,15 +486,22 @@ export default function HealthGoalsListClient({
         </div>
 
         {/* Right Column: High-Res Greens Photo */}
-        <div
-          className="relative min-h-[320px] md:min-h-full bg-cover bg-center"
-          style={{
-            backgroundImage: `url('${
+        <div className="relative min-h-[320px] md:min-h-full overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cloudinaryImage(
               content.health_goals_hero_image_url ||
-              'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop'
-            }')`,
-          }}
-        >
+                'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop',
+              1200
+            )}
+            alt={content.health_goals_hero_image_url_alt?.trim() || 'Shop microgreens by health goal'}
+            width={1200}
+            height={900}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
           <div className="absolute inset-0 bg-black/10 md:bg-transparent" />
         </div>
       </section>
@@ -640,10 +647,14 @@ export default function HealthGoalsListClient({
                         const pricePaise = activeVar ? activeVar.price_paise : 9900;
                         const isAdded = !!addedIds[product.id];
 
-                        const cardImage =
+                        const rawCardImage =
                           product.thumbnail_url ||
                           product.images?.[0]?.image_url ||
                           meta.photo;
+                        const cardImage = cloudinaryImage(rawCardImage, 600);
+                        const cardAlt =
+                          product.thumbnail_alt_text?.trim() ||
+                          `${product.name} fresh microgreens`;
 
                         return (
                           <div
@@ -673,7 +684,11 @@ export default function HealthGoalsListClient({
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
                                     src={cardImage}
-                                    alt={product.thumbnail_alt_text || product.name}
+                                    alt={cardAlt}
+                                    width={500}
+                                    height={670}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="absolute inset-0 w-full h-full object-cover opacity-95 transition-transform duration-500 group-hover:scale-105"
                                   />
                                 ) : (
@@ -696,7 +711,11 @@ export default function HealthGoalsListClient({
                                       // eslint-disable-next-line @next/next/no-img-element
                                       <img
                                         src={cardImage}
-                                        alt={product.thumbnail_alt_text || product.name}
+                                        alt=""
+                                        width={240}
+                                        height={150}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full object-cover"
                                       />
                                     ) : (
@@ -712,8 +731,12 @@ export default function HealthGoalsListClient({
                                     <div className="w-[62%] aspect-square max-w-[68px] relative mb-2 shrink-0">
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
-                                        src="/circle logo.jpeg"
-                                        alt="Wild About Greens"
+                                        src="/circle-logo.jpeg"
+                                        alt=""
+                                        width={68}
+                                        height={68}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full object-contain rounded-full"
                                       />
                                     </div>
@@ -961,8 +984,12 @@ export default function HealthGoalsListClient({
                   <div className={`w-full mt-auto ${isCocoPeat ? 'overflow-visible relative' : 'overflow-hidden'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={imageUrl}
+                      src={cloudinaryImage(imageUrl, 500)}
                       alt={title.replace('\n', ' ')}
+                      width={400}
+                      height={300}
+                      loading="lazy"
+                      decoding="async"
                       style={
                         isCocoPeat
                           ? { transform: 'translate(1.5%, -11.5%) scale(1.5)', transformOrigin: 'center' }

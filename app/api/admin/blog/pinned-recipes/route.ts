@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateContentBlocks } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,7 @@ export async function PUT(request: NextRequest) {
       `;
     }
 
+    revalidateContentBlocks('homepage');
     return NextResponse.json({
       success: true,
       pinned1: p1,

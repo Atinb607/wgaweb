@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidatePartnerLogos } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
+    revalidatePartnerLogos();
     return NextResponse.json(result[0], { status: 201 });
   } catch (error: unknown) {
     console.error('admin create partner logo error:', error);

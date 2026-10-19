@@ -206,7 +206,7 @@ export default function CheckoutPage() {
 
   // WhatsApp pre-filled delivery request link
   const whatsappDeliveryUrl = useMemo(() => {
-    const phone = '918427974445';
+    const phone = '918427254445';
     const customerName = form.name.trim() || 'Valued Customer';
     const customerPhone = form.phone.trim() || 'Not specified';
     const customerAddress = form.address.trim() || 'Address not specified';

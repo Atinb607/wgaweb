@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice } from '@/lib/format';
+import { cldUrl } from '@/lib/cloudinary';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
 import type { Product } from '@/app/products/page';
 import { LeafFavicon, Sprout, Zap } from '@/components/icons';
@@ -275,10 +276,11 @@ export default function HealthGoalModal({
                       product.variants.find((v) => v.is_active) || product.variants[0];
                     const pricePaise = activeVar ? activeVar.price_paise : 9900;
                     const isAdded = !!addedIds[product.id];
-                    const cardImage =
+                    const rawCardImage =
                       product.thumbnail_url ||
                       product.images?.[0]?.image_url ||
                       meta.photo;
+                    const cardImage = cldUrl(rawCardImage, 400);
 
                     return (
                       <div
@@ -298,7 +300,7 @@ export default function HealthGoalModal({
                                 backgroundColor: meta.badge.bg,
                                 color: meta.badge.color,
                               }}
-                              className="absolute top-2.5 left-2.5 z-20 font-mono text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1.5"
+                              className="absolute top-2.5 left-2.5 z-20 font-mono text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1"
                             >
                               <LeafFavicon className="w-3 h-3" />
                               <span>{product.badge_label || meta.badge.text}</span>
@@ -309,7 +311,11 @@ export default function HealthGoalModal({
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={cardImage}
-                                alt={product.thumbnail_alt_text || product.name}
+                                alt={product.thumbnail_alt_text?.trim() || `${product.name} fresh microgreens`}
+                                loading="lazy"
+                                decoding="async"
+                                width={400}
+                                height={480}
                                 className="absolute inset-0 w-full h-full object-cover opacity-95 transition-transform duration-500 group-hover:scale-105"
                               />
                             ) : (
@@ -333,7 +339,11 @@ export default function HealthGoalModal({
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
                                     src={cardImage}
-                                    alt={product.thumbnail_alt_text || product.name}
+                                    alt=""
+                                    width={200}
+                                    height={140}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (

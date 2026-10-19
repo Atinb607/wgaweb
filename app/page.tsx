@@ -3,22 +3,31 @@ import HomePageClient, { type ContentPin } from './HomePageClient';
 import type { Metadata } from 'next';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
 import type { Product, Variant, ProductImage } from '@/app/products/page';
+import JsonLd from '@/components/JsonLd';
+import {
+  buildOrganizationJsonLd,
+  buildPageMetadata,
+  DEFAULT_META_DESCRIPTION,
+  DEFAULT_OG_IMAGE_PATH,
+  DEFAULT_SITE_NAME,
+  getSiteSettings,
+} from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Wild About Greens · Fresh Microgreens Delivered to Your Doorstep',
-  description: 'Farm-fresh microgreens harvested on the morning of delivery. Non GMO seeds, mineral water, zero pesticides. Delivered fresh to your doorstep.',
-  openGraph: {
-    title: 'Wild About Greens · Fresh Microgreens Delivered to Your Doorstep',
-    description: 'Farm-fresh microgreens harvested on the morning of delivery. Delivered fresh to your doorstep.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Wild About Greens · Fresh Microgreens Delivered to Your Doorstep',
-    description: 'Farm-fresh microgreens harvested on the morning of delivery. Delivered fresh to your doorstep.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const siteName = settings.site_name || DEFAULT_SITE_NAME;
+  const description = settings.default_meta_description || DEFAULT_META_DESCRIPTION;
+  return buildPageMetadata({
+    title: `${siteName} · Fresh Microgreens Delivered in Tricity`,
+    description,
+    path: '/',
+    image: settings.default_og_image || DEFAULT_OG_IMAGE_PATH,
+    imageAlt: settings.default_og_image_alt || `${siteName} · Fresh Microgreens Delivered in Tricity`,
+    absoluteTitle: true,
+  });
+}
 
 interface ContentBlock {
   key: string;
@@ -230,26 +239,41 @@ async function getPartnerLogos(content: Record<string, string>): Promise<Partner
 }
 
 export default async function HomePage() {
-  const content = await getContentMap();
-  const [dbPins, recipeCount, featuredRecipes, healthGoalsContent, allProducts, partnerLogos] =
-    await Promise.all([
-      getPins(),
-      getRecipeCount(),
-      getFeaturedRecipes(content),
-      getHealthGoalsContent(),
-      getActiveProducts(),
-      getPartnerLogos(content),
-    ]);
+  const [
+    content,
+    dbPins,
+    recipeCount,
+    healthGoalsContent,
+    allProducts,
+    siteSettings,
+  ] = await Promise.all([
+    getContentMap(),
+    getPins(),
+    getRecipeCount(),
+    getHealthGoalsContent(),
+    getActiveProducts(),
+    getSiteSettings(),
+  ]);
+
+  const [featuredRecipes, partnerLogos] = await Promise.all([
+    getFeaturedRecipes(content),
+    getPartnerLogos(content),
+  ]);
+
+  const orgJsonLd = buildOrganizationJsonLd(siteSettings);
 
   return (
-    <HomePageClient
-      content={content}
-      dbPins={dbPins}
-      recipeCount={recipeCount}
-      featuredRecipes={featuredRecipes}
-      initialHealthGoals={healthGoalsContent}
-      allProducts={allProducts}
-      partnerLogos={partnerLogos}
-    />
+    <>
+      <JsonLd data={orgJsonLd} />
+      <HomePageClient
+        content={content}
+        dbPins={dbPins}
+        recipeCount={recipeCount}
+        featuredRecipes={featuredRecipes}
+        initialHealthGoals={healthGoalsContent}
+        allProducts={allProducts}
+        partnerLogos={partnerLogos}
+      />
+    </>
   );
 }

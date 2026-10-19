@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateProducts } from '@/lib/revalidate';
 
 export async function PUT(
   request: NextRequest,
@@ -28,6 +29,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Variant not found' }, { status: 404 });
     }
 
+    revalidateProducts();
     return NextResponse.json(result[0]);
   } catch (error: unknown) {
     console.error('admin update variant error:', error);
@@ -55,6 +57,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Variant not found' }, { status: 404 });
     }
 
+    revalidateProducts();
     return NextResponse.json({ message: 'Variant deactivated', variant: result[0] });
   } catch (error: unknown) {
     console.error('admin delete variant error:', error);

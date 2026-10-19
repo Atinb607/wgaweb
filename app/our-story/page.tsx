@@ -1,23 +1,19 @@
 import type { Metadata } from 'next';
 import { getSQL } from '@/lib/db';
 import OurStoryClient from './OurStoryClient';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Our Story · Wild About Greens',
-  description:
-    'Helping India rediscover the power of fresh food. We grow microgreens locally on vertical indoor racks.',
-  openGraph: {
-    title: 'Our Story · Wild About Greens',
-    description: 'Helping India rediscover the power of fresh food. We grow fresh microgreens on vertical indoor racks.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Our Story · Wild About Greens',
-    description: 'Helping India rediscover the power of fresh food.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Our Story & Mission',
+    description:
+      'Learn how Wild About Greens grows 100% pesticide-free microgreens indoors using mineral RO water and non-GMO seeds to bring peak nutrition to Indian homes.',
+    path: '/our-story',
+    imageAlt: 'Our Story & Mission · Wild About Greens',
+  });
+}
 
 async function getContentMap(): Promise<Record<string, string>> {
   try {

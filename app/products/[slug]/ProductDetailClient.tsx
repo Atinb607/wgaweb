@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, cloudinaryImage } from '@/lib/format';
 import { LeafFavicon, Sprout, Shield, Sparkles, CheckCircle, Clock, Utensils, Zap, Droplet, Scissors } from '@/components/icons';
 import { Product, Variant, RelatedProduct, Review, HighlightBadge, WhyChoosePin, ProductFAQ, DetailAccordion, HatTrickVariantData } from './page';
 
@@ -332,6 +332,7 @@ export interface OtherGreenItem {
   categories: string[];
   description: string;
   thumbnail_url?: string | null;
+  thumbnail_alt_text?: string | null;
   variant_id?: string;
 }
 
@@ -388,11 +389,11 @@ export default function ProductDetailClient({
           .sort((a, b) => a.display_order - b.display_order)
           .map((img, i) => ({
             url: img.image_url,
-            alt: img.alt_text || `${product.name} - image ${i + 1}`,
+            alt: img.alt_text?.trim() || `${product.name} fresh microgreens - image ${i + 1}`,
           }))
       : product.thumbnail_url
-        ? [{ url: product.thumbnail_url, alt: product.thumbnail_alt_text || product.name }]
-        : [{ url: '/placeholder.png', alt: product.name }];
+        ? [{ url: product.thumbnail_url, alt: product.thumbnail_alt_text?.trim() || `${product.name} fresh microgreens` }]
+        : [{ url: '/placeholder.png', alt: `${product.name} fresh microgreens` }];
 
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [plan, setPlan] = useState<'single' | 'subscription'>('single');
@@ -493,6 +494,7 @@ export default function ProductDetailClient({
           bgColor,
           photo: photoUrl,
           thumbnail_url: rel.thumbnail_url,
+          thumbnail_alt_text: rel.thumbnail_alt_text,
           isBundle: Boolean(rel.is_bundle),
           categories: rel.categories || [],
           description: rel.description || '',
@@ -725,8 +727,13 @@ export default function ProductDetailClient({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   key={activeImgIdx}
-                  src={PRODUCT_IMAGES[activeImgIdx]?.url}
-                  alt={PRODUCT_IMAGES[activeImgIdx]?.alt || product.name}
+                  src={cloudinaryImage(PRODUCT_IMAGES[activeImgIdx]?.url, 900)}
+                  alt={PRODUCT_IMAGES[activeImgIdx]?.alt || `${product.name} fresh microgreens`}
+                  width={800}
+                  height={864}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   className="w-full h-full object-cover rounded-xl transition-all duration-300"
                 />
               </div>
@@ -745,8 +752,12 @@ export default function ProductDetailClient({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={img.url}
+                      src={cloudinaryImage(img.url, 200)}
                       alt={img.alt || `${product.name} thumbnail ${i + 1}`}
+                      width={64}
+                      height={64}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -812,6 +823,27 @@ export default function ProductDetailClient({
                     <span>{badge.label}</span>
                   </motion.span>
                 ))}
+                {Array.isArray(product.tags) &&
+                  product.tags
+                    .map((t) => String(t ?? '').trim())
+                    .filter(Boolean)
+                    .map((tag, idx) => (
+                      <motion.span
+                        key={`tag-${idx}-${tag}`}
+                        variants={{
+                          hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
+                          visible: {
+                            opacity: 1,
+                            y: 0,
+                            transition: { duration: shouldReduceMotion ? 0 : 0.2, ease: 'easeOut' },
+                          },
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFFDF8] border border-[#E4DDC8] text-xs font-semibold text-[#122A1F] shadow-sm"
+                      >
+                        <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />
+                        <span>{tag}</span>
+                      </motion.span>
+                    ))}
               </motion.div>
 
               {/* BUY BOX */}
@@ -1080,8 +1112,12 @@ export default function ProductDetailClient({
                             {photoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={photoUrl}
-                                alt={rel.thumbnail_alt_text || rel.name}
+                                src={cloudinaryImage(photoUrl, 240)}
+                                alt={rel.thumbnail_alt_text?.trim() || `${rel.name} fresh microgreens`}
+                                width={80}
+                                height={80}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                             ) : (
@@ -1140,8 +1176,12 @@ export default function ProductDetailClient({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={content.bundle_banner_image || '/trio-bundle-banner.png'}
+              src={cloudinaryImage(content.bundle_banner_image || '/trio-bundle-banner.png', 900)}
               alt={content.bundle_banner_image_alt || content.bundle_banner_title || 'Classic Trio - Go For All Three'}
+              width={800}
+              height={450}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           </Link>
@@ -1309,11 +1349,16 @@ export default function ProductDetailClient({
           <div className="relative bg-[#E4DDC8] min-h-[260px] lg:h-full overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={
+              src={cloudinaryImage(
                 content.stats_banner_image ||
-                'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=jpg&q=85&w=1200&auto=format&fit=crop'
-              }
-              alt="Fresh Microgreens Harvest"
+                  'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=jpg&q=85&w=1200&auto=format&fit=crop',
+                900
+              )}
+              alt={content.stats_banner_image_alt?.trim() || 'Fresh Microgreens Harvest'}
+              width={800}
+              height={500}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover lg:absolute lg:inset-0"
             />
           </div>
@@ -1497,8 +1542,12 @@ export default function ProductDetailClient({
                             {item.photo || item.thumbnail_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={item.photo || item.thumbnail_url || ''}
-                                alt={item.name}
+                                src={cloudinaryImage(item.photo || item.thumbnail_url || '', 500)}
+                                alt={item.thumbnail_alt_text?.trim() || `${item.name} fresh microgreens`}
+                                width={400}
+                                height={400}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                               />
                             ) : (
@@ -1625,8 +1674,12 @@ export default function ProductDetailClient({
                   <div className={`w-full mt-auto ${isCocoPeat ? 'overflow-visible relative' : 'overflow-hidden'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={imageUrl}
+                      src={cloudinaryImage(imageUrl, 500)}
                       alt={title.replace('\n', ' ')}
+                      width={400}
+                      height={300}
+                      loading="lazy"
+                      decoding="async"
                       style={
                         isCocoPeat
                           ? { transform: 'translate(1.5%, -11.5%) scale(1.5)', transformOrigin: 'center' }
@@ -1751,8 +1804,12 @@ export default function ProductDetailClient({
           <div className="flex items-center gap-3 min-w-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={PRODUCT_IMAGES[0]?.url}
+              src={cloudinaryImage(PRODUCT_IMAGES[0]?.url, 120)}
               alt={PRODUCT_IMAGES[0]?.alt || product.name}
+              width={44}
+              height={44}
+              loading="lazy"
+              decoding="async"
               className="w-11 h-11 rounded-lg object-cover border border-black/10 flex-shrink-0"
             />
             <div className="min-w-0">

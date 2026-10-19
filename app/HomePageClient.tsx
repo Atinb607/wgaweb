@@ -8,8 +8,23 @@ import WhyMicrogreensChart from '@/components/WhyMicrogreensChart';
 import { Instagram, ShoppingBag, PackageBox, Sprout, Flask, Target, Utensils } from '@/components/icons';
 import { HEALTH_GOALS } from '@/lib/healthGoals';
 import { getOptimizedLogoUrl } from '@/lib/format';
+import { cldUrl } from '@/lib/cloudinary';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
 import type { Product } from '@/app/products/page';
+
+function cldVideoUrl(url: string | null | undefined, width = 1280): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed.includes('res.cloudinary.com') || !trimmed.includes('/video/upload/')) {
+    return trimmed;
+  }
+  const idx = trimmed.indexOf('/video/upload/');
+  const after = trimmed.slice(idx + '/video/upload/'.length);
+  if (/^(?:[a-z]{1,2}_|q_|f_|w_|c_)/.test(after)) {
+    return trimmed;
+  }
+  return trimmed.slice(0, idx + '/video/upload/'.length) + `q_auto,f_auto,w_${width}/` + after;
+}
 
 export interface ContentPin {
   id: string;
@@ -133,14 +148,52 @@ export default function HomePageClient({
   // Background/poster image: use hero_image_url if not a video, otherwise default fallback photo
   const heroImage =
     rawImage.length > 0 && !isVideoMedia(rawImage)
-      ? rawImage
+      ? cldUrl(rawImage, 2400)
       : 'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=jpg&q=85&w=2400&auto=format&fit=crop';
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [shouldPlayVideo, setShouldPlayVideo] = useState(false);
+
+  useEffect(() => {
+    if (shouldReduceMotion || !heroVideo) return;
+
+    let cancelled = false;
+    const startPlayback = () => {
+      if (cancelled) return;
+      setShouldPlayVideo(true);
+    };
+
+    if (typeof window !== 'undefined') {
+      if (document.readyState === 'complete') {
+        if ('requestIdleCallback' in window) {
+          (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(startPlayback, { timeout: 2500 });
+        } else {
+          setTimeout(startPlayback, 1000);
+        }
+      } else {
+        const onLoad = () => {
+          if ('requestIdleCallback' in window) {
+            (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(startPlayback, { timeout: 2500 });
+          } else {
+            setTimeout(startPlayback, 1000);
+          }
+        };
+        window.addEventListener('load', onLoad, { once: true });
+        return () => {
+          cancelled = true;
+          window.removeEventListener('load', onLoad);
+        };
+      }
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [heroVideo, shouldReduceMotion]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !heroVideo) return;
+    if (!video || !shouldPlayVideo) return;
 
     // React does not set DOM property video.muted = true, which triggers browser autoplay blockage.
     video.muted = true;
@@ -161,7 +214,7 @@ export default function HomePageClient({
         window.addEventListener('scroll', startPlay, { once: true });
       });
     }
-  }, [heroVideo]);
+  }, [shouldPlayVideo]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
@@ -311,7 +364,20 @@ export default function HomePageClient({
       {/* ================= HERO ================= */}
       <section className="relative min-h-screen flex items-center justify-center text-center overflow-hidden text-[#FFFDF8] pt-28 pb-16">
         {/* Background photo or video (video takes top priority if uploaded) */}
-        {heroVideo ? (
+        {/* Background poster image: Always rendered eagerly as the page LCP element */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={heroImage}
+          alt={content.hero_image_url_alt?.trim() || 'Wild About Greens · Fresh Living Microgreens'}
+          width={1920}
+          height={1080}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 z-0 w-full h-full object-cover object-center pointer-events-none"
+        />
+        {/* Background video: starts after page load/idle, preload none, respects reduced motion */}
+        {heroVideo && !shouldReduceMotion && shouldPlayVideo && (
           <video
             ref={videoRef}
             key={heroVideo}
@@ -319,21 +385,14 @@ export default function HomePageClient({
             muted
             loop
             playsInline
-            preload="auto"
+            preload="none"
             className="absolute inset-0 z-0 w-full h-full object-cover pointer-events-none"
             poster={heroImage}
           >
-            <source src={heroVideo} type="video/mp4" />
-            <source src={heroVideo} type="video/webm" />
+            <source src={cldVideoUrl(heroVideo, 1280)} type="video/mp4" />
+            <source src={cldVideoUrl(heroVideo, 1280)} type="video/webm" />
             <source src={heroVideo} />
           </video>
-        ) : (
-          <div
-            className="absolute inset-0 z-0 bg-cover bg-center animate-kenburns"
-            style={{
-              backgroundImage: `url('${heroImage}')`,
-            }}
-          />
         )}
         {/* Scrim overlay */}
         <div
@@ -569,8 +628,12 @@ export default function HomePageClient({
                 <div className="rounded-2xl overflow-hidden shadow-md border border-[#E4DDC8]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={content.why_image}
-                    alt={content.why_image_alt || 'Why Microgreens'}
+                    src={cldUrl(content.why_image, 800)}
+                    alt={content.why_image_alt?.trim() || 'Why Microgreens'}
+                    width={800}
+                    height={512}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-56 sm:h-64 object-cover"
                   />
                 </div>
@@ -641,8 +704,12 @@ export default function HomePageClient({
                       {goal.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={goal.image_url}
-                          alt={goal.title}
+                          src={cldUrl(goal.image_url, 600)}
+                          alt={goal.title || 'Health goal'}
+                          width={500}
+                          height={500}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       ) : goal.icon && !/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(goal.icon) ? (
@@ -682,8 +749,11 @@ export default function HomePageClient({
               <img
                 src="/FSSAI.png"
                 alt="FSSAI Registration - Lic. No. 11512018001447"
+                width={160}
+                height={80}
                 className="h-14 sm:h-16 md:h-20 w-auto object-contain"
                 loading="lazy"
+                decoding="async"
               />
             </a>
           </div>
@@ -696,7 +766,7 @@ export default function HomePageClient({
         id="recipe"
         style={{
           backgroundImage: `url('${
-            content.recipes_bg_image ||
+            cldUrl(content.recipes_bg_image, 1600) ||
             'https://images.unsplash.com/photo-1613769049987-b31b641f25b1?fm=jpg&q=88&w=2400&auto=format&fit=crop'
           }')`,
         }}
@@ -941,6 +1011,10 @@ export default function HomePageClient({
                 src={optimizedUrl}
                 alt={logo.name}
                 title={logo.name}
+                width={200}
+                height={80}
+                loading="lazy"
+                decoding="async"
                 className={`w-full h-full ${sizeImgClass} object-contain mix-blend-multiply opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none select-none`}
                 draggable={false}
               />

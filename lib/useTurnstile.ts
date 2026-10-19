@@ -30,6 +30,37 @@ export interface TurnstileOptions {
   execution?: 'render' | 'execute';
 }
 
+let turnstileScriptPromise: Promise<void> | null = null;
+
+export function loadTurnstileScript(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.turnstile) return Promise.resolve();
+  if (turnstileScriptPromise) return turnstileScriptPromise;
+
+  turnstileScriptPromise = new Promise<void>((resolve) => {
+    const existing = document.getElementById('cf-turnstile-script') as HTMLScriptElement | null;
+    if (existing) {
+      if (window.turnstile) {
+        resolve();
+      } else {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => resolve(), { once: true });
+      }
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'cf-turnstile-script';
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => resolve();
+    document.head.appendChild(script);
+  });
+
+  return turnstileScriptPromise;
+}
+
 export function useTurnstile(options: TurnstileOptions = {}) {
   const { size = 'normal', theme = 'dark', execution = 'render' } = options;
   const [token, setToken] = useState<string | null>(null);
@@ -79,43 +110,75 @@ export function useTurnstile(options: TurnstileOptions = {}) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!siteKey) return;
 
     let active = true;
+    let observer: IntersectionObserver | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let safetyTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    // Ensure Turnstile script is loaded if not already injected
-    if (!window.turnstile && !document.getElementById('cf-turnstile-script')) {
-      const script = document.createElement('script');
-      script.id = 'cf-turnstile-script';
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-      script.async = true;
-      document.head.appendChild(script);
-    }
-
-    const checkAndInit = () => {
+    const startLoadingAndInit = () => {
       if (!active) return;
-      if (window.turnstile && containerRef.current && !widgetIdRef.current) {
-        initWidget();
-      }
+      loadTurnstileScript().then(() => {
+        if (!active) return;
+        const checkAndInit = () => {
+          if (!active) return;
+          if (window.turnstile && containerRef.current && !widgetIdRef.current) {
+            initWidget();
+          }
+        };
+
+        checkAndInit();
+
+        interval = setInterval(() => {
+          if (widgetIdRef.current) {
+            if (interval) clearInterval(interval);
+            return;
+          }
+          checkAndInit();
+        }, 150);
+
+        safetyTimeout = setTimeout(() => {
+          if (interval) clearInterval(interval);
+        }, 10000);
+      });
     };
 
-    checkAndInit();
+    const el = containerRef.current;
+    // If container is positioned offscreen (e.g. fixed left -9999px), observe parent element or form
+    const triggerTarget = el?.closest('form') || el?.parentElement || el;
 
-    const interval = setInterval(() => {
-      if (widgetIdRef.current) {
-        clearInterval(interval);
-        return;
+    if (triggerTarget) {
+      triggerTarget.addEventListener('focusin', startLoadingAndInit, { once: true, passive: true });
+      triggerTarget.addEventListener('pointerdown', startLoadingAndInit, { once: true, passive: true });
+
+      if (typeof IntersectionObserver !== 'undefined') {
+        observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              startLoadingAndInit();
+              if (observer && triggerTarget) {
+                observer.unobserve(triggerTarget);
+              }
+            }
+          },
+          { rootMargin: '300px' }
+        );
+        observer.observe(triggerTarget);
+      } else {
+        startLoadingAndInit();
       }
-      checkAndInit();
-    }, 150);
-
-    const safetyTimeout = setTimeout(() => {
-      clearInterval(interval);
-    }, 10000);
+    }
 
     return () => {
       active = false;
-      clearInterval(interval);
-      clearTimeout(safetyTimeout);
+      if (observer) observer.disconnect();
+      if (triggerTarget) {
+        triggerTarget.removeEventListener('focusin', startLoadingAndInit);
+        triggerTarget.removeEventListener('pointerdown', startLoadingAndInit);
+      }
+      if (interval) clearInterval(interval);
+      if (safetyTimeout) clearTimeout(safetyTimeout);
       if (widgetIdRef.current && typeof window !== 'undefined' && window.turnstile) {
         try {
           window.turnstile.remove(widgetIdRef.current);
@@ -125,7 +188,7 @@ export function useTurnstile(options: TurnstileOptions = {}) {
         widgetIdRef.current = null;
       }
     };
-  }, [initWidget]);
+  }, [initWidget, siteKey]);
 
   /**
    * Acquire a fresh token right before submitting the request to backend.
@@ -136,6 +199,8 @@ export function useTurnstile(options: TurnstileOptions = {}) {
     if (!siteKey) {
       return process.env.NODE_ENV !== 'production' ? 'dev-token' : null;
     }
+
+    await loadTurnstileScript();
 
     if (!widgetIdRef.current && containerRef.current && window.turnstile) {
       initWidget();

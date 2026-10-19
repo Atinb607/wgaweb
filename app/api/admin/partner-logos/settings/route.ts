@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidatePartnerLogos } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,7 @@ export async function PUT(request: NextRequest) {
       `;
     }
 
+    revalidatePartnerLogos();
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('admin update partner logos settings error:', error);

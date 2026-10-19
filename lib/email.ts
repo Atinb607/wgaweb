@@ -162,7 +162,7 @@ export async function sendOrderConfirmation(
     )
     .join('');
 
-  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
+  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
 
   const resend = getResend();
   if (!resend) {
@@ -317,6 +317,8 @@ export async function sendOrderConfirmation(
     await resend.emails.send({
       from: fromEmail,
       to: order.customer_email,
+      replyTo: 'info@wildaboutgreens.com',
+      ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
       subject,
       html: htmlContent,
     });
@@ -366,9 +368,9 @@ export interface BulkOrderForEmail {
 export async function sendInquiryNotification(
   inquiry: InquiryForEmail
 ): Promise<boolean> {
-  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
-  // Send to the business owner's email (FROM_EMAIL doubles as the admin inbox for MVP)
-  const toEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
+  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  // Send to the notification recipient (NOTIFY_EMAIL), falling back to FROM_EMAIL or default
+  const toEmail = process.env.NOTIFY_EMAIL || process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
 
   const resend = getResend();
   if (!resend) {
@@ -380,6 +382,8 @@ export async function sendInquiryNotification(
     await resend.emails.send({
       from: fromEmail,
       to: toEmail,
+      replyTo: 'info@wildaboutgreens.com',
+      ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
       subject: `New Bulk Inquiry: ${inquiry.business_name}`,
       html: `
         <h2>New Restaurant / Bulk Inquiry</h2>
@@ -410,8 +414,8 @@ export async function sendInquiryNotification(
 export async function sendBulkOrderNotification(
   req: BulkOrderForEmail
 ): Promise<boolean> {
-  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
-  const toEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
+  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  const toEmail = process.env.NOTIFY_EMAIL || process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
 
   const resend = getResend();
   if (!resend) {
@@ -423,6 +427,8 @@ export async function sendBulkOrderNotification(
     await resend.emails.send({
       from: fromEmail,
       to: toEmail,
+      replyTo: 'info@wildaboutgreens.com',
+      ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
       subject: `New Bulk Order Request: ${req.ticket_number} (${req.trays_count} Trays)`,
       html: `
         <h2>New Bulk Order Request: ${req.ticket_number}</h2>
@@ -468,7 +474,7 @@ export async function sendNewsletterWelcome(
     return false;
   }
 
-  const fromEmail = process.env.FROM_EMAIL || 'wildaboutgreens@gmail.com';
+  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
 
   try {
     const sql = getSQL();
@@ -550,6 +556,8 @@ export async function sendNewsletterWelcome(
     await resend.emails.send({
       from: fromEmail,
       to: email,
+      replyTo: 'info@wildaboutgreens.com',
+      ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
       subject,
       html: htmlContent,
     });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { revalidateHealthGoals } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,8 @@ export async function PUT(request: NextRequest) {
       FROM health_goals_content
       ORDER BY display_order ASC
     `;
+
+    revalidateHealthGoals();
 
     return NextResponse.json({
       success: true,

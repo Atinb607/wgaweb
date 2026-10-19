@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
+import { loadTurnstileScript } from '@/lib/useTurnstile';
 import { useSearchParams } from 'next/navigation';
 import { formatPrice } from '@/lib/format';
 import { Truck, Sprout, PackageBox, Clipboard, Sparkles, AlertTriangle, Lock, Subscription } from '@/components/icons';
@@ -144,7 +144,7 @@ function getActiveStepIndex(status: string): number {
 
 function getWhatsAppUrl(phoneStr?: string): string {
   const digits = (phoneStr || '').replace(/\D/g, '');
-  const cleanNumber = digits.length === 10 ? `91${digits}` : (digits || '918427974445');
+  const cleanNumber = digits.length === 10 ? `91${digits}` : (digits || '918427254445');
   return `https://wa.me/${cleanNumber}`;
 }
 
@@ -166,8 +166,8 @@ function TrackOrderContent() {
     track_title: 'Track Your Order',
     track_subtitle:
       'Enter your order number along with your phone number and email address to view the live harvest and delivery status.',
-    track_support_phone: '+91 84279 74445',
-    track_support_email: 'wildaboutgreens@gmail.com',
+    track_support_phone: '+91 84272 54445',
+    track_support_email: 'info@wildaboutgreens.com',
     track_harvest_note:
       'Grown with mineral water & clean air · Harvested morning of delivery',
   });
@@ -201,9 +201,54 @@ function TrackOrderContent() {
       .catch((err) => console.error('Failed to load track-order content:', err));
   }, []);
 
-  const handleTurnstileScriptReady = useCallback(() => {
-    setTurnstileReady(true);
-  }, []);
+  useEffect(() => {
+    if (!siteKey) return;
+    let active = true;
+    let observer: IntersectionObserver | null = null;
+
+    const startLoading = () => {
+      if (!active) return;
+      loadTurnstileScript().then(() => {
+        if (active) {
+          setTurnstileReady(true);
+        }
+      });
+    };
+
+    const container = turnstileContainerRef.current;
+    const form = container?.closest('form') || container;
+
+    if (form) {
+      form.addEventListener('focusin', startLoading, { once: true, passive: true });
+      form.addEventListener('pointerdown', startLoading, { once: true, passive: true });
+
+      if (typeof IntersectionObserver !== 'undefined') {
+        observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+              startLoading();
+              if (observer && form) observer.unobserve(form);
+            }
+          },
+          { rootMargin: '200px' }
+        );
+        observer.observe(form);
+      } else {
+        startLoading();
+      }
+    } else {
+      startLoading();
+    }
+
+    return () => {
+      active = false;
+      if (observer) observer.disconnect();
+      if (form) {
+        form.removeEventListener('focusin', startLoading);
+        form.removeEventListener('pointerdown', startLoading);
+      }
+    };
+  }, [siteKey]);
 
   const renderTurnstile = useCallback(() => {
     if (!turnstileReady || !siteKey || !window.turnstile || !turnstileContainerRef.current) return;
@@ -289,14 +334,6 @@ function TrackOrderContent() {
 
   return (
     <>
-      {siteKey && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          strategy="afterInteractive"
-          onReady={handleTurnstileScriptReady}
-        />
-      )}
-
       {/* Main Container with ample top padding to avoid fixed navbar overlap */}
       <div className="bg-white min-h-screen text-[#151F19] pt-32 sm:pt-40 pb-20">
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
