@@ -10,6 +10,7 @@ import type { HealthGoal } from '@/lib/healthGoals';
 import type { Product, WhyChoosePin, Review } from '@/app/products/page';
 import { LeafFavicon, Target, Sprout, Zap } from '@/components/icons';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 interface ProductMeta {
   photo: string;
@@ -24,22 +25,22 @@ const DEFAULT_WHY_CHOOSE_BLOCKS = [
   {
     title: 'Grown,\nnot made.',
     description: 'seed → sprout · 7-10 days',
-    image_url: '/right%20choice/grown-not-made.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.grownNotMade,
   },
   {
     title: 'RO water as\nprimary source.',
     description: 'no heaviness · easy on your gut',
-    image_url: '/right%20choice/ro-water.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.roWater,
   },
   {
     title: 'Coco-Peat is\nwhere it starts.',
     description: 'soil-free · sustainable',
-    image_url: '/right%20choice/coco-peat.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.cocoPeat,
   },
   {
     title: 'No Pesticides:\nnever ever.',
     description: 'zero spray · zero residue',
-    image_url: '/right%20choice/no-pest.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.noPest,
   },
 ];
 

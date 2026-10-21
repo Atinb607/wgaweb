@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import { CONTENT_REGISTRY } from '@/lib/contentRegistry';
 import { Mail, Save, Check, AlertTriangle, PackageBox } from '@/components/icons';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 interface ContentBlock {
   id?: string;
@@ -434,13 +435,12 @@ export default function AdminEmailContentPage() {
               <div className="p-4 sm:p-6 bg-gray-50 max-h-[700px] overflow-y-auto">
                 <div className="max-w-[560px] mx-auto bg-white rounded-xl border border-[#E8E2D2] overflow-hidden shadow-sm">
                   {/* Brand Header */}
-                  <div className="bg-[#1C3F2D] p-5 text-center text-[#FFFDF8]">
-                    <h2 className="text-lg font-bold tracking-[0.2em] uppercase font-sans text-white">
-                      Wild About Greens
-                    </h2>
-                    <p className="text-[11px] tracking-wider text-[#CFFA57] uppercase font-mono mt-0.5">
-                      Fresh Harvest
-                    </p>
+                  <div className="bg-[#1C3F2D] p-5 text-center flex items-center justify-center">
+                    <img
+                      src={CLOUDINARY_ASSETS.logoPictureBg}
+                      alt="Wild About Greens"
+                      className="h-9 w-auto max-w-[200px] object-contain mx-auto"
+                    />
                   </div>
 
                   {/* Body Content */}
@@ -664,13 +664,12 @@ export default function AdminEmailContentPage() {
               <div className="p-4 sm:p-6 bg-gray-50 max-h-[700px] overflow-y-auto">
                 <div className="max-w-[560px] mx-auto bg-white rounded-xl border border-[#E8E2D2] overflow-hidden shadow-sm">
                   {/* Brand Header */}
-                  <div className="bg-[#1C3F2D] p-5 text-center text-[#FFFDF8]">
-                    <h2 className="text-lg font-bold tracking-[0.2em] uppercase font-sans text-white">
-                      Wild About Greens
-                    </h2>
-                    <p className="text-[11px] tracking-wider text-[#CFFA57] uppercase font-mono mt-0.5">
-                      Fresh Harvest
-                    </p>
+                  <div className="bg-[#1C3F2D] p-5 text-center flex items-center justify-center">
+                    <img
+                      src={CLOUDINARY_ASSETS.logoPictureBg}
+                      alt="Wild About Greens"
+                      className="h-9 w-auto max-w-[200px] object-contain mx-auto"
+                    />
                   </div>
 
                   {/* Body Content */}

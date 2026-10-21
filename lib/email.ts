@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 import { getSQL } from '@/lib/db';
 
 let _resend: Resend | null = null;
@@ -15,6 +16,21 @@ function getResend(): Resend | null {
   }
   _resend = new Resend(key);
   return _resend;
+}
+
+/**
+ * Resolves the sender email address and display name.
+ * Defaults to 'Wild About Greens <info@wildaboutgreens.com>' to match verified Resend domain.
+ */
+export function getFromEmail(): string {
+  const envFrom = process.env.FROM_EMAIL?.trim();
+  if (envFrom && !envFrom.includes('destresshub.com')) {
+    if (!envFrom.includes('<') && envFrom.includes('@')) {
+      return `Wild About Greens <${envFrom}>`;
+    }
+    return envFrom;
+  }
+  return 'Wild About Greens <info@wildaboutgreens.com>';
 }
 
 interface OrderForEmail {
@@ -162,7 +178,7 @@ export async function sendOrderConfirmation(
     )
     .join('');
 
-  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  const fromEmail = getFromEmail();
 
   const resend = getResend();
   if (!resend) {
@@ -184,15 +200,18 @@ export async function sendOrderConfirmation(
     </head>
     <body style="margin: 0; padding: 24px 12px; background-color: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
       <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E8E2D2; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
-        <!-- Brand Header -->
+        <!-- Brand Header with Official Logo -->
         <tr>
-          <td style="background-color: #1C3F2D; padding: 28px 24px; text-align: center;">
-            <p style="margin: 0; font-size: 11px; letter-spacing: 3px; color: #CFFA57; font-weight: 700; text-transform: uppercase;">
-              FRESH HARVEST
-            </p>
-            <h1 style="margin: 6px 0 0; font-size: 22px; letter-spacing: 2px; color: #FFFFFF; font-weight: 800; text-transform: uppercase;">
-              WILD ABOUT GREENS
-            </h1>
+          <td align="center" style="background-color: #1C3F2D; padding: 26px 20px; text-align: center;">
+            <a href="https://wildaboutgreens.com" target="_blank" style="text-decoration: none; display: inline-block;">
+              <img
+                src="${CLOUDINARY_ASSETS.logoPictureBg}"
+                alt="Wild About Greens"
+                width="196"
+                height="44"
+                style="display: block; width: 196px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 1.5px;"
+              />
+            </a>
           </td>
         </tr>
 
@@ -368,7 +387,7 @@ export interface BulkOrderForEmail {
 export async function sendInquiryNotification(
   inquiry: InquiryForEmail
 ): Promise<boolean> {
-  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  const fromEmail = getFromEmail();
   // Send to the notification recipient (NOTIFY_EMAIL), falling back to FROM_EMAIL or default
   const toEmail = process.env.NOTIFY_EMAIL || process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
 
@@ -386,16 +405,67 @@ export async function sendInquiryNotification(
       ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
       subject: `New Bulk Inquiry: ${inquiry.business_name}`,
       html: `
-        <h2>New Restaurant / Bulk Inquiry</h2>
-        <table style="border-collapse: collapse;">
-          <tr><td style="padding: 4px 12px 4px 0; font-weight: bold;">Business</td><td>${inquiry.business_name}</td></tr>
-          <tr><td style="padding: 4px 12px 4px 0; font-weight: bold;">Contact</td><td>${inquiry.contact_name}</td></tr>
-          <tr><td style="padding: 4px 12px 4px 0; font-weight: bold;">Phone</td><td>${inquiry.phone}</td></tr>
-          ${inquiry.email ? `<tr><td style="padding: 4px 12px 4px 0; font-weight: bold;">Email</td><td>${inquiry.email}</td></tr>` : ''}
-        </table>
-        ${inquiry.message ? `<h3>Message</h3><p>${inquiry.message}</p>` : ''}
-        <hr />
-        <p style="color: #888; font-size: 12px;">Inquiry ID: ${inquiry.id}</p>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Bulk Inquiry: ${inquiry.business_name}</title>
+        </head>
+        <body style="margin: 0; padding: 24px 12px; background-color: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E8E2D2; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+            <!-- Brand Header with Official Logo -->
+            <tr>
+              <td align="center" style="background-color: #1C3F2D; padding: 26px 20px; text-align: center;">
+                <a href="https://wildaboutgreens.com" target="_blank" style="text-decoration: none; display: inline-block;">
+                  <img
+                    src="${CLOUDINARY_ASSETS.logoPictureBg}"
+                    alt="Wild About Greens"
+                    width="196"
+                    height="44"
+                    style="display: block; width: 196px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 1.5px;"
+                  />
+                </a>
+              </td>
+            </tr>
+            <!-- Content -->
+            <tr>
+              <td style="padding: 28px 24px;">
+                <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #151F19;">
+                  New Restaurant / Bulk Inquiry
+                </h2>
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60; width: 140px;">Business</td>
+                    <td style="padding: 10px 8px; color: #151F19; font-weight: 600;">${inquiry.business_name}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Contact</td>
+                    <td style="padding: 10px 8px; color: #151F19;">${inquiry.contact_name}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Phone</td>
+                    <td style="padding: 10px 8px; color: #151F19;"><a href="tel:${inquiry.phone}" style="color: #1C3F2D; font-weight: 600;">${inquiry.phone}</a></td>
+                  </tr>
+                  ${inquiry.email ? `
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Email</td>
+                    <td style="padding: 10px 8px; color: #151F19;"><a href="mailto:${inquiry.email}" style="color: #1C3F2D;">${inquiry.email}</a></td>
+                  </tr>` : ''}
+                </table>
+                ${inquiry.message ? `
+                <div style="background-color: #F8F9FA; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; border: 1px solid #EDF2F7;">
+                  <h4 style="margin: 0 0 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2D3748;">Message</h4>
+                  <p style="margin: 0; font-size: 14px; color: #4A5568; line-height: 1.6; white-space: pre-wrap;">${inquiry.message}</p>
+                </div>` : ''}
+                <p style="color: #A0AEC0; font-size: 11px; margin: 20px 0 0; text-align: center; border-top: 1px solid #E8E2D2; padding-top: 14px;">
+                  Inquiry ID: ${inquiry.id} • Wild About Greens Urban Farm
+                </p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `,
     });
 
@@ -414,7 +484,7 @@ export async function sendInquiryNotification(
 export async function sendBulkOrderNotification(
   req: BulkOrderForEmail
 ): Promise<boolean> {
-  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  const fromEmail = getFromEmail();
   const toEmail = process.env.NOTIFY_EMAIL || process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
 
   const resend = getResend();
@@ -431,22 +501,94 @@ export async function sendBulkOrderNotification(
       ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
       subject: `New Bulk Order Request: ${req.ticket_number} (${req.trays_count} Trays)`,
       html: `
-        <h2>New Bulk Order Request: ${req.ticket_number}</h2>
-        <table style="border-collapse: collapse; font-family: sans-serif; font-size: 14px;">
-          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Ticket Number</td><td><strong>${req.ticket_number}</strong></td></tr>
-          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Customer Name</td><td>${req.customer_name}</td></tr>
-          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Phone</td><td>${req.customer_phone}</td></tr>
-          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Email</td><td>${req.customer_email}</td></tr>
-          ${req.business_name ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Business Name</td><td>${req.business_name}</td></tr>` : ''}
-          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Trays Count</td><td><strong>${req.trays_count} trays</strong></td></tr>
-          <tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Products Requested</td><td>${req.products}</td></tr>
-          ${req.frequency ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Order Frequency</td><td>${req.frequency}</td></tr>` : ''}
-          ${req.delivery_address ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Delivery Address</td><td>${req.delivery_address}</td></tr>` : ''}
-          ${req.delivery_pincode ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: bold;">Pincode</td><td>${req.delivery_pincode}</td></tr>` : ''}
-        </table>
-        ${req.notes ? `<h3>Special Notes / Instructions</h3><p style="background: #f7f7f7; padding: 12px; border-radius: 8px;">${req.notes}</p>` : ''}
-        <hr />
-        <p style="color: #888; font-size: 12px;">Submitted via Wild About Greens Bulk Order portal.</p>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Bulk Order Request: ${req.ticket_number}</title>
+        </head>
+        <body style="margin: 0; padding: 24px 12px; background-color: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E8E2D2; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+            <!-- Brand Header with Official Logo -->
+            <tr>
+              <td align="center" style="background-color: #1C3F2D; padding: 26px 20px; text-align: center;">
+                <a href="https://wildaboutgreens.com" target="_blank" style="text-decoration: none; display: inline-block;">
+                  <img
+                    src="${CLOUDINARY_ASSETS.logoPictureBg}"
+                    alt="Wild About Greens"
+                    width="196"
+                    height="44"
+                    style="display: block; width: 196px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 1.5px;"
+                  />
+                </a>
+              </td>
+            </tr>
+            <!-- Content -->
+            <tr>
+              <td style="padding: 28px 24px;">
+                <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #151F19;">
+                  New Bulk Order Request: ${req.ticket_number}
+                </h2>
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60; width: 140px;">Ticket Number</td>
+                    <td style="padding: 10px 8px; color: #1C3F2D; font-weight: 800; font-family: monospace;">${req.ticket_number}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Customer Name</td>
+                    <td style="padding: 10px 8px; color: #151F19; font-weight: 600;">${req.customer_name}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Phone</td>
+                    <td style="padding: 10px 8px; color: #151F19;"><a href="tel:${req.customer_phone}" style="color: #1C3F2D; font-weight: 600;">${req.customer_phone}</a></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Email</td>
+                    <td style="padding: 10px 8px; color: #151F19;"><a href="mailto:${req.customer_email}" style="color: #1C3F2D;">${req.customer_email}</a></td>
+                  </tr>
+                  ${req.business_name ? `
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Business Name</td>
+                    <td style="padding: 10px 8px; color: #151F19;">${req.business_name}</td>
+                  </tr>` : ''}
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Trays Count</td>
+                    <td style="padding: 10px 8px; color: #166534; font-weight: 800;">${req.trays_count} trays</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Products Requested</td>
+                    <td style="padding: 10px 8px; color: #151F19;">${req.products}</td>
+                  </tr>
+                  ${req.frequency ? `
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Order Frequency</td>
+                    <td style="padding: 10px 8px; color: #151F19;">${req.frequency}</td>
+                  </tr>` : ''}
+                  ${req.delivery_address ? `
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Delivery Address</td>
+                    <td style="padding: 10px 8px; color: #151F19;">${req.delivery_address}</td>
+                  </tr>` : ''}
+                  ${req.delivery_pincode ? `
+                  <tr style="border-bottom: 1px solid #F0ECE1;">
+                    <td style="padding: 10px 8px; font-weight: 700; color: #5C6B60;">Pincode</td>
+                    <td style="padding: 10px 8px; color: #151F19;">${req.delivery_pincode}</td>
+                  </tr>` : ''}
+                </table>
+                ${req.notes ? `
+                <div style="background-color: #F8F9FA; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; border: 1px solid #EDF2F7;">
+                  <h4 style="margin: 0 0 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2D3748;">Special Notes / Instructions</h4>
+                  <p style="margin: 0; font-size: 14px; color: #4A5568; line-height: 1.6; white-space: pre-wrap;">${req.notes}</p>
+                </div>` : ''}
+                <p style="color: #A0AEC0; font-size: 11px; margin: 20px 0 0; text-align: center; border-top: 1px solid #E8E2D2; padding-top: 14px;">
+                  Submitted via Wild About Greens Bulk Order portal
+                </p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `,
     });
 
@@ -474,7 +616,7 @@ export async function sendNewsletterWelcome(
     return false;
   }
 
-  const fromEmail = process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  const fromEmail = getFromEmail();
 
   try {
     const sql = getSQL();
@@ -489,10 +631,25 @@ export async function sendNewsletterWelcome(
       contentMap[b.key] = b.value;
     }
 
-    const subject = contentMap.newsletter_thankyou_subject || 'Welcome to Wild About Greens!';
-    const heading = contentMap.newsletter_thankyou_heading || 'Welcome to the Wild About Greens Family!';
-    const bodyText = contentMap.newsletter_thankyou_body || "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us.\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team";
-    const footerText = contentMap.newsletter_thankyou_footer || 'Fresh harvest delivered straight from our indoor farm to your doorstep.';
+    let subject = contentMap.newsletter_thankyou_subject || 'Welcome to Wild About Greens! 🌱';
+    if (subject.includes('[placeholder')) {
+      subject = 'Welcome to Wild About Greens! 🌱';
+    }
+
+    let heading = contentMap.newsletter_thankyou_heading || 'Welcome to the Wild About Greens Family!';
+    if (heading.includes('[placeholder')) {
+      heading = 'Welcome to the Wild About Greens Family!';
+    }
+
+    let bodyText = contentMap.newsletter_thankyou_body || "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us.\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team";
+    if (bodyText.includes('[placeholder')) {
+      bodyText = "Hi there!\n\nWelcome to Wild About Greens, we're thrilled to have you with us.\n\nHere is your exclusive 15% discount for your first order: USE CODE: WELCOME15\n\nStay fresh,\nThe Wild About Greens Team";
+    }
+
+    let footerText = contentMap.newsletter_thankyou_footer || 'Fresh harvest delivered straight from our indoor farm to your doorstep.';
+    if (footerText.includes('[placeholder')) {
+      footerText = 'Fresh harvest delivered straight from our indoor farm to your doorstep.';
+    }
 
     // Convert plain text body to simple HTML paragraphs
     const bodyHtml = bodyText
@@ -510,15 +667,18 @@ export async function sendNewsletterWelcome(
       </head>
       <body style="margin: 0; padding: 24px 12px; background-color: #F9FAFB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
         <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E8E2D2; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
-          <!-- Header -->
+          <!-- Brand Header with Official Logo -->
           <tr>
-            <td style="background-color: #1C3F2D; padding: 26px 20px; text-align: center;">
-              <p style="margin: 0; font-size: 11px; letter-spacing: 3px; color: #CFFA57; font-weight: 700; text-transform: uppercase;">
-                FRESH HARVEST
-              </p>
-              <h1 style="margin: 6px 0 0; font-size: 20px; letter-spacing: 2px; color: #FFFFFF; font-weight: 800; text-transform: uppercase;">
-                WILD ABOUT GREENS
-              </h1>
+            <td align="center" style="background-color: #1C3F2D; padding: 26px 20px; text-align: center;">
+              <a href="https://wildaboutgreens.com" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img
+                  src="${CLOUDINARY_ASSETS.logoPictureBg}"
+                  alt="Wild About Greens"
+                  width="196"
+                  height="44"
+                  style="display: block; width: 196px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 1.5px;"
+                />
+              </a>
             </td>
           </tr>
 

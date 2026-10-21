@@ -1,0 +1,198 @@
+{
+  "apple-touch-icon.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608007/wag_assets/apple-touch-icon.png",
+    "public_id": "wag_assets/apple-touch-icon",
+    "format": "png",
+    "width": 1254,
+    "height": 1254
+  },
+  "circle-logo.jpeg": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608008/wag_assets/circle-logo.jpg",
+    "public_id": "wag_assets/circle-logo",
+    "format": "jpg",
+    "width": 595,
+    "height": 589
+  },
+  "favicon.ico": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608010/wag_assets/favicon.png",
+    "public_id": "wag_assets/favicon",
+    "format": "png",
+    "width": 1254,
+    "height": 1254
+  },
+  "favicon.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608010/wag_assets/favicon.png",
+    "public_id": "wag_assets/favicon",
+    "format": "png",
+    "width": 1254,
+    "height": 1254
+  },
+  "favicon.svg": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608015/wag_assets/favicon.svg",
+    "public_id": "wag_assets/favicon",
+    "format": "svg",
+    "width": 1254,
+    "height": 1254
+  },
+  "FSSAI.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608020/wag_assets/FSSAI.png",
+    "public_id": "wag_assets/FSSAI",
+    "format": "png",
+    "width": 1672,
+    "height": 940
+  },
+  "fssailogo.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608021/wag_assets/fssailogo.png",
+    "public_id": "wag_assets/fssailogo",
+    "format": "png",
+    "width": 2000,
+    "height": 964
+  },
+  "images/why-choose/10-day-peak.jpg": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608023/wag_assets/images/why-choose/10-day-peak.jpg",
+    "public_id": "wag_assets/images/why-choose/10-day-peak",
+    "format": "jpg",
+    "width": 1200,
+    "height": 896
+  },
+  "images/why-choose/cut-to-order.jpg": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608026/wag_assets/images/why-choose/cut-to-order.jpg",
+    "public_id": "wag_assets/images/why-choose/cut-to-order",
+    "format": "jpg",
+    "width": 1200,
+    "height": 896
+  },
+  "images/why-choose/mineral-ro-water.jpg": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608029/wag_assets/images/why-choose/mineral-ro-water.jpg",
+    "public_id": "wag_assets/images/why-choose/mineral-ro-water",
+    "format": "jpg",
+    "width": 1200,
+    "height": 896
+  },
+  "images/why-choose/soil-free-clean.jpg": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608033/wag_assets/images/why-choose/soil-free-clean.jpg",
+    "public_id": "wag_assets/images/why-choose/soil-free-clean",
+    "format": "jpg",
+    "width": 1200,
+    "height": 896
+  },
+  "kid-eating-microgreens.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608034/wag_assets/kid-eating-microgreens.png",
+    "public_id": "wag_assets/kid-eating-microgreens",
+    "format": "png",
+    "width": 476,
+    "height": 318
+  },
+  "logo for picture background.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608037/wag_assets/logo_for_picture_background.png",
+    "public_id": "wag_assets/logo_for_picture_background",
+    "format": "png",
+    "width": 2000,
+    "height": 2000
+  },
+  "logo for white bg.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608041/wag_assets/logo_for_white_bg.png",
+    "public_id": "wag_assets/logo_for_white_bg",
+    "format": "png",
+    "width": 1536,
+    "height": 1024
+  },
+  "logo-picture-bg.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608045/wag_assets/logo-picture-bg.png",
+    "public_id": "wag_assets/logo-picture-bg",
+    "format": "png",
+    "width": 1880,
+    "height": 420
+  },
+  "logo-white-bg.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608046/wag_assets/logo-white-bg.png",
+    "public_id": "wag_assets/logo-white-bg",
+    "format": "png",
+    "width": 1880,
+    "height": 420
+  },
+  "right choice/coco-peat.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608051/wag_assets/right_choice/coco-peat.png",
+    "public_id": "wag_assets/right_choice/coco-peat",
+    "format": "png",
+    "width": 1254,
+    "height": 1254
+  },
+  "right choice/grown-not-made.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608052/wag_assets/right_choice/grown-not-made.png",
+    "public_id": "wag_assets/right_choice/grown-not-made",
+    "format": "png",
+    "width": 612,
+    "height": 408
+  },
+  "right choice/no-pest.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608060/wag_assets/right_choice/no-pest.png",
+    "public_id": "wag_assets/right_choice/no-pest",
+    "format": "png",
+    "width": 1254,
+    "height": 1254
+  },
+  "right choice/ro-water-pitcher-backup.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608065/wag_assets/right_choice/ro-water-pitcher-backup.png",
+    "public_id": "wag_assets/right_choice/ro-water-pitcher-backup",
+    "format": "png",
+    "width": 1133,
+    "height": 1388
+  },
+  "right choice/ro-water.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608068/wag_assets/right_choice/ro-water.png",
+    "public_id": "wag_assets/right_choice/ro-water",
+    "format": "png",
+    "width": 1200,
+    "height": 900
+  },
+  "right-choice/coco-peat.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608078/wag_assets/right-choice/coco-peat.png",
+    "public_id": "wag_assets/right-choice/coco-peat",
+    "format": "png",
+    "width": 1254,
+    "height": 1254
+  },
+  "right-choice/grown-not-made.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608080/wag_assets/right-choice/grown-not-made.png",
+    "public_id": "wag_assets/right-choice/grown-not-made",
+    "format": "png",
+    "width": 612,
+    "height": 408
+  },
+  "right-choice/no-pest.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608091/wag_assets/right-choice/no-pest.png",
+    "public_id": "wag_assets/right-choice/no-pest",
+    "format": "png",
+    "width": 1254,
+    "height": 1254
+  },
+  "right-choice/ro-water-pitcher-backup.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608100/wag_assets/right-choice/ro-water-pitcher-backup.png",
+    "public_id": "wag_assets/right-choice/ro-water-pitcher-backup",
+    "format": "png",
+    "width": 1133,
+    "height": 1388
+  },
+  "right-choice/ro-water.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608103/wag_assets/right-choice/ro-water.png",
+    "public_id": "wag_assets/right-choice/ro-water",
+    "format": "png",
+    "width": 1200,
+    "height": 900
+  },
+  "tricity-trio-banner.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608105/wag_assets/tricity-trio-banner.png",
+    "public_id": "wag_assets/tricity-trio-banner",
+    "format": "png",
+    "width": 512,
+    "height": 253
+  },
+  "trio-bundle-banner.png": {
+    "secure_url": "https://res.cloudinary.com/qjoihkpr/image/upload/v1792608108/wag_assets/trio-bundle-banner.png",
+    "public_id": "wag_assets/trio-bundle-banner",
+    "format": "png",
+    "width": 512,
+    "height": 253
+  }
+}

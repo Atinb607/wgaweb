@@ -1,3 +1,5 @@
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
+
 export function ShoppingBag({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className={className}>
@@ -247,7 +249,7 @@ export function LeafFavicon({ className = 'w-3.5 h-3.5' }: { className?: string 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/favicon.png"
+      src={CLOUDINARY_ASSETS.faviconPng}
       alt=""
       width={16}
       height={16}

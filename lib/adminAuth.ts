@@ -97,6 +97,7 @@ const ADMIN_SUBPAGES = [
   'blog',
   'carousel',
   'login',
+  'coupons',
 ];
 
 export function isAdminPath(pathname: string | null): boolean {

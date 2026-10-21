@@ -11,6 +11,7 @@ import { getOptimizedLogoUrl } from '@/lib/format';
 import { cldUrl } from '@/lib/cloudinary';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
 import type { Product } from '@/app/products/page';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 function cldVideoUrl(url: string | null | undefined, width = 1280): string {
   if (!url) return '';
@@ -739,16 +740,16 @@ export default function HomePageClient({
           {/* ================= FSSAI LOGO (Centered, no background, no divider, no text) ================= */}
           <div className="mt-10 sm:mt-12 md:mt-14 flex justify-center items-center">
             <a
-              href="/FSSAI.png"
+              href={CLOUDINARY_ASSETS.fssai}
               target="_blank"
               rel="noopener noreferrer"
-              title="FSSAI Registration - Lic. No. 11512018001447"
+              title="FSSAI Registration"
               className="inline-block transition-transform hover:scale-105"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/FSSAI.png"
-                alt="FSSAI Registration - Lic. No. 11512018001447"
+                src={CLOUDINARY_ASSETS.fssai}
+                alt="FSSAI Registration"
                 width={160}
                 height={80}
                 className="h-14 sm:h-16 md:h-20 w-auto object-contain"

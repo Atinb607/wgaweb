@@ -27,6 +27,7 @@ import {
   Menu,
   X,
 } from '@/components/icons';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 export default function AdminLayoutClient({
   children,
@@ -157,7 +158,7 @@ export default function AdminLayoutClient({
             title="Wild About Greens Admin Panel"
           >
             <Image
-              src="/logo-picture-bg.png"
+              src={CLOUDINARY_ASSETS.logoPictureBg}
               alt="Wild About Greens"
               width={160}
               height={36}
@@ -215,7 +216,7 @@ export default function AdminLayoutClient({
             className="flex flex-col gap-1"
           >
             <Image
-              src="/logo-picture-bg.png"
+              src={CLOUDINARY_ASSETS.logoPictureBg}
               alt="Wild About Greens"
               width={140}
               height={30}
@@ -280,7 +281,7 @@ export default function AdminLayoutClient({
             </button>
             <Link href={`/${currentKey}`} className="flex items-center gap-1.5 min-w-0">
               <Image
-                src="/logo-picture-bg.png"
+                src={CLOUDINARY_ASSETS.logoPictureBg}
                 alt="Wild About Greens"
                 width={95}
                 height={22}

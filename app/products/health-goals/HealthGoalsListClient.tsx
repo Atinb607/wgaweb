@@ -11,6 +11,7 @@ import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 import type { Product, WhyChoosePin, Review, SamplerVariantData } from '@/app/products/page';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 interface ProductMeta {
   photo: string;
@@ -25,22 +26,22 @@ const DEFAULT_WHY_CHOOSE_BLOCKS = [
   {
     title: 'Grown,\nnot made.',
     description: 'seed → sprout · 7-10 days',
-    image_url: '/right%20choice/grown-not-made.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.grownNotMade,
   },
   {
     title: 'RO water as\nprimary source.',
     description: 'no heaviness · easy on your gut',
-    image_url: '/right%20choice/ro-water.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.roWater,
   },
   {
     title: 'Coco-Peat is\nwhere it starts.',
     description: 'soil-free · sustainable',
-    image_url: '/right%20choice/coco-peat.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.cocoPeat,
   },
   {
     title: 'No Pesticides:\nnever ever.',
     description: 'zero spray · zero residue',
-    image_url: '/right%20choice/no-pest.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.noPest,
   },
 ];
 
@@ -387,7 +388,10 @@ export default function HealthGoalsListClient({
     setNewsletterStatus('loading');
     setNewsletterMessage('');
     try {
-      const captchaToken = await getNewsletterCaptchaToken();
+      const captchaToken = await getNewsletterCaptchaToken({
+        title: 'Claim Your 15% Discount',
+        subtitle: 'Please complete the quick verification below so we can email your 15% discount code.',
+      });
       if (!captchaToken) {
         setNewsletterStatus('error');
         setNewsletterMessage('Please complete the security check to continue.');
@@ -731,7 +735,7 @@ export default function HealthGoalsListClient({
                                     <div className="w-[62%] aspect-square max-w-[68px] relative mb-2 shrink-0">
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
-                                        src="/circle-logo.jpeg"
+                                        src={CLOUDINARY_ASSETS.circleLogo}
                                         alt=""
                                         width={68}
                                         height={68}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { LeafFavicon } from '@/components/icons';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm bg-white rounded-xl shadow-md p-8">
         <div className="text-center mb-6 flex flex-col items-center">
           <Image
-            src="/logo-white-bg.png"
+            src={CLOUDINARY_ASSETS.logoWhiteBg}
             alt="Wild About Greens"
             width={180}
             height={42}

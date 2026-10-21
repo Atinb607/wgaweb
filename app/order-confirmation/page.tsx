@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { WhatsApp, Check, Clipboard, Banknote, Subscription, Mail, Sprout } from '@/components/icons';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 interface StoredOrderItem {
   productName: string;
@@ -82,7 +83,7 @@ function ConfirmationContent() {
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white shadow-sm border border-[#E8E2D2] p-3.5">
             <Image
-              src="/favicon.png"
+              src={CLOUDINARY_ASSETS.faviconPng}
               alt="Wild About Greens Logo"
               width={52}
               height={52}
@@ -152,14 +153,14 @@ function ConfirmationContent() {
           </div>
         </div>
 
-        {/* Resend Email Notice Banner */}
+        {/* Email Confirmation Notice Banner */}
         <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
             <Mail className="w-5 h-5 text-emerald-800" />
           </div>
           <div className="space-y-1 text-sm text-emerald-950">
             <h3 className="font-bold text-emerald-900">
-              Confirmation Email Sent via Resend
+              We&apos;ve Mailed You
             </h3>
             <p className="text-emerald-800/90 leading-relaxed text-xs sm:text-sm">
               We&apos;ve sent an order confirmation email to{' '}

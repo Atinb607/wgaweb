@@ -35,7 +35,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Coupon request not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updated[0]);
+    return NextResponse.json(updated[0], {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
@@ -61,7 +67,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Coupon request not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, id: deleted[0].id });
+    return NextResponse.json(
+      { success: true, id: deleted[0].id },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

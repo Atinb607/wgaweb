@@ -1,4 +1,5 @@
 import React from 'react';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 interface LegalPageLayoutProps {
   pageTitle: string;
@@ -116,7 +117,7 @@ export default function LegalPageLayout({
           {showFssai && (
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FAF7F0] border border-[#E4DDC8] text-xs font-mono text-[#1C3F2D] w-fit shadow-xs">
               <span className="w-2 h-2 rounded-full bg-[#2E7D32]" />
-              <span>FSSAI Lic. No. 11512018001447</span>
+              <span>FSSAI Registered</span>
             </div>
           )}
         </div>
@@ -213,7 +214,7 @@ export default function LegalPageLayout({
           <div className="mt-14 pt-8 border-t border-[#E4DDC8]">
             <div className="p-6 sm:p-8 bg-[#FAF7F0] border border-[#E4DDC8] rounded-2xl flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
               <a
-                href="/FSSAI.png"
+                href={CLOUDINARY_ASSETS.fssai}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="View FSSAI Registration Certificate"
@@ -221,8 +222,8 @@ export default function LegalPageLayout({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/FSSAI.png"
-                  alt="FSSAI Registration - Lic. No. 11512018001447"
+                  src={CLOUDINARY_ASSETS.fssai}
+                  alt="FSSAI Registration"
                   width={160}
                   height={80}
                   loading="lazy"
@@ -238,8 +239,8 @@ export default function LegalPageLayout({
                   Food Safety and Standards Authority of India (FSSAI)
                 </h3>
                 <p className="text-xs sm:text-sm text-[#5C6B60] leading-relaxed">
-                  Wild About Greens is certified and registered with the Food Safety and Standards Authority of India under License No.{' '}
-                  <strong className="font-mono text-[#151F19]">11512018001447</strong>. All harvesting, handling, packaging, and distribution operations comply with statutory hygiene requirements and food safety regulations under the Food Safety and Standards Act, 2006.
+                  Wild About Greens is certified and registered with the Food Safety and Standards Authority of India (FSSAI). All harvesting, handling, packaging, and distribution operations comply with statutory hygiene requirements and food safety regulations under the Food Safety and Standards Act, 2006.
+
                 </p>
               </div>
             </div>

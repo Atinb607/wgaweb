@@ -286,7 +286,18 @@ export default function CheckoutPage() {
 
     try {
       // Step 5: Acquire invisible Turnstile token
-      const acquiredTurnstileToken = await getTurnstileToken();
+      const acquiredTurnstileToken = await getTurnstileToken({
+        title: 'Order Security Check',
+        subtitle: 'Please complete the quick verification below to place your Cash on Delivery order.',
+      });
+
+      if (!acquiredTurnstileToken) {
+        setCodError('Verification was cancelled. Please complete the security check to place your order.');
+        setSliderResetKey((k) => k + 1);
+        codSubmittingRef.current = false;
+        setCodSubmitting(false);
+        return;
+      }
 
       const res = await fetch('/api/checkout/cod/create', {
         method: 'POST',

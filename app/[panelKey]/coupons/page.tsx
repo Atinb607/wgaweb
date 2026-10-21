@@ -99,7 +99,9 @@ export default function AdminCouponsPage() {
   const loadCoupons = useCallback(async () => {
     setCouponsLoading(true);
     try {
-      const res = await adminFetch('/api/admin/coupons');
+      const res = await adminFetch(`/api/admin/coupons?_t=${Date.now()}`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
         setCoupons(Array.isArray(data) ? data : []);
@@ -118,8 +120,11 @@ export default function AdminCouponsPage() {
       if (requestStatusFilter) params.set('status', requestStatusFilter);
       params.set('page', String(requestPage));
       params.set('limit', '25');
+      params.set('_t', String(Date.now()));
 
-      const res = await adminFetch(`/api/admin/coupon-requests?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/coupon-requests?${params.toString()}`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
         setRequests(Array.isArray(data.requests) ? data.requests : []);
@@ -281,8 +286,25 @@ export default function AdminCouponsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        // Immediately update state so UI never reverts to stale cached state
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === reqItem.id
+              ? {
+                  ...r,
+                  status: nextStatus,
+                  handled_at: (data && data.handled_at) || new Date().toISOString(),
+                }
+              : r
+          )
+        );
+        if (reqItem.status === 'new' && nextStatus !== 'new') {
+          setNewRequestCount((prev) => Math.max(0, prev - 1));
+        } else if (reqItem.status !== 'new' && nextStatus === 'new') {
+          setNewRequestCount((prev) => prev + 1);
+        }
         showFeedback(`Marked ${reqItem.email} as ${nextStatus}.`);
-        loadRequests();
+        await loadRequests();
       } else {
         showFeedback(data.error || 'Failed to update request.', 'error');
       }
@@ -301,8 +323,13 @@ export default function AdminCouponsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        setRequests((prev) => prev.filter((r) => r.id !== reqItem.id));
+        setRequestTotal((prev) => Math.max(0, prev - 1));
+        if (reqItem.status === 'new') {
+          setNewRequestCount((prev) => Math.max(0, prev - 1));
+        }
         showFeedback(`Deleted request for ${reqItem.email}.`);
-        loadRequests();
+        await loadRequests();
       } else {
         showFeedback(data.error || 'Failed to delete request.', 'error');
       }
@@ -345,7 +372,10 @@ export default function AdminCouponsPage() {
       <div className="flex items-center gap-2 border-b border-[#E4DDC8]">
         <button
           type="button"
-          onClick={() => setActiveTab('codes')}
+          onClick={() => {
+            setActiveTab('codes');
+            loadCoupons();
+          }}
           className={`px-5 py-3 text-sm font-bold border-b-2 transition-colors cursor-pointer ${
             activeTab === 'codes'
               ? 'border-[#1C3F2D] text-[#1C3F2D]'
@@ -357,7 +387,10 @@ export default function AdminCouponsPage() {
 
         <button
           type="button"
-          onClick={() => setActiveTab('requests')}
+          onClick={() => {
+            setActiveTab('requests');
+            loadRequests();
+          }}
           className={`px-5 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
             activeTab === 'requests'
               ? 'border-[#1C3F2D] text-[#1C3F2D]'

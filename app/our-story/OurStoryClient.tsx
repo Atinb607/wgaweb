@@ -33,7 +33,10 @@ export default function OurStoryClient({
     setMessage('');
     try {
       // 1. Obtain captcha token before sending request to backend
-      const captchaToken = await getTokenBeforeSubmit();
+      const captchaToken = await getTokenBeforeSubmit({
+        title: 'Join Our Community',
+        subtitle: 'Please complete the quick verification below so we can add you to our community list.',
+      });
       if (!captchaToken) {
         setStatus('error');
         setMessage('Please complete the security check to continue.');

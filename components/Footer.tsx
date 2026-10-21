@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { isAdminPath } from '@/lib/adminAuth';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 export default function Footer() {
   const pathname = usePathname();
@@ -24,7 +25,10 @@ export default function Footer() {
     setMessage('');
     try {
       // 1. Obtain captcha token before sending the request to backend
-      const captchaToken = await getTokenBeforeSubmit();
+      const captchaToken = await getTokenBeforeSubmit({
+        title: 'Newsletter Subscription',
+        subtitle: 'Please complete the quick verification below so we can add you to our list.',
+      });
       if (!captchaToken) {
         setStatus('error');
         setMessage('Please complete the security check to continue.');
@@ -77,7 +81,7 @@ export default function Footer() {
                 aria-label="Wild About Greens Home"
               >
                 <Image
-                  src="/logo-picture-bg.png"
+                  src={CLOUDINARY_ASSETS.logoPictureBg}
                   alt="Wild About Greens"
                   width={188}
                   height={42}

@@ -5,7 +5,59 @@ import { adminFetch } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
 import ImageField from '@/components/admin/ImageField';
 import { HEALTH_GOALS } from '@/lib/healthGoals';
-import { Target, Utensils, Sprout, Lightbulb, Trash2 } from '@/components/icons';
+import {
+  Target,
+  Utensils,
+  Sprout,
+  Lightbulb,
+  Trash2,
+  Zap,
+  Shield,
+  Droplet,
+  Scissors,
+  Sparkles,
+  CheckCircle,
+  ExternalLink,
+  Save,
+  PackageBox,
+} from '@/components/icons';
+
+function renderHighlightedStory(text: string) {
+  if (!text) return null;
+  const parts = text.split(/(<u>.*?<\/u>|__.*?__)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('<u>') && part.endsWith('</u>')) {
+      return (
+        <u
+          key={i}
+          className="decoration-[#B7E23F] decoration-[3px] underline-offset-2 font-medium text-[#122A1F]"
+        >
+          {part.slice(3, -4)}
+        </u>
+      );
+    }
+    if (part.startsWith('__') && part.endsWith('__')) {
+      return (
+        <u
+          key={i}
+          className="decoration-[#B7E23F] decoration-[3px] underline-offset-2 font-medium text-[#122A1F]"
+        >
+          {part.slice(2, -2)}
+        </u>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+function renderAdminBadgeIcon(icon: string) {
+  const norm = (icon || '').toLowerCase();
+  if (norm === 'zap' || norm === 'bolt' || icon === '⚡') return <Zap className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'shield' || icon === '🛡️') return <Shield className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'droplet' || norm === 'water' || icon === '💧') return <Droplet className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'scissors' || norm === 'cut' || icon === '✂️') return <Scissors className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  return <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+}
 
 export interface CategorySetting {
   id?: string;
@@ -682,594 +734,1074 @@ export default function AdminProductsPage() {
     if (editing) loadProduct(editing.id);
   };
 
-  // ── Editing/creating view ──
+  // ── Editing/creating view (Synchronized 1:1 with Storefront) ──
   if (editing || isNew) {
+    const lowestPrice = variants.length > 0 ? Math.min(...variants.map((v) => v.price_paise)) : 0;
+
     return (
-      <div>
-        <button
-          onClick={() => {
-            setEditing(null);
-            setIsNew(false);
-          }}
-          className="text-sm text-gray-500 hover:text-gray-700 mb-4"
-        >
-          &larr; Back to list
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          {isNew ? 'Add Product' : `Edit: ${editing?.name}`}
-        </h1>
-
-        <div className="bg-white rounded-xl border p-6 space-y-4 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
-              <input
-                value={form.slug}
-                onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-700">Categories &amp; Category Order</label>
-                <span className="text-[11px] text-gray-400">Order # in category</span>
-              </div>
-              {form.categories.length > 0 && (
-                <div className="space-y-1.5 mb-2.5">
-                  {form.categories.map((cat) => (
-                    <div
-                      key={cat}
-                      className="flex items-center justify-between gap-2 bg-gray-50/80 border border-gray-200 rounded-lg px-3 py-2 text-xs"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-semibold text-gray-800 capitalize truncate">
-                          {cat.replace(/-/g, ' ')}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveCategory(cat)}
-                          className="text-gray-400 hover:text-red-500 font-bold ml-1 text-base leading-none"
-                          title="Remove category"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <label className="text-[11px] text-gray-500 whitespace-nowrap font-medium">
-                          Order #:
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={form.category_orders?.[cat] || ''}
-                          onChange={(e) => handleCategoryOrderChange(cat, e.target.value)}
-                          placeholder="1"
-                          className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-xs font-mono font-bold text-emerald-800 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="relative">
-                <input
-                  value={catInput}
-                  onChange={(e) => { setCatInput(e.target.value); setShowCatDropdown(true); }}
-                  onFocus={() => setShowCatDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowCatDropdown(false), 200)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && catInput.trim()) {
-                      e.preventDefault();
-                      handleAddCategory(catInput);
-                      setCatInput('');
-                      setShowCatDropdown(false);
-                    }
-                  }}
-                  placeholder="Type to search or add a category…"
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-                {showCatDropdown && (
-                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-auto">
-                    {allCategories
-                      .filter(c => !form.categories.includes(c) && c.toLowerCase().includes(catInput.toLowerCase()))
-                      .map(cat => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleAddCategory(cat);
-                            setCatInput('');
-                            setShowCatDropdown(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 capitalize"
-                        >
-                          {cat.replace(/-/g, ' ')}
-                        </button>
-                      ))}
-                    {catInput.trim() && !allCategories.includes(catInput.trim().toLowerCase().replace(/\s+/g, '-')) && (
-                      <button
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleAddCategory(catInput);
-                          setCatInput('');
-                          setShowCatDropdown(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium"
-                      >
-                        + Create &ldquo;{catInput.trim()}&rdquo;
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Health Goals Multi-Select Dropdown */}
-            <div className="sm:col-span-2 bg-[#F6FAF7] border border-emerald-200/90 rounded-xl p-4 sm:p-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
-                <div>
-                  <label className="block text-sm font-semibold text-emerald-950 flex items-center gap-1.5">
-                    <Target className="w-4 h-4 text-emerald-800" />
-                    <span>Health Goals (Shop by Health Goal)</span>
-                  </label>
-                  <p className="text-xs text-emerald-800/80">
-                    Assign one or multiple of the 8 health goals to display this product under those goals on the website.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        health_goals: HEALTH_GOALS.map((g) => g.id),
-                      }))
-                    }
-                    className="text-[11px] font-medium text-emerald-700 hover:text-emerald-900 bg-white px-2.5 py-1 rounded-md border border-emerald-300 hover:bg-emerald-50 transition-colors shadow-xs"
+      <div className="pb-32">
+        {/* ── Top Header & Sticky Action Bar ── */}
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 mb-8 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(null);
+                  setIsNew(false);
+                }}
+                className="text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0"
+              >
+                &larr; Product List
+              </button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+                    {isNew ? 'Create New Product' : (form.name || 'Edit Product')}
+                  </h1>
+                  {form.badge_label && (
+                    <span className="bg-[#8B2D46] text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                      {form.badge_label}
+                    </span>
+                  )}
+                  <span
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                      form.is_active
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
                   >
-                    Select All 8 Goals
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        health_goals: [],
-                      }))
-                    }
-                    className="text-[11px] font-medium text-gray-600 hover:text-red-700 bg-white px-2.5 py-1 rounded-md border border-gray-300 hover:bg-red-50 transition-colors shadow-xs"
-                  >
-                    Clear All
-                  </button>
-                </div>
-              </div>
-
-              {/* Selected Health Goal Badges */}
-              <div className="flex flex-wrap gap-1.5 mb-3 min-h-[32px] items-center">
-                {form.health_goals && form.health_goals.length > 0 ? (
-                  form.health_goals.map((goalId) => {
-                    const goalDef = HEALTH_GOALS.find(
-                      (g) => g.id === goalId || g.slug === goalId || g.aliases.includes(goalId)
-                    );
-                    return (
-                      <span
-                        key={goalId}
-                        className="inline-flex items-center gap-1.5 bg-white text-[#1C3F2D] text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-300 shadow-sm"
-                      >
-                        <span>{goalDef?.title || goalId}</span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setForm((prev) => ({
-                              ...prev,
-                              health_goals: prev.health_goals.filter((g) => g !== goalId),
-                            }))
-                          }
-                          className="text-gray-400 hover:text-red-600 font-bold ml-1 text-sm leading-none"
-                          title="Remove this health goal"
-                        >
-                          &times;
-                        </button>
-                      </span>
-                    );
-                  })
-                ) : (
-                  <span className="text-xs text-emerald-700/70 italic">
-                    No health goals selected. Choose from the dropdown below:
+                    {form.is_active ? '● Published' : '○ Draft'}
                   </span>
+                </div>
+                {!isNew && form.slug && (
+                  <p className="text-xs text-gray-400 font-mono truncate">
+                    /products/{form.slug}
+                  </p>
                 )}
               </div>
+            </div>
 
-              {/* Health Goal Select Dropdown */}
-              <div className="relative">
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val && !form.health_goals.includes(val)) {
-                      setForm((prev) => ({
-                        ...prev,
-                        health_goals: [...prev.health_goals, val],
-                      }));
-                    }
-                  }}
-                  className="w-full bg-white border border-emerald-300 rounded-lg px-3 py-2 text-sm text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 shadow-sm cursor-pointer"
+            <div className="flex items-center gap-2 shrink-0">
+              {!isNew && editing && (
+                <a
+                  href={`/products/${form.slug || editing.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors flex items-center gap-1.5"
+                  title="Open live storefront page in new tab"
                 >
-                  <option value="" disabled>
-                    + Select a health goal from dropdown...
-                  </option>
-                  {HEALTH_GOALS.map((goal) => {
-                    const isSelected = form.health_goals.includes(goal.id);
-                    return (
-                      <option
-                        key={goal.id}
-                        value={goal.id}
-                        disabled={isSelected}
-                        className={isSelected ? 'text-gray-400 bg-gray-50' : 'text-gray-900'}
-                      >
-                        {isSelected
-                          ? `✓ ${goal.title} (Already selected)`
-                          : `${goal.title} — ${goal.subtitle}`}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
-              <input
-                value={tagString}
-                onChange={(e) => setTagString(e.target.value)}
-                placeholder="e.g. spicy, salad, bundle"
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Badge Label</label>
-              <input
-                value={form.badge_label}
-                onChange={(e) => setForm({ ...form, badge_label: e.target.value })}
-                placeholder="e.g. Bestseller, Customer Favorite"
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Highlight Line 1</label>
-              <input
-                value={form.highlight_1}
-                onChange={(e) => setForm({ ...form, highlight_1: e.target.value })}
-                placeholder="e.g. 40x sulforaphane vs mature head"
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Highlight Line 2</label>
-              <input
-                value={form.highlight_2}
-                onChange={(e) => setForm({ ...form, highlight_2: e.target.value })}
-                placeholder="e.g. Fresh tray · 7 to 10 days fresh"
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Detail Highlight Badges (max 4) */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900">
-                  Detail Highlight Badges (Max 4)
-                </label>
-                <p className="text-xs text-gray-500">
-                  The 4 feature chips shown under the description on the public product page (e.g. 40x Sulforaphane).
-                </p>
-              </div>
-              {badges.length < 4 && (
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>View Live Page</span>
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="px-5 py-2 bg-gray-900 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-1.5"
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Saving...' : (isNew ? 'Save & Create Product' : 'Save Changes')}</span>
+              </button>
+              {!isNew && editing && (
                 <button
                   type="button"
-                  onClick={handleAddBadge}
-                  className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  onClick={() => handleDelete(editing.id)}
+                  className="px-3 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 border border-red-200 transition-colors"
                 >
-                  + Add Badge
+                  Deactivate
                 </button>
               )}
             </div>
-
-            {badges.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">No custom badges set. The default 4 badges will be displayed.</p>
-            ) : (
-              <div className="space-y-2">
-                {badges.map((b, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Icon key"
-                      value={b.icon}
-                      onChange={(e) => handleBadgeChange(idx, 'icon', e.target.value)}
-                      className="w-24 px-2 py-1.5 border rounded-lg text-sm text-center font-mono bg-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Badge Label (e.g. 40x Sulforaphane)"
-                      value={b.label}
-                      onChange={(e) => handleBadgeChange(idx, 'label', e.target.value)}
-                      className="flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveBadge(idx)}
-                      className="text-red-500 hover:text-red-700 p-1.5 text-sm font-bold"
-                      title="Remove badge"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Product FAQs Section */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          {/* Quick Jump Anchor Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-2.5 pb-0.5 text-xs no-scrollbar">
+            <span className="text-[11px] font-medium text-gray-400 shrink-0 mr-1">Jump to:</span>
+            <a href="#sec-identity" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              1. Identity &amp; Tags
+            </a>
+            <a href="#sec-editorial" className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200/60 shrink-0 font-semibold transition-colors">
+              2. Editorial Story (Hero)
+            </a>
+            <a href="#sec-badges" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              3. Feature Badges
+            </a>
+            <a href="#sec-media" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              4. Photos &amp; Carousel
+            </a>
+            <a href="#sec-variants" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              5. Buy Box Variants
+            </a>
+            <a href="#sec-accordions" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              6. Accordions &amp; Science
+            </a>
+            <a href="#sec-pairs" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              7. Companion Products
+            </a>
+            <a href="#sec-faqs" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              8. Product FAQs
+            </a>
+            <a href="#sec-catalog-cards" className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 shrink-0 font-semibold transition-colors">
+              9. Catalog Card Subtitles
+            </a>
+            <a href="#sec-seo" className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-900 text-gray-700 shrink-0 font-medium transition-colors">
+              10. SEO
+            </a>
+          </div>
+        </div>
+
+        <div className="space-y-8 max-w-7xl mx-auto">
+          {/* ========================================================================= */}
+          {/* SECTION 1: CORE IDENTITY & STOREFRONT STATUS */}
+          {/* ========================================================================= */}
+          <div id="sec-identity" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-6 border-b">
               <div>
-                <label className="block text-sm font-semibold text-gray-900">
-                  Product FAQs ({faqs.length})
-                </label>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                    Storefront Section 1
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                    Product Identity &amp; Categorization
+                  </h2>
+                </div>
                 <p className="text-xs text-gray-500">
-                  Variable questions and answers specific to this product, shown in the FAQ section above the footer.
+                  Primary title, URL slug, category display sequence, and storefront visibility.
+                </p>
+              </div>
+              <div className="flex items-center gap-4 bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200 text-xs shrink-0">
+                <label className="flex items-center gap-2 font-medium text-gray-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span>Published on Store</span>
+                </label>
+                <span className="text-gray-300">|</span>
+                <label className="flex items-center gap-2 font-medium text-gray-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.is_bundle}
+                    onChange={(e) => setForm({ ...form, is_bundle: e.target.checked })}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span>Bundle Pack</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Product Name <span className="text-emerald-700 font-normal font-mono">(Storefront PDP &lt;h1&gt;)</span>
+                </label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. Pink Radish"
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  URL Slug <span className="text-gray-400 font-normal font-mono">(/products/[slug])</span>
+                </label>
+                <input
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  placeholder="e.g. pink-radish"
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Badge Label <span className="text-gray-400 font-normal">(Floating badge over product photo)</span>
+                </label>
+                <input
+                  value={form.badge_label}
+                  onChange={(e) => setForm({ ...form, badge_label: e.target.value })}
+                  placeholder="e.g. Bestseller, New Harvest, Customer Favorite"
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Shown as the plum pill on top left of product photo on both catalog grid &amp; detail page.
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Categories &amp; Display Order
+                  </label>
+                  <span className="text-[11px] text-gray-400">Order # in category tab</span>
+                </div>
+                {form.categories.length > 0 && (
+                  <div className="space-y-1.5 mb-2.5">
+                    {form.categories.map((cat) => (
+                      <div
+                        key={cat}
+                        className="flex items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-semibold text-gray-800 capitalize truncate">
+                            {cat.replace(/-/g, ' ')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCategory(cat)}
+                            className="text-gray-400 hover:text-red-500 font-bold ml-1 text-base leading-none"
+                            title="Remove category"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <label className="text-[11px] text-gray-500 whitespace-nowrap font-medium">
+                            Sequence:
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={form.category_orders?.[cat] || ''}
+                            onChange={(e) => handleCategoryOrderChange(cat, e.target.value)}
+                            placeholder="1"
+                            className="w-16 px-2 py-0.5 border border-gray-300 rounded text-center text-xs font-mono font-bold text-emerald-800 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="relative">
+                  <input
+                    value={catInput}
+                    onChange={(e) => { setCatInput(e.target.value); setShowCatDropdown(true); }}
+                    onFocus={() => setShowCatDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowCatDropdown(false), 200)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && catInput.trim()) {
+                        e.preventDefault();
+                        handleAddCategory(catInput);
+                        setCatInput('');
+                        setShowCatDropdown(false);
+                      }
+                    }}
+                    placeholder="Type to search or add a category…"
+                    className="w-full px-3.5 py-2 border rounded-xl text-sm"
+                  />
+                  {showCatDropdown && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-auto">
+                      {allCategories
+                        .filter(c => !form.categories.includes(c) && c.toLowerCase().includes(catInput.toLowerCase()))
+                        .map(cat => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleAddCategory(cat);
+                              setCatInput('');
+                              setShowCatDropdown(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 capitalize"
+                          >
+                            {cat.replace(/-/g, ' ')}
+                          </button>
+                        ))}
+                      {catInput.trim() && !allCategories.includes(catInput.trim().toLowerCase().replace(/\s+/g, '-')) && (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleAddCategory(catInput);
+                            setCatInput('');
+                            setShowCatDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium"
+                        >
+                          + Create &ldquo;{catInput.trim()}&rdquo;
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Health Goals Multi-Select Dropdown */}
+              <div className="sm:col-span-2 bg-[#F6FAF7] border border-emerald-200/90 rounded-xl p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                  <div>
+                    <label className="block text-sm font-semibold text-emerald-950 flex items-center gap-1.5">
+                      <Target className="w-4 h-4 text-emerald-800" />
+                      <span>Health Goals (Shop by Health Goal)</span>
+                    </label>
+                    <p className="text-xs text-emerald-800/80">
+                      Assign one or multiple of the 8 health goals to display this product under those goals on the website.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          health_goals: HEALTH_GOALS.map((g) => g.id),
+                        }))
+                      }
+                      className="text-[11px] font-medium text-emerald-700 hover:text-emerald-900 bg-white px-2.5 py-1 rounded-md border border-emerald-300 hover:bg-emerald-50 transition-colors shadow-xs"
+                    >
+                      Select All 8 Goals
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          health_goals: [],
+                        }))
+                      }
+                      className="text-[11px] font-medium text-gray-600 hover:text-red-700 bg-white px-2.5 py-1 rounded-md border border-gray-300 hover:bg-red-50 transition-colors shadow-xs"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Health Goal Badges */}
+                <div className="flex flex-wrap gap-1.5 mb-3 min-h-[32px] items-center">
+                  {form.health_goals && form.health_goals.length > 0 ? (
+                    form.health_goals.map((goalId) => {
+                      const goalDef = HEALTH_GOALS.find(
+                        (g) => g.id === goalId || g.slug === goalId || g.aliases.includes(goalId)
+                      );
+                      return (
+                        <span
+                          key={goalId}
+                          className="inline-flex items-center gap-1.5 bg-white text-[#1C3F2D] text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-300 shadow-xs"
+                        >
+                          <span>{goalDef?.title || goalId}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                health_goals: prev.health_goals.filter((g) => g !== goalId),
+                              }))
+                            }
+                            className="text-gray-400 hover:text-red-600 font-bold ml-1 text-sm leading-none"
+                            title="Remove this health goal"
+                          >
+                            &times;
+                          </button>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="text-xs text-emerald-700/70 italic">
+                      No health goals selected. Choose from the dropdown below:
+                    </span>
+                  )}
+                </div>
+
+                {/* Health Goal Select Dropdown */}
+                <div className="relative">
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val && !form.health_goals.includes(val)) {
+                        setForm((prev) => ({
+                          ...prev,
+                          health_goals: [...prev.health_goals, val],
+                        }));
+                      }
+                    }}
+                    className="w-full bg-white border border-emerald-300 rounded-lg px-3 py-2 text-sm text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 shadow-xs cursor-pointer"
+                  >
+                    <option value="" disabled>
+                      + Select a health goal from dropdown...
+                    </option>
+                    {HEALTH_GOALS.map((goal) => {
+                      const isSelected = form.health_goals.includes(goal.id);
+                      return (
+                        <option
+                          key={goal.id}
+                          value={goal.id}
+                          disabled={isSelected}
+                          className={isSelected ? 'text-gray-400 bg-gray-50' : 'text-gray-900'}
+                        >
+                          {isSelected
+                            ? `✓ ${goal.title} (Already selected)`
+                            : `${goal.title} — ${goal.subtitle}`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* SECTION 2: HERO EDITORIAL STORY (SHOWN DIRECTLY UNDER TITLE) */}
+          {/* ========================================================================= */}
+          <div id="sec-editorial" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="pb-4 mb-6 border-b">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                  Storefront Detail Page: Under Title
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                  Product Detail Hero Story &amp; Editorial Description
+                </h2>
+              </div>
+              <p className="text-xs text-gray-500">
+                These 3 fields render directly underneath the product title on <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700">/products/[slug]</code> in the Newsreader serif typography.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-7">
+              {/* Form Input Column */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    1. Description Lead / Hook <span className="text-emerald-700 font-normal">(Bold Italic opening sentence)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.description_lead}
+                    onChange={(e) => setForm({ ...form, description_lead: e.target.value })}
+                    placeholder="e.g. Crisp, colourful and peppery, with a live mooli-like kick"
+                    className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Renders at the very start of the first paragraph in bold italic styling.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    2. Description Body <span className="text-gray-500 font-normal">(Main story paragraph)</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="e.g. Rich in glucoraphasatin. Actively supports natural liver detoxification via activation of phase II liver detox enzymes and works to reduce digestive tract inflammation."
+                    className="w-full px-3.5 py-2.5 border rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    The main story paragraph explaining flavor, bioactive nutrition, and harvest vitality.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    3. Description Highlight / Callout <span className="text-emerald-700 font-normal">(Paragraph 2 with Lime Underline)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={form.description_highlight}
+                    onChange={(e) => setForm({ ...form, description_highlight: e.target.value })}
+                    placeholder="e.g. Brightens salads and chaats, or carries up to <u>40 times the concentrated sulforaphane</u>."
+                    className="w-full px-3.5 py-2.5 border rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span>Wrap key phrases with <code className="bg-gray-100 px-1 py-0.2 rounded text-emerald-800 font-mono text-[10.5px]">&lt;u&gt;text&lt;/u&gt;</code> or <code className="bg-gray-100 px-1 py-0.2 rounded text-emerald-800 font-mono text-[10.5px]">__text__</code> to highlight them with the lime accent underline.</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Live Storefront Hero Preview Column */}
+              <div className="bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E4DDC8]">
+                    <span className="font-mono text-[10.5px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Storefront Hero Preview
+                    </span>
+                    <span className="text-[11px] text-[#5C6B60]">Matches wildaboutgreens.com/products/[slug]</span>
+                  </div>
+
+                  <h3 className="font-serif font-medium text-3xl sm:text-4xl text-[#151F19] leading-[1.08] tracking-tight mb-4">
+                    {form.name || 'Pink Radish'}
+                  </h3>
+
+                  <div className="font-editorial text-[17px] leading-[1.62] text-[#33402F] space-y-3">
+                    {(form.description_lead || form.description) ? (
+                      <p>
+                        {form.description_lead && (
+                          <span className="font-medium italic text-[#122A1F]">
+                            {form.description_lead}{' '}
+                          </span>
+                        )}
+                        {form.description || ''}
+                      </p>
+                    ) : (
+                      <p className="text-gray-400 italic text-sm">
+                        Enter a lead hook and description body to preview here...
+                      </p>
+                    )}
+
+                    {form.description_highlight && (
+                      <p>
+                        {renderHighlightedStory(form.description_highlight)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-6 border-t border-[#E4DDC8]/60 flex items-center gap-2 text-xs text-[#5C6B60]">
+                  <CheckCircle className="w-4 h-4 text-emerald-700" />
+                  <span>Rendered with Newsreader Serif &amp; signature lime accent.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* SECTION 3: FEATURE BADGES & CHIPS (SHOWN UNDER EDITORIAL STORY) */}
+          {/* ========================================================================= */}
+          <div id="sec-badges" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                    Storefront Detail Page: Under Description
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                    Feature Badges &amp; Tags
+                  </h2>
+                </div>
+                <p className="text-xs text-gray-500">
+                  The 4 feature chips and search tags shown directly beneath the description on the product page.
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleLoadDefaultFaqs}
-                  className="px-2.5 py-1 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  title="Reset to 6 standard FAQ templates"
+                  onClick={() => setBadges(defaultBadges)}
+                  className="px-3 py-1.5 text-xs font-medium bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg text-gray-700 transition-colors"
+                  title="Reset to the 4 standard badges"
                 >
-                  Load Defaults
+                  Load Standard Badges
                 </button>
-                <button
-                  type="button"
-                  onClick={handleAddFaq}
-                  className="px-3 py-1 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  + Add FAQ
-                </button>
+                {badges.length < 4 && (
+                  <button
+                    type="button"
+                    onClick={handleAddBadge}
+                    className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    + Add Badge
+                  </button>
+                )}
               </div>
             </div>
 
-            {faqs.length === 0 ? (
-              <div className="text-center py-6 bg-white border border-dashed rounded-lg">
-                <p className="text-xs text-gray-400 mb-2">No FAQs added for this product yet.</p>
-                <button
-                  type="button"
-                  onClick={handleAddFaq}
-                  className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md font-medium"
-                >
-                  + Add First Question
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {faqs.map((faq, idx) => (
-                  <div key={idx} className="bg-white border rounded-lg p-3.5 space-y-2 shadow-sm">
-                    <div className="flex items-center justify-between gap-2 border-b pb-1.5">
-                      <span className="text-xs font-mono font-bold text-gray-500">
-                        FAQ #{idx + 1}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {idx > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => handleMoveFaq(idx, 'up')}
-                            className="px-1.5 py-0.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded"
-                            title="Move Up"
-                          >
-                            ↑
-                          </button>
-                        )}
-                        {idx < faqs.length - 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleMoveFaq(idx, 'down')}
-                            className="px-1.5 py-0.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded"
-                            title="Move Down"
-                          >
-                            ↓
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFaq(idx)}
-                          className="text-red-500 hover:text-red-700 text-xs font-semibold px-1.5 py-0.5 hover:bg-red-50 rounded ml-1"
-                          title="Remove this question"
-                        >
-                          ✕ Remove
-                        </button>
+            <div className="space-y-6">
+              {/* Badges rows */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Detail Highlight Badges (Max 4 Chips)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {badges.map((b, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-200 shadow-xs"
+                    >
+                      <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 shadow-xs">
+                        {renderAdminBadgeIcon(b.icon)}
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-gray-600 mb-1">Question</label>
+                      <select
+                        value={b.icon}
+                        onChange={(e) => handleBadgeChange(idx, 'icon', e.target.value)}
+                        className="w-32 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-800 outline-none focus:ring-1 focus:ring-emerald-500 shrink-0"
+                      >
+                        <option value="zap">⚡ Sulforaphane / Energy</option>
+                        <option value="shield">🛡️ Zero Pesticides</option>
+                        <option value="droplet">💧 Mineral RO Grown</option>
+                        <option value="scissors">✂️ Cut to Order</option>
+                        <option value="sprout">🌱 Living Greens</option>
+                      </select>
                       <input
                         type="text"
-                        placeholder="e.g. How long do they stay fresh at home?"
-                        value={faq.question}
-                        onChange={(e) => handleFaqChange(idx, 'question', e.target.value)}
-                        className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white"
+                        placeholder="e.g. 40x Sulforaphane"
+                        value={b.label}
+                        onChange={(e) => handleBadgeChange(idx, 'label', e.target.value)}
+                        className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-800 outline-none focus:ring-1 focus:ring-emerald-500"
                       />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBadge(idx)}
+                        className="text-gray-400 hover:text-red-600 p-1 text-sm font-bold shrink-0"
+                        title="Remove badge"
+                      >
+                        &times;
+                      </button>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-gray-600 mb-1">Answer</label>
-                      <textarea
-                        rows={2}
-                        placeholder="e.g. Refrigerated and unwashed, most varieties hold up well for 5–7 days..."
-                        value={faq.answer}
-                        onChange={(e) => handleFaqChange(idx, 'answer', e.target.value)}
-                        className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white"
+                  ))}
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Tags <span className="text-gray-400 font-normal">(Comma-separated — displayed with sprout icons on PDP)</span>
+                </label>
+                <input
+                  value={tagString}
+                  onChange={(e) => setTagString(e.target.value)}
+                  placeholder="e.g. microgreens, fresh greens, edible greens, spicy"
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                />
+              </div>
+
+              {/* Live Storefront Chips Preview */}
+              <div className="bg-[#FFFDF8] border border-[#E4DDC8] rounded-xl p-4">
+                <span className="font-mono text-[10.5px] font-bold text-emerald-800 uppercase tracking-wider block mb-2.5">
+                  Live Chips Preview on Product Page:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {badges.map((badge, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E4DDC8] text-xs font-semibold text-[#122A1F] shadow-xs"
+                    >
+                      {renderAdminBadgeIcon(badge.icon)}
+                      <span>{badge.label || 'Badge Label'}</span>
+                    </span>
+                  ))}
+                  {tagString
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean)
+                    .map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E4DDC8] text-xs font-semibold text-[#122A1F] shadow-xs"
+                      >
+                        <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />
+                        <span>{tag}</span>
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* SECTION 4: PRODUCT MEDIA & GALLERY CAROUSEL */}
+          {/* ========================================================================= */}
+          <div id="sec-media" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="pb-4 mb-6 border-b">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                  Storefront Detail Page: Left Carousel
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                  Product Images &amp; Carousel Gallery
+                </h2>
+              </div>
+              <p className="text-xs text-gray-500">
+                Primary thumbnail and multiple high-resolution photos for the 1:1 square storefront gallery carousel.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Primary Thumbnail Field */}
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">
+                      Primary Thumbnail (Catalog &amp; Detail)
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded font-bold">
+                      1:1 SQUARE
+                    </span>
+                  </div>
+                  <ImageField
+                    value={form.thumbnail_url || null}
+                    onChange={(url) => setForm((prev) => ({ ...prev, thumbnail_url: url }))}
+                    label=""
+                    aspectRatio="1/1"
+                    folder={`products/${form.slug?.trim() || editing?.slug || 'new-product'}/thumbnail`}
+                    publicId="thumbnail"
+                    altText={form.thumbnail_alt_text || ''}
+                    onAltTextChange={(val) => setForm((prev) => ({ ...prev, thumbnail_alt_text: val }))}
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-3 pt-3 border-t">
+                  This image appears on the main /products grid, recipe pairings, and as the initial slide on the product page.
+                </p>
+              </div>
+
+              {/* Gallery Carousel Images Column */}
+              <div className="lg:col-span-2 bg-gray-50 border border-gray-200 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide">
+                      Carousel Gallery Photos ({images.length})
+                    </h3>
+                    <p className="text-[11px] text-gray-500">
+                      Additional angles, macro close-ups, harvest shots, and packaging images.
+                    </p>
+                  </div>
+                  {!isNew && editing && (
+                    <span className="text-[10px] font-mono text-gray-500 bg-white border px-2 py-0.5 rounded font-bold">
+                      Interactive Carousel
+                    </span>
+                  )}
+                </div>
+
+                {isNew ? (
+                  <div className="p-6 bg-white border border-dashed rounded-xl text-center space-y-2">
+                    <Lightbulb className="w-6 h-6 text-amber-600 mx-auto" />
+                    <p className="text-sm font-semibold text-gray-800">
+                      Multi-Photo Carousel Available Upon Saving
+                    </p>
+                    <p className="text-xs text-gray-500 max-w-md mx-auto">
+                      Once you click &ldquo;Save &amp; Create Product&rdquo;, a database ID is assigned and you can upload multiple carousel gallery images right here.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="mt-2 px-4 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-lg"
+                    >
+                      {saving ? 'Saving...' : 'Save Product Now to Unlock Gallery'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {images.map((img) => (
+                      <div
+                        key={img.id}
+                        className="border rounded-xl p-2 bg-white flex flex-col justify-between space-y-2 shadow-xs"
+                      >
+                        <ImageField
+                          value={img.image_url}
+                          onChange={async (url, publicId) => {
+                            await adminFetch(`/api/admin/images/${img.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                image_url: url,
+                                cloudinary_public_id: publicId,
+                              }),
+                            });
+                            if (editing) loadProduct(editing.id);
+                          }}
+                          aspectRatio="1/1"
+                          folder={`products/${form.slug?.trim() || editing?.slug || 'product'}/gallery`}
+                          altText={img.alt_text || ''}
+                          onAltTextChange={async (alt) => {
+                            await adminFetch(`/api/admin/images/${img.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ alt_text: alt }),
+                            });
+                            if (editing) loadProduct(editing.id);
+                          }}
+                        />
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[11px] text-gray-500 font-medium">Order:</span>
+                            <input
+                              type="number"
+                              defaultValue={img.display_order}
+                              onBlur={async (e) => {
+                                const newOrder = parseInt(e.target.value, 10);
+                                if (!isNaN(newOrder) && newOrder !== img.display_order) {
+                                  await adminFetch(`/api/admin/images/${img.id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ display_order: newOrder }),
+                                  });
+                                  if (editing) loadProduct(editing.id);
+                                }
+                              }}
+                              className="w-10 px-1 py-0.5 border rounded text-xs text-center bg-white font-mono"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!confirm('Delete this gallery image?')) return;
+                              await adminFetch(`/api/admin/images/${img.id}`, { method: 'DELETE' });
+                              if (editing) loadProduct(editing.id);
+                            }}
+                            className="text-red-500 hover:text-red-700 text-xs font-semibold px-1"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add Gallery Image Box */}
+                    <div className="border border-dashed border-gray-300 rounded-xl p-2 bg-white flex flex-col justify-between items-center text-center shadow-xs">
+                      <ImageField
+                        value={null}
+                        onChange={async (url, publicId) => {
+                          if (!editing) return;
+                          const addRes = await adminFetch(`/api/admin/products/${editing.id}/images`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              image_url: url,
+                              display_order: images.length,
+                              cloudinary_public_id: publicId,
+                            }),
+                          });
+                          if (addRes.ok) {
+                            loadProduct(editing.id);
+                          }
+                        }}
+                        aspectRatio="1/1"
+                        folder={`products/${form.slug?.trim() || editing?.slug || 'product'}/gallery`}
                       />
+                      <p className="text-[11px] text-emerald-800 font-medium mt-1">+ Upload Carousel Photo</p>
                     </div>
                   </div>
-                ))}
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* SECTION 5: BUY BOX VARIANTS & PRICING */}
+          {/* ========================================================================= */}
+          <div id="sec-variants" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                    Storefront Detail Page: Buy Box
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                    Tray Sizes, Weights &amp; Pricing Variants
+                  </h2>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Configures the tray size selector and single-tray standard base price. The storewide subscription routine automatically applies <strong className="text-emerald-700 font-semibold">{subDiscount}% off</strong> for weekly subscribers.
+                </p>
+              </div>
+
+              {!isNew && (
+                <button
+                  type="button"
+                  onClick={() => setShowVariantForm(true)}
+                  className="px-3.5 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-lg transition-colors shrink-0"
+                >
+                  + Add Variant Size
+                </button>
+              )}
+            </div>
+
+            {isNew ? (
+              <div className="p-6 bg-gray-50 border border-dashed rounded-xl text-center space-y-2">
+                <PackageBox className="w-6 h-6 text-gray-400 mx-auto" />
+                <p className="text-sm font-semibold text-gray-800">
+                  Variants Available Once Product Is Saved
+                </p>
+                <p className="text-xs text-gray-500 max-w-md mx-auto">
+                  Save this new product to configure tray sizes (e.g. 30g Harvested Greens, 50g Harvested Greens, 100g Live Tray), pricing in Rupees, and live stock count.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {showVariantForm && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                    <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wide">
+                      Add New Tray Variant
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-gray-600 mb-1">Variant Label</label>
+                        <input
+                          placeholder="e.g. 50g Harvested Greens"
+                          value={variantForm.label}
+                          onChange={(e) => {
+                            const newLabel = e.target.value;
+                            const extracted = extractWeightFromLabel(newLabel);
+                            setVariantForm((prev) => ({
+                              ...prev,
+                              label: newLabel,
+                              ...(extracted !== null && !prev.net_weight_grams ? { net_weight_grams: extracted } : {}),
+                            }));
+                          }}
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-gray-600 mb-1">Net Weight (Grams)</label>
+                        <input
+                          type="number"
+                          placeholder="50"
+                          value={variantForm.net_weight_grams || ''}
+                          onChange={(e) =>
+                            setVariantForm({ ...variantForm, net_weight_grams: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-gray-600 mb-1">Price (paise — ₹1 = 100 paise)</label>
+                        <input
+                          type="number"
+                          placeholder="25000 (= ₹250.00)"
+                          value={variantForm.price_paise || ''}
+                          onChange={(e) =>
+                            setVariantForm({ ...variantForm, price_paise: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-white font-mono"
+                        />
+                        {variantForm.price_paise > 0 && (
+                          <span className="text-[11px] text-emerald-700 font-medium">
+                            = {formatPrice(variantForm.price_paise)}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-gray-600 mb-1">Stock Quantity</label>
+                        <input
+                          type="number"
+                          placeholder="100"
+                          value={variantForm.stock_qty || ''}
+                          onChange={(e) =>
+                            setVariantForm({ ...variantForm, stock_qty: Number(e.target.value) })
+                          }
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-white font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleVariantCreate}
+                        className="px-4 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg hover:bg-gray-800"
+                      >
+                        Save Variant
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowVariantForm(false)}
+                        className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                  <table className="w-full min-w-[550px] text-sm">
+                    <thead>
+                      <tr className="text-left text-xs font-semibold text-gray-500 bg-gray-50 border-b">
+                        <th className="py-2.5 px-4">Variant Label</th>
+                        <th className="py-2.5 px-3">Weight (g)</th>
+                        <th className="py-2.5 px-3">Standard Price</th>
+                        <th className="py-2.5 px-3">Stock Qty</th>
+                        <th className="py-2.5 px-3">Active</th>
+                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {variants.map((v) => (
+                        <VariantRow
+                          key={v.id}
+                          variant={v}
+                          onSave={handleVariantSave}
+                          onDelete={handleVariantDelete}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Thumbnail upload field */}
-          <div>
-            <ImageField
-              value={form.thumbnail_url || null}
-              onChange={(url) => setForm((prev) => ({ ...prev, thumbnail_url: url }))}
-              label="Product Thumbnail"
-              aspectRatio="1/1"
-              folder={`products/${form.slug?.trim() || editing?.slug || 'new-product'}/thumbnail`}
-              publicId="thumbnail"
-              altText={form.thumbnail_alt_text || ''}
-              onAltTextChange={(val) => setForm((prev) => ({ ...prev, thumbnail_alt_text: val }))}
-            />
-          </div>
-          {/* Editorial Product Description Section */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900">Product Editorial Story & Description</h3>
-              <p className="text-xs text-gray-500">
-                These texts appear under the product title on the product detail page in the Newsreader editorial serif font.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description Lead / Hook <span className="text-xs font-normal text-gray-500">(Italic opening sentence)</span>
-              </label>
-              <input
-                type="text"
-                value={form.description_lead}
-                onChange={(e) => setForm({ ...form, description_lead: e.target.value })}
-                placeholder="e.g. The heavyweight champion of plant nutrition."
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Renders at the beginning of the first paragraph in bold italic text.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description Body <span className="text-xs font-normal text-gray-500">(Main story paragraph)</span>
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={3}
-                placeholder="e.g. Harvested at the biological apex on day 10, delivering peak cellular antioxidants straight to your door."
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description Highlight / Secondary Note <span className="text-xs font-normal text-gray-500">(Second editorial paragraph)</span>
-              </label>
-              <textarea
-                value={form.description_highlight}
-                onChange={(e) => setForm({ ...form, description_highlight: e.target.value })}
-                rows={2}
-                placeholder="e.g. Carries up to <u>40 times the concentrated sulforaphane</u> of a mature head of broccoli. Crisp, peppery, and alive until the moment you cut it."
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Tip: Wrap key phrases with <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700 font-mono text-[10.5px]">&lt;u&gt;text&lt;/u&gt;</code> or <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700 font-mono text-[10.5px]">__text__</code> to highlight them with the signature lime-green accent underline.
-              </p>
-            </div>
-          </div>
-
-          {/* Product Detail Description Accordions (4 Questions) */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          {/* ========================================================================= */}
+          {/* SECTION 6: PRODUCT DETAIL ACCORDIONS & NUTRITION PROFILE */}
+          {/* ========================================================================= */}
+          <div id="sec-accordions" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b">
               <div>
-                <label className="block text-sm font-semibold text-gray-900">
-                  Product Detail Accordions ({accordions.length})
-                </label>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                    Storefront Detail Page: Below Buy Box
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                    Product Detail Accordions &amp; Nutrition Science
+                  </h2>
+                </div>
                 <p className="text-xs text-gray-500">
-                  The 4 expandable question &amp; answer sections shown under the buy box on the product page (How to Eat &amp; Store, Nutrient Science, etc.).
+                  The 4 expandable question &amp; answer sections shown below the buy box (How to Eat &amp; Store, Nutrient Science, Purity, Delivery).
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleLoadDefaultAccordions}
-                  className="px-2.5 py-1 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg text-gray-700 transition-colors"
                   title="Reset to 4 standard accordion questions"
                 >
-                  Load Defaults
+                  Load Standard Accordions
                 </button>
                 <button
                   type="button"
                   onClick={handleAddAccordion}
-                  className="px-3 py-1 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
-                  + Add Question
+                  + Add Accordion
                 </button>
               </div>
             </div>
 
-            {accordions.length === 0 ? (
-              <div className="text-center py-6 bg-white border border-dashed rounded-lg">
-                <p className="text-xs text-gray-400 mb-2">No detail accordions added for this product yet.</p>
-                <button
-                  type="button"
-                  onClick={handleAddAccordion}
-                  className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md font-medium"
-                >
-                  + Add First Question
-                </button>
-              </div>
-            ) : (
+            <div className="space-y-5">
+              {/* Accordions List */}
               <div className="space-y-3">
                 {accordions.map((acc, idx) => (
-                  <div key={idx} className="bg-white border rounded-lg p-3.5 space-y-2 shadow-sm">
-                    <div className="flex items-center justify-between gap-2 border-b pb-1.5">
-                      <span className="text-xs font-mono font-bold text-gray-500">
-                        Item #{idx + 1}
+                  <div key={idx} className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2 shadow-xs">
+                    <div className="flex items-center justify-between gap-2 border-b pb-2">
+                      <span className="text-xs font-mono font-bold text-gray-600">
+                        Accordion #{idx + 1}: {acc.title || 'Untitled'}
                       </span>
                       <div className="flex items-center gap-1">
                         {idx > 0 && (
                           <button
                             type="button"
                             onClick={() => handleMoveAccordion(idx, 'up')}
-                            className="px-1.5 py-0.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded"
+                            className="px-2 py-0.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded"
                             title="Move Up"
                           >
-                            ↑
+                            ↑ Up
                           </button>
                         )}
                         {idx < accordions.length - 1 && (
                           <button
                             type="button"
                             onClick={() => handleMoveAccordion(idx, 'down')}
-                            className="px-1.5 py-0.5 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded"
+                            className="px-2 py-0.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded"
                             title="Move Down"
                           >
-                            ↓
+                            ↓ Down
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => handleRemoveAccordion(idx)}
-                          className="text-red-500 hover:text-red-700 text-xs font-semibold px-1.5 py-0.5 hover:bg-red-50 rounded ml-1"
+                          className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-0.5 hover:bg-red-50 rounded ml-1"
                           title="Remove this item"
                         >
                           ✕ Remove
@@ -1277,7 +1809,7 @@ export default function AdminProductsPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-600 mb-1">Title / Question</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Title</label>
                       <input
                         type="text"
                         placeholder="e.g. How to Eat & Store"
@@ -1287,43 +1819,75 @@ export default function AdminProductsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-600 mb-1">Content / Answer</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Content / Instructions</label>
                       <textarea
                         rows={3}
-                        placeholder="e.g. Keep your tray on the kitchen counter away from direct scorching sun..."
+                        placeholder="e.g. Keep your tray on the kitchen counter..."
                         value={acc.content}
                         onChange={(e) => handleAccordionChange(idx, 'content', e.target.value)}
-                        className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white"
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white leading-relaxed"
                       />
                     </div>
                   </div>
                 ))}
               </div>
-            )}
+
+              {/* Nutrition Notes Field */}
+              <div className="bg-[#F6FAF7] border border-emerald-200 rounded-xl p-4 sm:p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-emerald-800" />
+                    <span>Specific Nutrition &amp; Science Notes</span>
+                  </label>
+                  <span className="text-[10px] font-mono font-bold text-emerald-800 bg-white border border-emerald-300 px-2 py-0.5 rounded">
+                    Appears inside Accordion #2
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-800/80">
+                  Optional detailed bioactive breakdown rendered in a dedicated highlighted box inside the &ldquo;Nutrient Profile &amp; Science&rdquo; accordion on the product page (e.g. specific vitamin counts, glucoraphasatin levels, or antioxidant research).
+                </p>
+                <textarea
+                  value={form.nutrition_notes}
+                  onChange={(e) => setForm({ ...form, nutrition_notes: e.target.value })}
+                  rows={2}
+                  placeholder="e.g. Rich in glucoraphasatin (precursor to raphasatin). Contains 4x higher vitamin C and 10x higher folate compared to mature root radishes."
+                  className="w-full px-3.5 py-2 border border-emerald-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Pairs Well With Section (3 Products) */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center">
-                <Utensils className="w-4 h-4 inline mr-1.5 text-[#1C3F2D]" />
-                &ldquo;Pairs Well With&rdquo; Recommendations (3 Products)
-              </h3>
+          {/* ========================================================================= */}
+          {/* SECTION 7: COMPANION PRODUCTS ("PAIRS WELL WITH") */}
+          {/* ========================================================================= */}
+          <div id="sec-pairs" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="pb-4 mb-6 border-b">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                  Storefront Detail Page: Companion Section
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                  &ldquo;Pairs Well With&rdquo; Recommended Companion Products (3 Products)
+                </h2>
+              </div>
               <p className="text-xs text-gray-500">
                 Choose the 3 companion products displayed directly below the description accordions on this product&apos;s page.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[0, 1, 2].map((slotIdx) => (
-                <div key={slotIdx} className="bg-white p-3 border rounded-lg shadow-sm space-y-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Product #{slotIdx + 1}
-                  </label>
+                <div key={slotIdx} className="bg-gray-50 p-4 border rounded-xl space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700">
+                      Companion #{slotIdx + 1}
+                    </label>
+                    <Utensils className="w-3.5 h-3.5 text-gray-400" />
+                  </div>
                   <select
                     value={pairsWellWith[slotIdx] || ''}
                     onChange={(e) => handlePairChange(slotIdx, e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
                     <option value="">-- Choose Product --</option>
                     {products
@@ -1335,7 +1899,7 @@ export default function AdminProductsPage() {
                       ))}
                   </select>
                   {pairsWellWith[slotIdx] && (
-                    <p className="text-[10.5px] text-emerald-600 font-mono">
+                    <p className="text-[11px] text-emerald-700 font-medium">
                       ✓ Selected: {products.find((p) => p.id === pairsWellWith[slotIdx])?.name}
                     </p>
                   )}
@@ -1343,310 +1907,300 @@ export default function AdminProductsPage() {
               ))}
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nutrition Notes</label>
-            <textarea
-              value={form.nutrition_notes}
-              onChange={(e) => setForm({ ...form, nutrition_notes: e.target.value })}
-              rows={2}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
-            />
-          </div>
 
-          {/* Search Engine Optimization (SEO) */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900">Search Engine Optimization (SEO)</h3>
-              <p className="text-xs text-gray-500">
-                Optional overrides for search engines and social previews. Leave blank to automatically fall back to the product name and description.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-700">SEO Title</label>
-                <span className={`text-xs font-mono ${(form.seo_title?.length || 0) > 60 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
-                  {form.seo_title?.length || 0} / 60
-                </span>
+          {/* ========================================================================= */}
+          {/* SECTION 8: PRODUCT FAQS (EXPANDABLE QUESTIONS ABOVE FOOTER) */}
+          {/* ========================================================================= */}
+          <div id="sec-faqs" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-6 border-b">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                    Storefront Detail Page: Bottom FAQ Section
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                    Product FAQs ({faqs.length})
+                  </h2>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Questions and answers specific to this variety, shown in the expandable FAQ section above the footer.
+                </p>
               </div>
-              <input
-                type="text"
-                value={form.seo_title}
-                onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
-                placeholder={form.name || 'Automatic fallback: Product Name'}
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-700">SEO Description</label>
-                <span className={`text-xs font-mono ${(form.seo_description?.length || 0) > 155 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
-                  {form.seo_description?.length || 0} / 155
-                </span>
-              </div>
-              <textarea
-                rows={2}
-                value={form.seo_description}
-                onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
-                placeholder={form.description || 'Automatic fallback: truncated product description (155 chars)'}
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-              />
-              Active
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.is_bundle}
-                onChange={(e) => setForm({ ...form, is_bundle: e.target.checked })}
-              />
-              Bundle
-            </label>
-          </div>
-          <div className="flex gap-2">
-            {isNew && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 w-full flex items-center gap-1.5">
-                <Lightbulb className="w-4 h-4 text-amber-600 inline shrink-0" />
-                <span><strong>Image Gallery</strong> will appear here right after you save; it needs a product ID first.</span>
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Product'}
-            </button>
-            {!isNew && editing && (
-              <button
-                onClick={() => handleDelete(editing.id)}
-                className="px-4 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100"
-              >
-                Deactivate
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Gallery section */}
-        {!isNew && editing && (
-          <div className="bg-white rounded-xl border p-6 mb-6">
-            <div className="mb-4">
-              <h2 className="font-bold text-gray-900">Product Image Gallery</h2>
-              <p className="text-xs text-gray-500">
-                Multiple images for the public product detail gallery / carousel
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-              {images.map((img) => (
-                <div
-                  key={img.id}
-                  className="border rounded-xl p-2 bg-gray-50 flex flex-col justify-between space-y-2 shadow-sm"
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleLoadDefaultFaqs}
+                  className="px-3 py-1.5 text-xs font-medium bg-gray-50 hover:bg-gray-100 border border-gray-300 text-gray-700 rounded-lg transition-colors"
+                  title="Reset to 6 standard FAQ templates"
                 >
-                  <ImageField
-                    value={img.image_url}
-                    onChange={async (url, publicId) => {
-                      await adminFetch(`/api/admin/images/${img.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          image_url: url,
-                          cloudinary_public_id: publicId,
-                        }),
-                      });
-                      loadProduct(editing.id);
-                    }}
-                    aspectRatio="1/1"
-                    folder={`products/${form.slug?.trim() || editing.slug || 'product'}/gallery`}
-                    altText={img.alt_text || ''}
-                    onAltTextChange={async (alt) => {
-                      await adminFetch(`/api/admin/images/${img.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          alt_text: alt,
-                        }),
-                      });
-                      loadProduct(editing.id);
-                    }}
-                  />
-                  <div className="flex items-center justify-between gap-1 pt-1 border-t">
+                  Load Standard FAQs
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddFaq}
+                  className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  + Add FAQ
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {faqs.map((faq, idx) => (
+                <div key={idx} className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between gap-2 border-b pb-1.5">
+                    <span className="text-xs font-mono font-bold text-gray-600">
+                      FAQ #{idx + 1}
+                    </span>
                     <div className="flex items-center gap-1">
-                      <span className="text-[11px] text-gray-500 font-medium">Order:</span>
-                      <input
-                        type="number"
-                        defaultValue={img.display_order}
-                        onBlur={async (e) => {
-                          const newOrder = parseInt(e.target.value, 10);
-                          if (!isNaN(newOrder) && newOrder !== img.display_order) {
-                            await adminFetch(`/api/admin/images/${img.id}`, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ display_order: newOrder }),
-                            });
-                            loadProduct(editing.id);
-                          }
-                        }}
-                        className="w-12 px-1 py-0.5 border rounded text-xs text-center bg-white"
-                      />
+                      {idx > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleMoveFaq(idx, 'up')}
+                          className="px-2 py-0.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded"
+                          title="Move Up"
+                        >
+                          ↑ Up
+                        </button>
+                      )}
+                      {idx < faqs.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleMoveFaq(idx, 'down')}
+                          className="px-2 py-0.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded"
+                          title="Move Down"
+                        >
+                          ↓ Down
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFaq(idx)}
+                        className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-0.5 hover:bg-red-50 rounded ml-1"
+                        title="Remove this question"
+                      >
+                        ✕ Remove
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!confirm('Delete this gallery image?')) return;
-                        await adminFetch(`/api/admin/images/${img.id}`, { method: 'DELETE' });
-                        loadProduct(editing.id);
-                      }}
-                      className="text-red-500 hover:text-red-700 text-xs font-semibold px-1"
-                    >
-                      Delete
-                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">Question</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. How fresh are the greens when they arrive?"
+                      value={faq.question}
+                      onChange={(e) => handleFaqChange(idx, 'question', e.target.value)}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">Answer</label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Every tray is cut after you place your order..."
+                      value={faq.answer}
+                      onChange={(e) => handleFaqChange(idx, 'answer', e.target.value)}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white leading-relaxed"
+                    />
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
 
-              {/* Empty ImageField to add a new gallery image */}
-              <div className="border rounded-xl p-2 bg-gray-50 shadow-sm">
-                <ImageField
-                  value={null}
-                  onChange={async (url, publicId) => {
-                    const addRes = await adminFetch(`/api/admin/products/${editing.id}/images`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        image_url: url,
-                        display_order: images.length,
-                        cloudinary_public_id: publicId,
-                      }),
-                    });
-                    if (addRes.ok) {
-                      loadProduct(editing.id);
-                    }
-                  }}
-                  aspectRatio="1/1"
-                  folder={`products/${form.slug?.trim() || editing.slug || 'product'}/gallery`}
-                />
-                <p className="text-[11px] text-gray-400 text-center mt-1">+ Add Image</p>
+          {/* ========================================================================= */}
+          {/* SECTION 9: SHOP CATALOG LISTING CARD SUBTITLES */}
+          {/* ========================================================================= */}
+          <div id="sec-catalog-cards" className="bg-amber-50/70 border border-amber-300 rounded-2xl p-6 sm:p-7 shadow-xs">
+            <div className="pb-4 mb-6 border-b border-amber-200">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[11px] font-bold text-amber-950 bg-amber-200 border border-amber-300 px-2 py-0.5 rounded uppercase tracking-wider">
+                  Catalog Shop Grid Only (/products)
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-amber-950">
+                  Shop Catalog Grid Card Subtitles (Highlight 1 &amp; 2)
+                </h2>
+              </div>
+              <p className="text-xs text-amber-900/90 font-medium">
+                ⚠️ <strong>Important distinction:</strong> These two short lines appear <u>ONLY</u> on the catalog cards on the main <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-950">/products</code> shop grid. They do <u>NOT</u> appear on the individual product detail page hero (Section 2 controls the detail hero).
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-amber-950 mb-1">
+                    Catalog Card Subtitle 1 <span className="font-mono text-gray-500 font-normal">(highlight_1)</span>
+                  </label>
+                  <input
+                    value={form.highlight_1}
+                    onChange={(e) => setForm({ ...form, highlight_1: e.target.value })}
+                    placeholder="e.g. Detox and Digestion"
+                    className="w-full px-3.5 py-2.5 border border-amber-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                  <p className="text-[11px] text-amber-800/80 mt-1">
+                    First subtitle line rendered directly beneath the product name on the shop grid card.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-amber-950 mb-1">
+                    Catalog Card Subtitle 2 <span className="font-mono text-gray-500 font-normal">(highlight_2)</span>
+                  </label>
+                  <input
+                    value={form.highlight_2}
+                    onChange={(e) => setForm({ ...form, highlight_2: e.target.value })}
+                    placeholder="e.g. Rich in glucoraphasatin"
+                    className="w-full px-3.5 py-2.5 border border-amber-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                  <p className="text-[11px] text-amber-800/80 mt-1">
+                    Second subtitle line rendered in secondary gray font on the shop grid card.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mini Catalog Card Live Preview */}
+              <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-2 mb-3 border-b">
+                    <span className="font-mono text-[10.5px] font-bold text-amber-900 uppercase tracking-wider">
+                      Shop Grid Card Preview (/products)
+                    </span>
+                    <span className="text-[10px] text-gray-400">Card on Shop Page</span>
+                  </div>
+
+                  <div className="max-w-[240px] mx-auto bg-[#FFFDF8] border border-[#E4DDC8] rounded-2xl p-3 shadow-xs">
+                    <div className="aspect-square bg-stone-100 rounded-xl mb-3 overflow-hidden flex items-center justify-center relative">
+                      {form.thumbnail_url ? (
+                        <img
+                          src={form.thumbnail_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-gray-400">Product Thumbnail</span>
+                      )}
+                      {form.badge_label && (
+                        <span className="absolute top-2 left-2 bg-[#8B2D46] text-white text-[9.5px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          {form.badge_label}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="font-serif font-medium text-base text-[#151F19] truncate">
+                      {form.name || 'Pink Radish'}
+                    </h4>
+                    <p className="text-xs text-emerald-950 font-medium truncate mt-0.5">
+                      {form.highlight_1 || 'Detox and Digestion'}
+                    </p>
+                    <p className="text-[11px] text-gray-500 truncate">
+                      {form.highlight_2 || 'Rich in glucoraphasatin'}
+                    </p>
+                    <div className="mt-3 pt-2 border-t border-[#E4DDC8]/60 flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#122A1F]">
+                        {lowestPrice > 0 ? formatPrice(lowestPrice) : 'From ₹150'}
+                      </span>
+                      <span className="text-[11px] bg-emerald-900 text-white px-2 py-0.5 rounded-md font-semibold">
+                        View
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-gray-400 text-center mt-3">
+                  This card is what appears when browsing the main shop catalog.
+                </p>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Variants section */}
-        {!isNew && (
-          <div className="bg-white rounded-xl border p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-bold text-gray-900">Variants</h2>
+          {/* ========================================================================= */}
+          {/* SECTION 10: SEARCH ENGINE OPTIMIZATION (SEO) */}
+          {/* ========================================================================= */}
+          <div id="sec-seo" className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-xs">
+            <div className="pb-4 mb-6 border-b">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                  Search Engines &amp; Social Previews
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                  Search Engine Optimization (SEO)
+                </h2>
+              </div>
+              <p className="text-xs text-gray-500">
+                Optional metadata overrides for Google search results and WhatsApp/social sharing cards.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-700">SEO Title</label>
+                  <span className={`text-xs font-mono ${(form.seo_title?.length || 0) > 60 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                    {form.seo_title?.length || 0} / 60
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={form.seo_title}
+                  onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
+                  placeholder={form.name ? `${form.name} · Fresh Microgreens` : 'Automatic fallback: Product Name'}
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm bg-white"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-700">SEO Meta Description</label>
+                  <span className={`text-xs font-mono ${(form.seo_description?.length || 0) > 155 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                    {form.seo_description?.length || 0} / 155
+                  </span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={form.seo_description}
+                  onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
+                  placeholder={form.description || 'Automatic fallback: truncated product description'}
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm bg-white leading-relaxed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Fixed Bottom Sticky Save Bar ── */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 py-3 px-4 sm:px-8 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="font-bold text-sm text-gray-900 truncate">
+                {form.name || 'Untitled Product'}
+              </span>
+              <span className="text-xs text-gray-400 font-mono hidden sm:inline">
+                {form.slug ? `/products/${form.slug}` : ''}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowVariantForm(true)}
-                className="px-3 py-1 bg-gray-100 text-sm rounded-lg hover:bg-gray-200"
+                type="button"
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-3 py-2 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors hidden sm:block"
               >
-                + Add Variant
+                ↑ Top
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2.5 bg-gray-900 text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-md flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Saving...' : (isNew ? 'Save & Create Product' : 'Save Changes')}</span>
               </button>
             </div>
-            <p className="text-xs text-gray-500 mb-4">
-              Variants configure the single-tray standard base price. The storewide subscription routine automatically applies <strong className="text-emerald-700 font-semibold">{subDiscount}% off</strong> on top of this price when customers subscribe.
-            </p>
-
-            {showVariantForm && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <input
-                    placeholder="Label (e.g. 100g Tray)"
-                    value={variantForm.label}
-                    onChange={(e) => {
-                      const newLabel = e.target.value;
-                      const extracted = extractWeightFromLabel(newLabel);
-                      setVariantForm((prev) => ({
-                        ...prev,
-                        label: newLabel,
-                        ...(extracted !== null && !prev.net_weight_grams ? { net_weight_grams: extracted } : {}),
-                      }));
-                    }}
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Weight (g)"
-                    value={variantForm.net_weight_grams || ''}
-                    onChange={(e) =>
-                      setVariantForm({ ...variantForm, net_weight_grams: Number(e.target.value) })
-                    }
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price (paise)"
-                    value={variantForm.price_paise || ''}
-                    onChange={(e) =>
-                      setVariantForm({ ...variantForm, price_paise: Number(e.target.value) })
-                    }
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Stock"
-                    value={variantForm.stock_qty || ''}
-                    onChange={(e) =>
-                      setVariantForm({ ...variantForm, stock_qty: Number(e.target.value) })
-                    }
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleVariantCreate}
-                    className="px-3 py-1 bg-gray-900 text-white text-sm rounded-lg"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => setShowVariantForm(false)}
-                    className="px-3 py-1 text-gray-500 text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px] text-sm">
-              <thead>
-                <tr className="text-left text-gray-500 border-b">
-                  <th className="pb-2">Label</th>
-                  <th className="pb-2">Weight</th>
-                  <th className="pb-2">Price</th>
-                  <th className="pb-2">Stock</th>
-                  <th className="pb-2">Active</th>
-                  <th className="pb-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {variants.map((v) => (
-                  <VariantRow
-                    key={v.id}
-                    variant={v}
-                    onSave={handleVariantSave}
-                    onDelete={handleVariantDelete}
-                  />
-                ))}
-              </tbody>
-            </table>
-            </div>
           </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -1677,7 +2231,11 @@ export default function AdminProductsPage() {
           <button
             onClick={() => {
               setIsNew(true);
+              setEditing(null);
               setForm(emptyProduct);
+              setTagString('');
+              setVariants([]);
+              setImages([]);
               setBadges(defaultBadges);
               setFaqs(defaultProductFaqs);
               setAccordions(defaultDetailAccordions);

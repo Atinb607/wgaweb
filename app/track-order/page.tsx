@@ -176,6 +176,7 @@ function TrackOrderContent() {
   const [turnstileReady, setTurnstileReady] = useState(false);
   const turnstileWidgetId = useRef<string | null>(null);
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
@@ -332,6 +333,23 @@ function TrackOrderContent() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // Automatically scroll down to the order status section when an order is fetched
+  useEffect(() => {
+    if (searched && resultsRef.current) {
+      const timer = setTimeout(() => {
+        if (!resultsRef.current || typeof window === 'undefined') return;
+        const rect = resultsRef.current.getBoundingClientRect();
+        const headerOffset = 96; // Offset for fixed navigation header + spacing
+        const targetY = window.pageYOffset + rect.top - headerOffset;
+        window.scrollTo({
+          top: Math.max(0, targetY),
+          behavior: 'smooth',
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [searched, orders]);
+
   return (
     <>
       {/* Main Container with ample top padding to avoid fixed navbar overlap */}
@@ -468,8 +486,9 @@ function TrackOrderContent() {
           </div>
 
           {/* Results Section */}
-          {searched && (
-            <div className="space-y-8 animate-fadeIn">
+          <div ref={resultsRef} className="scroll-mt-24 sm:scroll-mt-28" id="order-status-section">
+            {searched && (
+              <div className="space-y-8 animate-fadeIn">
               {orders.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-3xl border border-[#E4DDC8] p-8 max-w-xl mx-auto shadow-sm">
                   <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3 text-gray-500">
@@ -786,6 +805,7 @@ function TrackOrderContent() {
               )}
             </div>
           )}
+        </div>
         </main>
       </div>
 

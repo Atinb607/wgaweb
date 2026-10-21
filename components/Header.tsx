@@ -9,6 +9,7 @@ import { useCartStore } from '@/lib/cartStore';
 import { isAdminPath } from '@/lib/adminAuth';
 import { Truck, X } from '@/components/icons';
 import CartMascot from '@/components/CartMascot';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 export default function Header() {
   const pathname = usePathname();
@@ -134,7 +135,7 @@ export default function Header() {
             >
               <div className="relative h-9 sm:h-10 lg:h-11 w-[155px] sm:w-[179px] lg:w-[197px] transition-transform duration-200 group-hover:scale-[1.02]">
                 <Image
-                  src="/logo-picture-bg.png"
+                  src={CLOUDINARY_ASSETS.logoPictureBg}
                   alt="Wild About Greens"
                   width={188}
                   height={42}
@@ -144,7 +145,7 @@ export default function Header() {
                   }`}
                 />
                 <Image
-                  src="/logo-white-bg.png"
+                  src={CLOUDINARY_ASSETS.logoWhiteBg}
                   alt="Wild About Greens"
                   width={188}
                   height={42}
@@ -270,7 +271,7 @@ export default function Header() {
                 >
                   <div className="relative h-8 w-[145px]">
                     <Image
-                      src="/logo-white-bg.png"
+                      src={CLOUDINARY_ASSETS.logoWhiteBg}
                       alt="Wild About Greens"
                       width={145}
                       height={32}

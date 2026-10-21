@@ -7,6 +7,7 @@ import { useCartStore } from '@/lib/cartStore';
 import { formatPrice, cloudinaryImage } from '@/lib/format';
 import { LeafFavicon, Sprout, Shield, Sparkles, CheckCircle, Clock, Utensils, Zap, Droplet, Scissors } from '@/components/icons';
 import { Product, Variant, RelatedProduct, Review, HighlightBadge, WhyChoosePin, ProductFAQ, DetailAccordion, HatTrickVariantData } from './page';
+import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
 
 const DEFAULT_HAT_TRICK_VARIANT: HatTrickVariantData = {
   variantId: 'ef7b23d7-1f12-4794-8bef-a4eccbdeb037',
@@ -80,22 +81,22 @@ const DEFAULT_WHY_CHOOSE_BLOCKS = [
   {
     title: 'Grown,\nnot made.',
     description: 'seed → sprout · 7-10 days',
-    image_url: '/right%20choice/grown-not-made.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.grownNotMade,
   },
   {
     title: 'RO water as\nprimary source.',
     description: 'no heaviness · easy on your gut',
-    image_url: '/right%20choice/ro-water.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.roWater,
   },
   {
     title: 'Coco-Peat is\nwhere it starts.',
     description: 'soil-free · sustainable',
-    image_url: '/right%20choice/coco-peat.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.cocoPeat,
   },
   {
     title: 'No Pesticides:\nnever ever.',
     description: 'zero spray · zero residue',
-    image_url: '/right%20choice/no-pest.png',
+    image_url: CLOUDINARY_ASSETS.whyChoose.noPest,
   },
 ];
 
@@ -268,19 +269,44 @@ function renderReasonIcon(type: string) {
 
 function renderBadgeIcon(icon: string, label: string) {
   const norm = (icon + ' ' + label).toLowerCase();
-  if (norm.includes('sulforaphane') || norm.includes('energy') || icon === '⚡') {
+  const iconLower = (icon || '').toLowerCase();
+  if (
+    iconLower === 'zap' ||
+    iconLower === 'bolt' ||
+    icon === '⚡' ||
+    norm.includes('sulforaphane') ||
+    norm.includes('energy')
+  ) {
     return <Zap className="w-3.5 h-3.5 text-[#1C3F2D]" />;
   }
-  if (norm.includes('pesticide') || norm.includes('clean') || icon === '🛡️') {
+  if (
+    iconLower === 'shield' ||
+    icon === '🛡️' ||
+    norm.includes('pesticide') ||
+    norm.includes('clean')
+  ) {
     return <Shield className="w-3.5 h-3.5 text-[#1C3F2D]" />;
   }
-  if (norm.includes('ro') || norm.includes('water') || norm.includes('mineral') || icon === '💧') {
+  if (
+    iconLower === 'droplet' ||
+    iconLower === 'water' ||
+    iconLower === 'drop' ||
+    icon === '💧' ||
+    norm.includes('ro') ||
+    norm.includes('mineral')
+  ) {
     return <Droplet className="w-3.5 h-3.5 text-[#1C3F2D]" />;
   }
-  if (norm.includes('cut') || norm.includes('order') || icon === '✂️') {
+  if (
+    iconLower === 'scissors' ||
+    iconLower === 'cut' ||
+    icon === '✂️' ||
+    norm.includes('harvest') ||
+    norm.includes('order')
+  ) {
     return <Scissors className="w-3.5 h-3.5 text-[#1C3F2D]" />;
   }
-  if (icon && !/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(icon)) {
+  if (icon && !/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(icon) && icon !== 'sprout') {
     return <span>{icon}</span>;
   }
   return <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />;
@@ -1050,6 +1076,10 @@ export default function ProductDetailClient({
               <div className="border-t border-[#E4DDC8] pt-2">
                 {effectiveAccordions.map((acc, idx) => {
                   const isOpen = openAcc === idx;
+                  const isNutrientAcc =
+                    acc.title.toLowerCase().includes('nutrient') ||
+                    acc.title.toLowerCase().includes('science') ||
+                    acc.title.toLowerCase().includes('profile');
                   return (
                     <div key={idx} className="border-b border-[#E4DDC8]">
                       <button
@@ -1073,6 +1103,14 @@ export default function ProductDetailClient({
                           >
                             <div className="pb-4 text-sm text-[#3B4A40] leading-relaxed space-y-2 whitespace-pre-line">
                               {acc.content}
+                              {isNutrientAcc && product.nutrition_notes && product.nutrition_notes.trim() && (
+                                <div className="mt-3 pt-3 border-t border-[#E4DDC8]/70 text-xs text-[#2A3B30] bg-[#F7F9F5] p-3 rounded-xl border border-[#DCE8D8]">
+                                  <span className="font-bold block text-[#122A1F] mb-1">
+                                    Nutrient &amp; Science Profile:
+                                  </span>
+                                  <p className="leading-relaxed whitespace-pre-line">{product.nutrition_notes.trim()}</p>
+                                </div>
+                              )}
                             </div>
                           </motion.div>
                         )}
@@ -1176,7 +1214,7 @@ export default function ProductDetailClient({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={cloudinaryImage(content.bundle_banner_image || '/trio-bundle-banner.png', 900)}
+              src={cloudinaryImage(content.bundle_banner_image || CLOUDINARY_ASSETS.trioBundleBanner, 900)}
               alt={content.bundle_banner_image_alt || content.bundle_banner_title || 'Classic Trio - Go For All Three'}
               width={800}
               height={450}

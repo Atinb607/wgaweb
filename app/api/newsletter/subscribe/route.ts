@@ -100,19 +100,23 @@ export async function POST(request: NextRequest) {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // Insert into newsletter_subscribers with ON CONFLICT to silently handle re-subscriptions.
-    const result = await sql`
+    // Insert into newsletter_subscribers with ON CONFLICT to record/update subscriptions.
+    await sql`
       INSERT INTO newsletter_subscribers (email, source)
       VALUES (${cleanEmail}, ${safeSource})
-      ON CONFLICT (email) DO NOTHING
-      RETURNING id
+      ON CONFLICT (email) DO UPDATE
+        SET source = COALESCE(EXCLUDED.source, newsletter_subscribers.source),
+            subscribed_at = now()
     `;
 
-    // Send general welcome email only for genuinely new non-promo signups, fire-and-forget
-    if (result.length > 0 && !isPromoBanner) {
-      sendNewsletterWelcome(cleanEmail).catch(() => {
-        // Silently ignore: email failure shouldn't affect the signup response
-      });
+    // Send welcome email for non-promo newsletter signups (e.g. footer)
+    // Await execution so serverless/Node environment does not terminate before delivery
+    if (!isPromoBanner) {
+      try {
+        await sendNewsletterWelcome(cleanEmail);
+      } catch (emailErr) {
+        console.error('[newsletter/subscribe] Welcome email delivery error:', emailErr);
+      }
     }
 
     // ── Banner Code Request (Step 4) ──

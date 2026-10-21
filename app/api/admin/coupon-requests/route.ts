@@ -56,14 +56,23 @@ export async function GET(request: NextRequest) {
 
     const total = Number(totalRows[0]?.count ?? 0);
 
-    return NextResponse.json({
-      requests: rows,
-      total,
-      page,
-      limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-      new_count: newCount,
-    });
+    return NextResponse.json(
+      {
+        requests: rows,
+        total,
+        page,
+        limit,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        new_count: newCount,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
