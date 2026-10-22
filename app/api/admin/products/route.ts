@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { revalidateProducts } from '@/lib/revalidate';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface AdminProductRow {
   id: string;
@@ -29,7 +31,7 @@ export async function GET() {
     `;
     const productList = products as unknown as AdminProductRow[];
     if (productList.length === 0) {
-      return NextResponse.json([]);
+      return adminJsonResponse([]);
     }
 
     const productIds = productList.map((p) => p.id);
@@ -46,11 +48,11 @@ export async function GET() {
       variants: variantList.filter((v) => v.product_id === p.id),
     }));
 
-    return NextResponse.json(withVariants);
+    return adminJsonResponse(withVariants);
   } catch (error: unknown) {
     console.error('admin get products error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
     const { slug, name, categories, category_orders, display_order, health_goals, badge_label, highlight_1, highlight_2, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, detail_highlight_badges, faqs, detail_accordions, pairs_well_with, seo_title, seo_description } = body;
 
     if (!slug || !name || !categories || !Array.isArray(categories) || categories.length === 0) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { error: 'slug, name, and at least one category are required' },
         { status: 400 }
       );
@@ -98,8 +100,8 @@ export async function POST(request: NextRequest) {
       ? JSON.stringify(detail_highlight_badges)
       : JSON.stringify([
           { icon: 'zap', label: '40x Sulforaphane' },
-          { icon: 'shield', label: 'Zero Pesticides' },
-          { icon: 'droplet', label: 'Mineral RO Grown' },
+          { icon: 'shield', label: 'Immunity Booster' },
+          { icon: 'droplet', label: 'Mineral Water' },
           { icon: 'scissors', label: 'Cut to Order' },
         ]);
     const formattedFaqs = Array.isArray(faqs) ? JSON.stringify(faqs) : JSON.stringify([]);
@@ -111,8 +113,8 @@ export async function POST(request: NextRequest) {
     let result;
     try {
       result = await sql`
-        INSERT INTO products (slug, name, categories, category_orders, display_order, health_goals, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, detail_highlight_badges, faqs, detail_accordions, pairs_well_with, seo_title, seo_description, updated_at)
-        VALUES (${slug}, ${name}, ${categories}, ${formattedCategoryOrders}::jsonb, ${resolvedDisplayOrder}, ${formattedHealthGoals}, ${description || null}, ${description_lead || null}, ${description_highlight || null}, ${nutrition_notes || null}, ${is_bundle || false}, ${thumbnail_url || null}, ${thumbnail_alt_text || null}, ${formattedTags}, ${badge_label || null}, ${highlight_1 || null}, ${highlight_2 || null}, ${formattedBadges}::jsonb, ${formattedFaqs}::jsonb, ${formattedAccordions}::jsonb, ${formattedPairs}::jsonb, ${cleanSeoTitle}, ${cleanSeoDescription}, NOW())
+        INSERT INTO products (slug, name, categories, category_orders, display_order, health_goals, description, description_lead, description_highlight, nutrition_notes, is_bundle, thumbnail_url, thumbnail_alt_text, tags, badge_label, highlight_1, highlight_2, detail_highlight_badges, faqs, detail_accordions, pairs_well_with, seo_title, seo_description)
+        VALUES (${slug}, ${name}, ${categories}, ${formattedCategoryOrders}::jsonb, ${resolvedDisplayOrder}, ${formattedHealthGoals}, ${description || null}, ${description_lead || null}, ${description_highlight || null}, ${nutrition_notes || null}, ${is_bundle || false}, ${thumbnail_url || null}, ${thumbnail_alt_text || null}, ${formattedTags}, ${badge_label || null}, ${highlight_1 || null}, ${highlight_2 || null}, ${formattedBadges}::jsonb, ${formattedFaqs}::jsonb, ${formattedAccordions}::jsonb, ${formattedPairs}::jsonb, ${cleanSeoTitle}, ${cleanSeoDescription})
         RETURNING *
       `;
     } catch (dbErr: unknown) {
@@ -129,13 +131,13 @@ export async function POST(request: NextRequest) {
     }
 
     revalidateProducts(result[0]?.slug);
-    return NextResponse.json(result[0], { status: 201 });
+    return adminJsonResponse(result[0], { status: 201 });
   } catch (error: unknown) {
     console.error('admin create product error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     if (message.includes('unique') || message.includes('duplicate')) {
-      return NextResponse.json({ error: 'A product with that slug already exists' }, { status: 409 });
+      return adminJsonResponse({ error: 'A product with that slug already exists' }, { status: 409 });
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }

@@ -849,27 +849,7 @@ export default function ProductDetailClient({
                     <span>{badge.label}</span>
                   </motion.span>
                 ))}
-                {Array.isArray(product.tags) &&
-                  product.tags
-                    .map((t) => String(t ?? '').trim())
-                    .filter(Boolean)
-                    .map((tag, idx) => (
-                      <motion.span
-                        key={`tag-${idx}-${tag}`}
-                        variants={{
-                          hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
-                          visible: {
-                            opacity: 1,
-                            y: 0,
-                            transition: { duration: shouldReduceMotion ? 0 : 0.2, ease: 'easeOut' },
-                          },
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFFDF8] border border-[#E4DDC8] text-xs font-semibold text-[#122A1F] shadow-sm"
-                      >
-                        <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />
-                        <span>{tag}</span>
-                      </motion.span>
-                    ))}
+
               </motion.div>
 
               {/* BUY BOX */}

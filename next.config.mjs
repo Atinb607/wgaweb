@@ -25,7 +25,44 @@ const nextConfig = {
     ],
   },
   async headers() {
+    const antiCacheHeaders = [
+      { key: 'Cache-Control', value: 'private, no-cache, no-store, max-age=0, must-revalidate' },
+      { key: 'Pragma', value: 'no-cache' },
+      { key: 'Expires', value: '0' },
+      { key: 'X-Cache-Enabled', value: 'False' },
+      { key: 'X-Accel-Buffering', value: 'no' },
+      { key: 'Surrogate-Control', value: 'no-store' },
+    ];
+
+    const adminSlugs = Array.from(
+      new Set(
+        [
+          process.env.ADMIN_PANEL_SLUG,
+          'admin-panel-secure',
+          'admin',
+        ].filter(Boolean)
+      )
+    );
+
+    const adminRouteRules = [
+      {
+        source: '/api/admin/:path*',
+        headers: antiCacheHeaders,
+      },
+      ...adminSlugs.flatMap((slug) => [
+        {
+          source: `/${slug}`,
+          headers: antiCacheHeaders,
+        },
+        {
+          source: `/${slug}/:path*`,
+          headers: antiCacheHeaders,
+        },
+      ]),
+    ];
+
     return [
+      ...adminRouteRules,
       {
         source: '/((?!_next/).*\\.(?:ico|png|jpg|jpeg|svg|webp|avif|mp4|webm|woff|woff2|ttf|otf))',
         headers: [

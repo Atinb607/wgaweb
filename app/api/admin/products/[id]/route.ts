@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { revalidateProducts } from '@/lib/revalidate';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(
   _request: NextRequest,
@@ -20,7 +22,7 @@ export async function GET(
     `;
 
     if (products.length === 0) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return adminJsonResponse({ error: 'Product not found' }, { status: 404 });
     }
 
     const variants = await sql`
@@ -37,11 +39,11 @@ export async function GET(
       ORDER BY display_order ASC, created_at ASC
     `;
 
-    return NextResponse.json({ ...products[0], variants, images });
+    return adminJsonResponse({ ...products[0], variants, images });
   } catch (error: unknown) {
     console.error('admin get product error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -140,15 +142,15 @@ export async function PUT(
     }
 
     if (result.length === 0) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return adminJsonResponse({ error: 'Product not found' }, { status: 404 });
     }
 
     revalidateProducts(result[0]?.slug);
-    return NextResponse.json(result[0]);
+    return adminJsonResponse(result[0]);
   } catch (error: unknown) {
     console.error('admin update product error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -168,14 +170,14 @@ export async function DELETE(
     `;
 
     if (result.length === 0) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return adminJsonResponse({ error: 'Product not found' }, { status: 404 });
     }
 
     revalidateProducts(result[0]?.slug);
-    return NextResponse.json({ message: 'Product deactivated', product: result[0] });
+    return adminJsonResponse({ message: 'Product deactivated', product: result[0] });
   } catch (error: unknown) {
     console.error('admin delete product error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }

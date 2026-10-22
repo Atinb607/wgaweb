@@ -50,12 +50,21 @@ function renderHighlightedStory(text: string) {
   });
 }
 
+function normalizeBadgeIcon(icon: string): string {
+  const norm = (icon || '').toLowerCase().trim();
+  if (norm === 'zap' || norm === 'bolt' || icon === '⚡') return 'zap';
+  if (norm === 'shield' || icon === '🛡️') return 'shield';
+  if (norm === 'droplet' || norm === 'water' || norm === 'drop' || icon === '💧') return 'droplet';
+  if (norm === 'scissors' || norm === 'cut' || icon === '✂️') return 'scissors';
+  return 'sprout';
+}
+
 function renderAdminBadgeIcon(icon: string) {
-  const norm = (icon || '').toLowerCase();
-  if (norm === 'zap' || norm === 'bolt' || icon === '⚡') return <Zap className="w-3.5 h-3.5 text-[#1C3F2D]" />;
-  if (norm === 'shield' || icon === '🛡️') return <Shield className="w-3.5 h-3.5 text-[#1C3F2D]" />;
-  if (norm === 'droplet' || norm === 'water' || icon === '💧') return <Droplet className="w-3.5 h-3.5 text-[#1C3F2D]" />;
-  if (norm === 'scissors' || norm === 'cut' || icon === '✂️') return <Scissors className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  const norm = normalizeBadgeIcon(icon);
+  if (norm === 'zap') return <Zap className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'shield') return <Shield className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'droplet') return <Droplet className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'scissors') return <Scissors className="w-3.5 h-3.5 text-[#1C3F2D]" />;
   return <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />;
 }
 
@@ -256,6 +265,8 @@ export default function AdminProductsPage() {
   const [newCatInput, setNewCatInput] = useState('');
   const [addingCat, setAddingCat] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const handleBadgeChange = (index: number, field: 'icon' | 'label', value: string) => {
     setBadges((prev) => {
@@ -349,8 +360,15 @@ export default function AdminProductsPage() {
   };
 
   const loadProducts = async () => {
-    const res = await adminFetch('/api/admin/products');
-    if (res.ok) setProducts(await res.json());
+    setLoadingProducts(true);
+    try {
+      const res = await adminFetch('/api/admin/products');
+      if (res.ok) setProducts(await res.json());
+    } catch (err) {
+      console.error('Failed to load products:', err);
+    } finally {
+      setLoadingProducts(false);
+    }
     loadCategories();
   };
 
@@ -683,6 +701,10 @@ export default function AdminProductsPage() {
           body: JSON.stringify(payload),
         });
         if (res.ok) {
+          const updated = await res.json();
+          setProducts((prev) =>
+            prev.map((p) => (p.id === editing.id ? { ...p, ...updated } : p))
+          );
           loadProducts();
           loadProduct(editing.id);
         }
@@ -694,9 +716,42 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deactivate this product?')) return;
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, is_active: false } : p))
+    );
     await adminFetch(`/api/admin/products/${id}`, { method: 'DELETE' });
     setEditing(null);
     loadProducts();
+  };
+
+  const handleToggleProductStatus = async (id: string, currentActive: boolean) => {
+    const nextActive = !currentActive;
+    setTogglingId(id);
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, is_active: nextActive } : p))
+    );
+    try {
+      const res = await adminFetch(`/api/admin/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: nextActive }),
+      });
+      if (!res.ok) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, is_active: currentActive } : p))
+        );
+        alert('Failed to update product status');
+      } else {
+        loadProducts();
+      }
+    } catch (err) {
+      console.error('Toggle product error:', err);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, is_active: currentActive } : p))
+      );
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   const handleVariantSave = async (v: Variant) => {
@@ -1278,11 +1333,11 @@ export default function AdminProductsPage() {
                     Storefront Detail Page: Under Description
                   </span>
                   <h2 className="text-base sm:text-lg font-bold text-gray-900">
-                    Feature Badges &amp; Tags
+                    Feature Badges
                   </h2>
                 </div>
                 <p className="text-xs text-gray-500">
-                  The 4 feature chips and search tags shown directly beneath the description on the product page.
+                  Up to 4 highlight badges shown directly beneath the description on the product page (e.g. Cut to Order, Zero Pesticides, Freshly Harvested).
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1322,15 +1377,15 @@ export default function AdminProductsPage() {
                         {renderAdminBadgeIcon(b.icon)}
                       </div>
                       <select
-                        value={b.icon}
+                        value={normalizeBadgeIcon(b.icon)}
                         onChange={(e) => handleBadgeChange(idx, 'icon', e.target.value)}
-                        className="w-32 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-800 outline-none focus:ring-1 focus:ring-emerald-500 shrink-0"
+                        className="w-36 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-800 outline-none focus:ring-1 focus:ring-emerald-500 shrink-0"
                       >
-                        <option value="zap">⚡ Sulforaphane / Energy</option>
+                        <option value="sprout">🌱 Living Greens</option>
                         <option value="shield">🛡️ Zero Pesticides</option>
                         <option value="droplet">💧 Mineral RO Grown</option>
                         <option value="scissors">✂️ Cut to Order</option>
-                        <option value="sprout">🌱 Living Greens</option>
+                        <option value="zap">⚡ High Nutrition</option>
                       </select>
                       <input
                         type="text"
@@ -1352,16 +1407,16 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              {/* Tags */}
+              {/* Search Keywords (Optional) */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Tags <span className="text-gray-400 font-normal">(Comma-separated — displayed with sprout icons on PDP)</span>
+                  Search Keywords / Tags <span className="text-gray-400 font-normal">(Optional — internal search only, not displayed as chips on storefront)</span>
                 </label>
                 <input
                   value={tagString}
                   onChange={(e) => setTagString(e.target.value)}
-                  placeholder="e.g. microgreens, fresh greens, edible greens, spicy"
-                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
+                  placeholder="e.g. salad greens, crunchy (optional keywords)"
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none text-gray-700 bg-gray-50/50"
                 />
               </div>
 
@@ -1380,19 +1435,7 @@ export default function AdminProductsPage() {
                       <span>{badge.label || 'Badge Label'}</span>
                     </span>
                   ))}
-                  {tagString
-                    .split(',')
-                    .map((t) => t.trim())
-                    .filter(Boolean)
-                    .map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E4DDC8] text-xs font-semibold text-[#122A1F] shadow-xs"
-                      >
-                        <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />
-                        <span>{tag}</span>
-                      </span>
-                    ))}
+
                 </div>
               </div>
             </div>
@@ -2513,6 +2556,16 @@ export default function AdminProductsPage() {
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={() => loadProducts()}
+          disabled={loadingProducts}
+          title="Force refresh products list from server"
+          className="ml-auto px-3 py-1 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+        >
+          <span className={loadingProducts ? 'inline-block animate-spin' : ''}>↻</span>
+          <span>{loadingProducts ? 'Refreshing...' : 'Refresh'}</span>
+        </button>
       </div>
 
       <div className="bg-white rounded-xl border overflow-x-auto shadow-xs">
@@ -2523,7 +2576,6 @@ export default function AdminProductsPage() {
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Category &amp; Order</th>
               <th className="px-4 py-3">Health Goals</th>
-              <th className="px-4 py-3">Tags</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -2591,30 +2643,26 @@ export default function AdminProductsPage() {
                     )}
                   </div>
                 </td>
+
                 <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {p.tags && p.tags.length > 0 ? (
-                      p.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="text-[10px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200"
-                        >
-                          {t}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-gray-400">-</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      p.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+                  <button
+                    type="button"
+                    onClick={() => handleToggleProductStatus(p.id, p.is_active)}
+                    disabled={togglingId === p.id}
+                    title={p.is_active ? 'Click to deactivate product' : 'Click to activate product'}
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+                      p.is_active
+                        ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                     }`}
                   >
-                    {p.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        p.is_active ? 'bg-green-500' : 'bg-gray-400'
+                      }`}
+                    />
+                    <span>{togglingId === p.id ? 'Updating...' : p.is_active ? 'Active' : 'Inactive'}</span>
+                  </button>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <button

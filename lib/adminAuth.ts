@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname, useParams } from 'next/navigation';
+import { isAdminPath, KNOWN_PUBLIC_PREFIXES, ADMIN_SUBPAGES } from './adminPaths';
+
+export { isAdminPath, KNOWN_PUBLIC_PREFIXES, ADMIN_SUBPAGES };
 
 /**
  * Client-side admin auth check. Calls /api/admin/stats to verify
@@ -29,7 +32,16 @@ export function useAdminAuth(panelKey?: string) {
       return;
     }
 
-    fetch('/api/admin/stats', { credentials: 'include' })
+    // Pass cache: 'no-store' and cache-buster
+    fetch(`/api/admin/stats?_t=${Date.now()}`, {
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'X-Cache-Enabled': 'False',
+      },
+    })
       .then((res) => {
         if (res.ok) {
           setIsAuthed(true);
@@ -48,85 +60,37 @@ export function useAdminAuth(panelKey?: string) {
 
 /** Wrapper for admin fetch calls: returns the response or redirects on 401 */
 export async function adminFetch(url: string, options?: RequestInit): Promise<Response> {
-  const res = await fetch(url, { ...options, credentials: 'include' });
+  const method = (options?.method || 'GET').toUpperCase();
+  let fetchUrl = url;
+
+  // Append timestamp cache-buster for GET / HEAD requests to defeat SiteGround Nginx SuperCacher & browser caching
+  if (method === 'GET' || method === 'HEAD') {
+    const separator = fetchUrl.includes('?') ? '&' : '?';
+    fetchUrl = `${fetchUrl}${separator}_t=${Date.now()}`;
+  }
+
+  const headers = new Headers(options?.headers);
+  if (!headers.has('Cache-Control')) {
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+  if (!headers.has('Pragma')) {
+    headers.set('Pragma', 'no-cache');
+  }
+  if (!headers.has('X-Cache-Enabled')) {
+    headers.set('X-Cache-Enabled', 'False');
+  }
+
+  const res = await fetch(fetchUrl, {
+    ...options,
+    headers,
+    cache: options?.cache || 'no-store',
+    credentials: options?.credentials || 'include',
+  });
+
   if (res.status === 401 && typeof window !== 'undefined') {
     const segments = window.location.pathname.split('/').filter(Boolean);
     const currentKey = segments[0] || 'admin';
     window.location.href = `/${currentKey}/login`;
   }
   return res;
-}
-
-const KNOWN_PUBLIC_PREFIXES = [
-  '/products',
-  '/cart',
-  '/checkout',
-  '/order-confirmation',
-  '/track-order',
-  '/bulk-order',
-  '/our-story',
-  '/pathshala',
-  '/recipes',
-  '/recipe',
-  '/blog',
-  '/recipe-khazana',
-  '/contact-us',
-  '/policies',
-  '/privacy-policy',
-  '/terms-and-conditions',
-  '/terms-of-service',
-  '/shipping-and-returns',
-  '/returns-and-exchange',
-  '/shipping',
-  '/health-goals',
-];
-
-const ADMIN_SUBPAGES = [
-  'products',
-  'orders',
-  'bulk-orders',
-  'delivery-pincodes',
-  'health-goals',
-  'newsletter',
-  'inquiries',
-  'reviews',
-  'content',
-  'email-content',
-  'partner-logos',
-  'pins',
-  'blog',
-  'carousel',
-  'login',
-  'coupons',
-];
-
-export function isAdminPath(pathname: string | null): boolean {
-  if (!pathname) return false;
-  if (pathname === '/') return false;
-
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    return true;
-  }
-
-  // If matches known public prefixes, definitely not admin
-  if (KNOWN_PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-    return false;
-  }
-
-  const segments = pathname.split('/').filter(Boolean);
-
-  // Subpage matches known admin subpages (e.g. /<slug>/orders, /<slug>/login)
-  if (segments.length >= 2 && ADMIN_SUBPAGES.includes(segments[1])) {
-    return true;
-  }
-  if (segments.length >= 1 && ADMIN_SUBPAGES.includes(segments[segments.length - 1])) {
-    return true;
-  }
-
-  // A single non-public segment is the dynamic admin panel root (/[panelKey])
-  if (segments.length === 1) {
-    return true;
-  }
-
-  return false;
 }

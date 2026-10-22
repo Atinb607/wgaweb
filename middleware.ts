@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
 import { isCanonicalHost } from '@/lib/seo';
+import { isAdminPath } from '@/lib/adminPaths';
+import { ADMIN_NO_CACHE_HEADERS } from '@/lib/adminResponse';
 
 // ── Security headers applied to ALL responses ──
 const securityHeaders: Record<string, string> = {
@@ -40,6 +42,15 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest): Nex
   if (shouldAddNoIndexHeader(request)) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
+
+  // Defeat caching on all admin panel pages and admin API endpoints (especially on SiteGround / Nginx)
+  const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith('/api/admin/') || isAdminPath(pathname)) {
+    for (const [key, value] of Object.entries(ADMIN_NO_CACHE_HEADERS)) {
+      response.headers.set(key, value);
+    }
+  }
+
   return response;
 }
 

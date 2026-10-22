@@ -9,6 +9,7 @@ export function revalidateProducts(slug?: string | null) {
     revalidatePath('/products', 'page');
     revalidatePath('/products/health-goals', 'page');
     revalidatePath('/bulk-order', 'page');
+    revalidatePath('/cart', 'page');
     if (slug) {
       revalidatePath(`/products/${slug}`, 'page');
     }
@@ -107,57 +108,33 @@ export function revalidatePartnerLogos() {
 }
 
 /**
- * Revalidates public pages when content blocks change for a specific page.
+ * Revalidates public pages when site settings or content blocks change.
  */
-export function revalidateContentBlocks(pageKey: string) {
+export function revalidateSiteContent(page?: string | null) {
   try {
-    switch (pageKey) {
-      case 'homepage':
-      case 'home':
-        revalidatePath('/', 'page');
-        break;
-      case 'product-listing':
-        revalidatePath('/products', 'page');
-        revalidatePath('/products/health-goals', 'page');
-        break;
-      case 'product-detail':
-        revalidatePath('/products/[slug]', 'page');
-        break;
-      case 'our-story':
-        revalidatePath('/our-story', 'page');
-        break;
-      case 'pathshala':
-      case 'blog':
-        revalidatePath('/pathshala', 'page');
-        break;
-      case 'recipes':
-      case 'recipe':
-      case 'recipe-khazana':
-        revalidatePath('/recipes', 'page');
-        break;
-      case 'privacy-policy':
-        revalidatePath('/privacy-policy', 'page');
-        revalidatePath('/policies', 'page');
-        break;
-      case 'terms-and-conditions':
-        revalidatePath('/terms-and-conditions', 'page');
-        revalidatePath('/policies', 'page');
-        break;
-      case 'shipping-and-returns':
-        revalidatePath('/shipping-and-returns', 'page');
-        revalidatePath('/policies', 'page');
-        break;
-      case 'health-goals':
-        revalidatePath('/products/health-goals', 'page');
-        break;
-      case 'site':
-        revalidatePath('/', 'layout');
-        break;
-      default:
-        revalidatePath('/', 'page');
-        break;
+    revalidatePath('/', 'layout');
+    revalidatePath('/', 'page');
+    if (page === 'products' || page === 'product-listing') {
+      revalidatePath('/products', 'page');
+      revalidatePath('/products/health-goals', 'page');
+    } else if (page === 'product-detail') {
+      revalidatePath('/products/[slug]', 'page');
+    } else if (page === 'our-story') {
+      revalidatePath('/our-story', 'page');
+    } else if (page === 'pathshala') {
+      revalidatePath('/pathshala', 'page');
+    } else if (page === 'recipes') {
+      revalidatePath('/recipes', 'page');
+    } else if (page === 'bulk-order') {
+      revalidatePath('/bulk-order', 'page');
+    } else if (page === 'contact-us') {
+      revalidatePath('/contact-us', 'page');
+    } else if (page === 'cart-drawer') {
+      revalidatePath('/', 'layout');
     }
   } catch (err) {
-    console.warn(`revalidateContentBlocks(${pageKey}) error:`, err);
+    console.warn('revalidateSiteContent error:', err);
   }
 }
+
+export const revalidateContentBlocks = revalidateSiteContent;

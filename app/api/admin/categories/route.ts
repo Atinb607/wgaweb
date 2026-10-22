@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import {
   getAllCategoriesWithCounts,
   updateCategoriesOrderAndVisibility,
@@ -6,6 +6,7 @@ import {
   deleteCategory,
 } from '@/lib/categoryServer';
 import { revalidateProducts } from '@/lib/revalidate';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,13 +18,11 @@ export const revalidate = 0;
 export async function GET() {
   try {
     const categories = await getAllCategoriesWithCounts();
-    return NextResponse.json(categories, {
-      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
-    });
+    return adminJsonResponse(categories);
   } catch (error: unknown) {
     console.error('admin get categories error:', error);
     const message = error instanceof Error ? error.message : 'Failed to fetch categories';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -36,7 +35,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     if (!body || !Array.isArray(body.categories)) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { error: 'Invalid request body. "categories" array is required.' },
         { status: 400 }
       );
@@ -52,7 +51,7 @@ export async function PUT(request: NextRequest) {
     const refreshed = await getAllCategoriesWithCounts();
     revalidateProducts();
 
-    return NextResponse.json({
+    return adminJsonResponse({
       success: true,
       categories: refreshed,
       message: 'Category order and visibility updated successfully.',
@@ -60,7 +59,7 @@ export async function PUT(request: NextRequest) {
   } catch (error: unknown) {
     console.error('admin put categories error:', error);
     const message = error instanceof Error ? error.message : 'Failed to update categories';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -74,14 +73,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const rawName = body?.name;
     if (!rawName || typeof rawName !== 'string' || !rawName.trim()) {
-      return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
+      return adminJsonResponse({ error: 'Category name is required' }, { status: 400 });
     }
 
     const created = await addCategory(rawName);
     const refreshed = await getAllCategoriesWithCounts();
     revalidateProducts();
 
-    return NextResponse.json({
+    return adminJsonResponse({
       success: true,
       category: created,
       categories: refreshed,
@@ -90,7 +89,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error('admin post categories error:', error);
     const message = error instanceof Error ? error.message : 'Failed to create category';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -101,34 +100,40 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    let name = searchParams.get('name');
+    let name: string | null = null;
 
-    if (!name) {
+    // Check query params
+    const queryName = request.nextUrl.searchParams.get('name');
+    if (queryName && queryName.trim()) {
+      name = queryName.trim();
+    } else {
+      // Check body
       try {
         const body = await request.json();
-        name = body?.name;
+        if (body?.name && typeof body.name === 'string' && body.name.trim()) {
+          name = body.name.trim();
+        }
       } catch {
-        // no body
+        // No body provided, ignore
       }
     }
 
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return NextResponse.json({ error: 'Category name is required to delete' }, { status: 400 });
+    if (!name) {
+      return adminJsonResponse({ error: 'Category name is required' }, { status: 400 });
     }
 
-    await deleteCategory(name.trim().toLowerCase());
+    await deleteCategory(name);
     const refreshed = await getAllCategoriesWithCounts();
     revalidateProducts();
 
-    return NextResponse.json({
+    return adminJsonResponse({
       success: true,
       categories: refreshed,
-      message: `Category "${name}" removed.`,
+      message: `Category "${name}" removed from settings.`,
     });
   } catch (error: unknown) {
     console.error('admin delete category error:', error);
     const message = error instanceof Error ? error.message : 'Failed to delete category';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
