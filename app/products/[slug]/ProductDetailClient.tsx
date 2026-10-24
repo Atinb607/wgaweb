@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice, cloudinaryImage } from '@/lib/format';
+import { cldSrcSet } from '@/lib/cloudinary';
 import { LeafFavicon, Sprout, Shield, Sparkles, CheckCircle, Clock, Utensils, Zap, Droplet, Scissors } from '@/components/icons';
 import { Product, Variant, RelatedProduct, Review, HighlightBadge, WhyChoosePin, ProductFAQ, DetailAccordion, HatTrickVariantData } from './page';
 import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
@@ -449,6 +450,7 @@ export default function ProductDetailClient({
   const [whyChoosePins, setWhyChoosePins] = useState<WhyChoosePin[]>(initialWhyChoosePins);
 
   useEffect(() => {
+    if (initialWhyChoosePins.length > 0) return;
     fetch('/api/pins/product_listing_why_choose')
       .then((r) => r.json())
       .then((data) => {
@@ -457,7 +459,7 @@ export default function ProductDetailClient({
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialWhyChoosePins.length]);
 
   const companionProducts = (
     pairedProducts && pairedProducts.length > 0 ? pairedProducts : relatedProducts || []
@@ -753,7 +755,9 @@ export default function ProductDetailClient({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   key={activeImgIdx}
-                  src={cloudinaryImage(PRODUCT_IMAGES[activeImgIdx]?.url, 900)}
+                  src={cloudinaryImage(PRODUCT_IMAGES[activeImgIdx]?.url, 800)}
+                  srcSet={cldSrcSet(PRODUCT_IMAGES[activeImgIdx]?.url, [420, 640, 900])}
+                  sizes="(max-width: 1024px) 92vw, 48vw"
                   alt={PRODUCT_IMAGES[activeImgIdx]?.alt || `${product.name} fresh microgreens`}
                   width={800}
                   height={864}

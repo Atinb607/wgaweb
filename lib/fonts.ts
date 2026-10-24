@@ -23,6 +23,7 @@ export const fraunces = Fraunces({
 export const newsreader = Newsreader({
   subsets: ['latin'],
   display: 'swap',
+  preload: false,
   variable: '--font-editorial',
   axes: ['opsz'],
 });
@@ -31,12 +32,14 @@ export const anton = Anton({
   weight: '400',
   subsets: ['latin'],
   display: 'swap',
+  preload: false,
   variable: '--font-display',
 });
 
 export const dancingScript = Dancing_Script({
   subsets: ['latin'],
   display: 'swap',
+  preload: false,
   variable: '--font-handwriting',
 });
 
@@ -44,6 +47,7 @@ export const ibmPlexMono = IBM_Plex_Mono({
   weight: ['400', '500', '600'],
   subsets: ['latin'],
   display: 'swap',
+  preload: false,
   variable: '--font-mono',
 });
 

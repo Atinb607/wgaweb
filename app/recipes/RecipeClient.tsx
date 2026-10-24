@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Utensils } from '@/components/icons';
-import { cldUrl } from '@/lib/cloudinary';
+import { cldUrl, cldSrcSet } from '@/lib/cloudinary';
 
 export interface RecipeItem {
   id: string;
@@ -31,7 +31,9 @@ export default function RecipeClient({
 }: RecipeClientProps) {
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  const heroImage = cldUrl(content.hero_image_url?.trim() || DEFAULT_HERO_IMAGE, 1600);
+  const heroImageSource = content.hero_image_url?.trim() || DEFAULT_HERO_IMAGE;
+  const heroImage = cldUrl(heroImageSource, 1280);
+  const heroSrcSet = cldSrcSet(heroImageSource, [480, 768, 1280, 1600]);
   const heroTitle = content.hero_title?.trim() || 'All Recipes';
   const heroSubtitle = content.hero_subtitle?.trim() || '';
 
@@ -50,6 +52,8 @@ export default function RecipeClient({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={heroImage}
+          srcSet={heroSrcSet}
+          sizes="100vw"
           alt={content.hero_image_url_alt?.trim() || `${heroTitle} · Wild About Greens`}
           loading="eager"
           fetchPriority="high"

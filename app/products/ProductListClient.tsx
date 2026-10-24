@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice, cloudinaryImage } from '@/lib/format';
+import { cldSrcSet } from '@/lib/cloudinary';
 import { LeafFavicon, Sprout, Zap } from '@/components/icons';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
@@ -286,6 +287,7 @@ export default function ProductListClient({
   };
 
   useEffect(() => {
+    if (initialWhyChoosePins.length > 0) return;
     fetch('/api/pins/product_listing_why_choose')
       .then((r) => r.json())
       .then((data) => {
@@ -294,7 +296,7 @@ export default function ProductListClient({
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialWhyChoosePins.length]);
 
   const effectiveReviews = reviews && reviews.length > 0 ? reviews : DEFAULT_REVIEWS;
 
@@ -438,9 +440,15 @@ export default function ProductListClient({
           <img
             src={cloudinaryImage(
               content.hero_image_url ||
-                'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?fm=jpg&q=85&w=1600&auto=format&fit=crop',
-              1200
+                'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?fm=webp&q=80&w=1080&auto=format&fit=crop',
+              960
             )}
+            srcSet={cldSrcSet(
+              content.hero_image_url ||
+                'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?fm=webp&q=80&w=1080&auto=format&fit=crop',
+              [480, 768, 960, 1280]
+            )}
+            sizes="(max-width: 768px) 100vw, 50vw"
             alt={content.hero_image_url_alt?.trim() || 'Fresh living microgreens harvested to order'}
             width={1200}
             height={900}
@@ -731,7 +739,7 @@ export default function ProductListClient({
           className="absolute inset-0 z-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "url('https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop')",
+              "url('https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=webp&q=80&w=1200&auto=format&fit=crop')",
           }}
         />
         <div

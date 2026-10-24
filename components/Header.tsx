@@ -139,7 +139,7 @@ export default function Header() {
                   alt="Wild About Greens"
                   width={188}
                   height={42}
-                  priority
+                  priority={!showSolidNav}
                   className={`absolute inset-0 w-full h-full object-contain object-center transition-opacity duration-300 ${
                     showSolidNav ? 'opacity-0 pointer-events-none' : 'opacity-100'
                   }`}
@@ -149,7 +149,7 @@ export default function Header() {
                   alt="Wild About Greens"
                   width={188}
                   height={42}
-                  priority
+                  priority={showSolidNav}
                   className={`absolute inset-0 w-full h-full object-contain object-center transition-opacity duration-300 ${
                     showSolidNav ? 'opacity-100' : 'opacity-0 pointer-events-none'
                   }`}
@@ -275,7 +275,6 @@ export default function Header() {
                       alt="Wild About Greens"
                       width={145}
                       height={32}
-                      priority
                       className="object-contain"
                     />
                   </div>

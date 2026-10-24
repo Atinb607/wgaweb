@@ -6,6 +6,7 @@ import { getSQL } from '@/lib/db';
 import RecipeShareButtons from '@/components/RecipeShareButtons';
 import JoinRevolutionSection from '@/components/JoinRevolutionSection';
 import JsonLd from '@/components/JsonLd';
+import { cldSrcSet } from '@/lib/cloudinary';
 import {
   absoluteUrl,
   buildBreadcrumbJsonLd,
@@ -174,7 +175,9 @@ export default async function PathshalaDetailPage({ params }: { params: { slug: 
       <div className="w-full relative overflow-hidden bg-[#EAE8E1] h-[220px] sm:h-[300px] md:h-[380px] lg:h-[440px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={cloudinaryImage(bannerImage, 1600)}
+          src={cloudinaryImage(bannerImage, 1280)}
+          srcSet={cldSrcSet(bannerImage, [480, 768, 1280, 1600])}
+          sizes="100vw"
           alt={post.cover_image_alt_text?.trim() || post.title}
           width={1600}
           height={440}

@@ -75,8 +75,9 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: { index: true, follow: true },
     icons: {
       icon: [
-        { url: '/favicon.ico', sizes: 'any' },
-        { url: '/favicon.png', type: 'image/png' },
+        { url: '/favicon.webp', type: 'image/webp', sizes: '64x64' },
+        { url: '/favicon.png', type: 'image/png', sizes: '64x64' },
+        { url: '/favicon.ico', sizes: '32x32' },
       ],
       apple: [
         { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
@@ -95,6 +96,14 @@ export default function RootLayout({
 
   return (
     <html lang="en-IN" className={fontVariables}>
+      <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://plus.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://plus.unsplash.com" />
+      </head>
       <body className="min-h-screen flex flex-col font-sans bg-white text-[#151F19] antialiased">
         <Header />
         <CartDrawer />
@@ -106,5 +115,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-

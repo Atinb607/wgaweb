@@ -1,16 +1,54 @@
 /**
- * Pure isomorphic Cloudinary helpers for client and server.
+ * Pure isomorphic Cloudinary & CDN image helpers for client and server.
  * Does not import the Node.js Cloudinary SDK to keep client bundles lean.
  */
 
 /**
- * Inserts f_auto,q_auto,w_{width},c_limit after /upload/ for Cloudinary URLs.
- * Returns non-Cloudinary URLs or URLs that already contain transformations unchanged.
+ * Optimizes image URLs for Cloudinary, Unsplash, and Pexels:
+ * - Inserts/updates f_auto,q_auto,w_{width},c_limit after /upload/ for Cloudinary URLs.
+ * - Converts Unsplash & Pexels URLs to WebP and applies width constraints when provided.
  */
 export function cldUrl(url: string | null | undefined, width?: number): string {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
+
+  const cleanWidth = width && Number.isFinite(width) && width > 0 ? Math.round(width) : undefined;
+
+  // Handle Unsplash URLs (images.unsplash.com / plus.unsplash.com)
+  if (trimmed.includes('unsplash.com/')) {
+    let updated = trimmed.replace(/([?&])fm=jpg(&|$)/, '$1fm=webp$2');
+    if (!updated.includes('fm=webp')) {
+      updated += (updated.includes('?') ? '&' : '?') + 'fm=webp';
+    }
+    if (!updated.includes('auto=format')) {
+      updated += '&auto=format';
+    }
+    if (cleanWidth) {
+      if (/([?&])w=\d+/.test(updated)) {
+        updated = updated.replace(/([?&])w=\d+/, `$1w=${cleanWidth}`);
+      } else {
+        updated += `&w=${cleanWidth}`;
+      }
+    }
+    return updated;
+  }
+
+  // Handle Pexels URLs (images.pexels.com)
+  if (trimmed.includes('images.pexels.com/')) {
+    let updated = trimmed;
+    if (!updated.includes('fm=webp')) {
+      updated += (updated.includes('?') ? '&' : '?') + 'fm=webp';
+    }
+    if (cleanWidth) {
+      if (/([?&])w=\d+/.test(updated)) {
+        updated = updated.replace(/([?&])w=\d+/, `$1w=${cleanWidth}`);
+      } else {
+        updated += `&w=${cleanWidth}`;
+      }
+    }
+    return updated;
+  }
 
   // Return non-Cloudinary URLs unchanged
   if (!trimmed.includes('res.cloudinary.com') || !trimmed.includes('/upload/')) {
@@ -19,27 +57,62 @@ export function cldUrl(url: string | null | undefined, width?: number): string {
 
   // Check if it already contains transformations after /upload/
   const uploadIndex = trimmed.indexOf('/upload/');
+  const prefix = trimmed.slice(0, uploadIndex + '/upload/'.length);
   const afterUpload = trimmed.slice(uploadIndex + '/upload/'.length);
-  const firstSegment = afterUpload.split('/')[0] || '';
+  const segments = afterUpload.split('/');
+  const firstSegment = segments[0] || '';
 
-  // If already transformed (contains common transformation keys)
+  // Check if first segment is a transformation string (and not a version like v12345)
   const hasTransformations =
-    /^(?:[a-z]{1,2}_[a-zA-Z0-9_.,-]+)/.test(firstSegment) ||
-    firstSegment.includes('f_auto') ||
-    firstSegment.includes('q_auto') ||
-    firstSegment.includes('w_') ||
-    firstSegment.includes('c_');
+    !/^v\d+$/.test(firstSegment) &&
+    (/^(?:[a-z]{1,2}_[a-zA-Z0-9_.,-]+)/.test(firstSegment) ||
+      firstSegment.includes('f_auto') ||
+      firstSegment.includes('f_webp') ||
+      firstSegment.includes('q_auto') ||
+      firstSegment.includes('w_') ||
+      firstSegment.includes('c_'));
 
   if (hasTransformations) {
-    return trimmed;
+    if (!cleanWidth) {
+      return trimmed;
+    }
+    let updatedFirst = firstSegment;
+    if (/(^|,)w_\d+/.test(updatedFirst)) {
+      updatedFirst = updatedFirst.replace(/(^|,)w_\d+/, `$1w_${cleanWidth}`);
+    } else {
+      updatedFirst = `${updatedFirst},w_${cleanWidth},c_limit`;
+    }
+    segments[0] = updatedFirst;
+    return prefix + segments.join('/');
   }
 
-  const cleanWidth = width && Number.isFinite(width) && width > 0 ? Math.round(width) : undefined;
   const transform = cleanWidth
     ? `f_auto,q_auto,w_${cleanWidth},c_limit`
     : 'f_auto,q_auto';
 
-  return trimmed.slice(0, uploadIndex + '/upload/'.length) + transform + '/' + afterUpload;
+  return prefix + transform + '/' + afterUpload;
+}
+
+/**
+ * Generates a responsive `srcSet` string for Cloudinary, Unsplash, and Pexels URLs.
+ * Returns `undefined` if the URL cannot be responsively resized.
+ */
+export function cldSrcSet(
+  url: string | null | undefined,
+  widths: number[] = [480, 768, 1080, 1440, 1920]
+): string | undefined {
+  if (!url || typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+
+  const isResizable =
+    (trimmed.includes('res.cloudinary.com') && trimmed.includes('/upload/')) ||
+    trimmed.includes('unsplash.com/') ||
+    trimmed.includes('images.pexels.com/');
+
+  if (!isResizable) return undefined;
+
+  return widths.map((w) => `${cldUrl(trimmed, w)} ${w}w`).join(', ');
 }
 
 /**
@@ -102,7 +175,7 @@ export function getOptimizedLogoUrl(url: string | null | undefined): string {
 
   if (trimmed.includes('res.cloudinary.com') && trimmed.includes('/image/upload/')) {
     if (!trimmed.includes('e_trim')) {
-      return trimmed.replace('/image/upload/', '/image/upload/e_trim,f_auto,q_auto/');
+      return trimmed.replace('/image/upload/', '/image/upload/e_trim,f_auto,q_auto,w_320,c_limit/');
     }
   }
 

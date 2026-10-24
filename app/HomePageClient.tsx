@@ -8,7 +8,7 @@ import WhyMicrogreensChart from '@/components/WhyMicrogreensChart';
 import { Instagram, ShoppingBag, PackageBox, Sprout, Flask, Target, Utensils } from '@/components/icons';
 import { HEALTH_GOALS } from '@/lib/healthGoals';
 import { getOptimizedLogoUrl } from '@/lib/format';
-import { cldUrl } from '@/lib/cloudinary';
+import { cldUrl, cldSrcSet } from '@/lib/cloudinary';
 import type { HealthGoalContentItem } from '@/app/[panelKey]/health-goals/page';
 import type { Product } from '@/app/products/page';
 import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
@@ -112,24 +112,28 @@ export default function HomePageClient({
   );
 
   useEffect(() => {
-    fetch('/api/health-goals')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setHealthGoals(data);
-        }
-      })
-      .catch((err) => console.error('Error fetching health goals:', err));
+    if (initialHealthGoals.length === 0) {
+      fetch('/api/health-goals')
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setHealthGoals(data);
+          }
+        })
+        .catch((err) => console.error('Error fetching health goals:', err));
+    }
 
-    fetch('/api/partner-logos')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setPartnerLogos(data);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (initialPartnerLogos.length === 0) {
+      fetch('/api/partner-logos')
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setPartnerLogos(data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [initialHealthGoals.length, initialPartnerLogos.length]);
 
   const effectiveHealthGoals = healthGoals.length > 0 ? healthGoals : DEFAULT_HEALTH_GOALS;
 
@@ -147,10 +151,12 @@ export default function HomePageClient({
       : null;
 
   // Background/poster image: use hero_image_url if not a video, otherwise default fallback photo
-  const heroImage =
+  const heroImageSource =
     rawImage.length > 0 && !isVideoMedia(rawImage)
-      ? cldUrl(rawImage, 2400)
-      : 'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=jpg&q=85&w=2400&auto=format&fit=crop';
+      ? rawImage
+      : 'https://plus.unsplash.com/premium_photo-1703258064295-71c77cc0720f?fm=webp&q=80&w=1280&auto=format&fit=crop';
+  const heroImage = cldUrl(heroImageSource, 1280);
+  const heroSrcSet = cldSrcSet(heroImageSource, [480, 768, 1280, 1920]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlayVideo, setShouldPlayVideo] = useState(false);
@@ -229,24 +235,24 @@ export default function HomePageClient({
     }
   }, []);
 
-  // Part 1: Hero entrance animations (staggered on page load)
+  // Part 1: Hero entrance animations (staggered on page load, opacity 1 on SSR so LCP paints immediately)
   const heroContainerVariants: Variants = {
-    hidden: { opacity: shouldReduceMotion ? 1 : 0 },
+    hidden: { opacity: 1 },
     visible: {
       opacity: 1,
       transition: shouldReduceMotion
         ? { duration: 0 }
         : {
-            staggerChildren: 0.12,
-            delayChildren: 0.08,
+            staggerChildren: 0.08,
+            delayChildren: 0.02,
           },
     },
   };
 
   const heroItemVariants: Variants = {
     hidden: {
-      opacity: shouldReduceMotion ? 1 : 0,
-      y: shouldReduceMotion ? 0 : 20,
+      opacity: 1,
+      y: shouldReduceMotion ? 0 : 8,
     },
     visible: {
       opacity: 1,
@@ -254,7 +260,7 @@ export default function HomePageClient({
       transition: shouldReduceMotion
         ? { duration: 0 }
         : {
-            duration: 0.45,
+            duration: 0.35,
             ease: [0.22, 1, 0.36, 1],
           },
     },
@@ -369,6 +375,8 @@ export default function HomePageClient({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={heroImage}
+          srcSet={heroSrcSet}
+          sizes="100vw"
           alt={content.hero_image_url_alt?.trim() || 'Wild About Greens · Fresh Living Microgreens'}
           width={1920}
           height={1080}
@@ -767,8 +775,11 @@ export default function HomePageClient({
         id="recipe"
         style={{
           backgroundImage: `url('${
-            cldUrl(content.recipes_bg_image, 1600) ||
-            'https://images.unsplash.com/photo-1613769049987-b31b641f25b1?fm=jpg&q=88&w=2400&auto=format&fit=crop'
+            cldUrl(
+              content.recipes_bg_image ||
+                'https://images.unsplash.com/photo-1613769049987-b31b641f25b1?fm=webp&q=80&w=1280&auto=format&fit=crop',
+              1280
+            )
           }')`,
         }}
       >

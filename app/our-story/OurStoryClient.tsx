@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
-import { cldUrl } from '@/lib/cloudinary';
+import { cldUrl, cldSrcSet } from '@/lib/cloudinary';
 import type { SamplerVariantData } from './page';
 
 export default function OurStoryClient({
@@ -81,6 +81,17 @@ export default function OurStoryClient({
     }
   };
 
+  const heroFadeIn: Variants = {
+    hidden: { opacity: 1, y: shouldReduceMotion ? 0 : 8 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: shouldReduceMotion
+        ? { duration: 0 }
+        : { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+    },
+  };
+
   const fadeInUp: Variants = {
     hidden: { opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 24 },
     visible: {
@@ -131,7 +142,7 @@ export default function OurStoryClient({
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={fadeInUp}
+            variants={heroFadeIn}
             className="flex flex-col justify-center py-12 lg:py-16 px-6 sm:px-12 lg:pl-16 lg:pr-12 xl:pl-28"
           >
             <div
@@ -157,7 +168,7 @@ export default function OurStoryClient({
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={fadeInUp}
+            variants={heroFadeIn}
             className="relative bg-white flex items-center justify-center p-6 sm:p-10 lg:p-12"
             aria-label="Photo collage of our microgreens, from tray to table"
           >
@@ -165,11 +176,12 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/3296644/pexels-photo-3296644.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/3296644/pexels-photo-3296644.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Top-down view of a tray of thriving green microgreens"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -177,11 +189,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/15874889/pexels-photo-15874889.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/15874889/pexels-photo-15874889.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Close-up macro shot of beetroot microgreens, pink and red stems"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -189,11 +201,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.unsplash.com/photo-1593629718347-283811841101?q=80&w=400&auto=format&fit=crop"
+                  src="https://images.unsplash.com/photo-1593629718347-283811841101?fm=webp&q=80&w=320&auto=format&fit=crop"
                   alt="Microgreens falling into a white ceramic bowl"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -201,11 +213,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Open-faced avocado toast topped with fresh microgreens and radishes"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -213,11 +225,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/29168411/pexels-photo-29168411.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/29168411/pexels-photo-29168411.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Gourmet salad with microgreens and edible flowers in a rustic ceramic bowl"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -225,11 +237,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/32095425/pexels-photo-32095425.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/32095425/pexels-photo-32095425.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Open-faced multigrain sandwich topped with fresh microgreens and cucumber"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -237,11 +249,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Colorful salad with beets, pecans, goat cheese and microgreen sprouts"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -249,11 +261,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Gourmet salad plated with edible flowers, radish, herbs and microgreens"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -261,11 +273,11 @@ export default function OurStoryClient({
               <div className="relative overflow-hidden bg-[#F1EDE3] rounded-sm group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.pexels.com/photos/29122091/pexels-photo-29122091.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  src="https://images.pexels.com/photos/29122091/pexels-photo-29122091.jpeg?auto=compress&cs=tinysrgb&w=320&fm=webp"
                   alt="Vibrant gourmet dish topped with colorful microgreens and an edible flower"
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
@@ -302,10 +314,11 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('${
+                    backgroundImage: `url('${cldUrl(
                       content.story_image_1 ||
-                      'https://images.pexels.com/photos/29122091/pexels-photo-29122091.jpeg?auto=compress&cs=tinysrgb&w=1600'
-                    }')`,
+                        'https://images.pexels.com/photos/29122091/pexels-photo-29122091.jpeg?auto=compress&cs=tinysrgb&w=600&fm=webp',
+                      600
+                    )}')`,
                   }}
                 />
               </div>
@@ -313,10 +326,11 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('${
+                    backgroundImage: `url('${cldUrl(
                       content.story_image_2 ||
-                      'https://images.pexels.com/photos/30297034/pexels-photo-30297034.png?auto=compress&cs=tinysrgb&w=1600'
-                    }')`,
+                        'https://images.pexels.com/photos/30297034/pexels-photo-30297034.png?auto=compress&cs=tinysrgb&w=600&fm=webp',
+                      600
+                    )}')`,
                   }}
                 />
               </div>
@@ -324,10 +338,11 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('${
+                    backgroundImage: `url('${cldUrl(
                       content.story_image_3 ||
-                      'https://images.pexels.com/photos/27400770/pexels-photo-27400770.jpeg?auto=compress&cs=tinysrgb&w=1600'
-                    }')`,
+                        'https://images.pexels.com/photos/27400770/pexels-photo-27400770.jpeg?auto=compress&cs=tinysrgb&w=600&fm=webp',
+                      600
+                    )}')`,
                   }}
                 />
               </div>
@@ -406,10 +421,17 @@ export default function OurStoryClient({
           <div className="order-1 lg:order-2 relative overflow-hidden min-h-[340px] sm:min-h-[400px] lg:min-h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={
-                cldUrl(content.belief_image, 1200) ||
-                'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1600&auto=format&fit=crop'
-              }
+              src={cldUrl(
+                content.belief_image ||
+                  'https://images.unsplash.com/photo-1490645935967-10de6ba17061?fm=webp&q=80&w=960&auto=format&fit=crop',
+                960
+              )}
+              srcSet={cldSrcSet(
+                content.belief_image ||
+                  'https://images.unsplash.com/photo-1490645935967-10de6ba17061?fm=webp&q=80&w=960&auto=format&fit=crop',
+                [480, 768, 960, 1280]
+              )}
+              sizes="(max-width: 1024px) 100vw, 50vw"
               alt={content.belief_image_alt?.trim() || 'Poached egg with vegetables and tomatoes on a blue plate'}
               width={1200}
               height={800}
@@ -472,7 +494,7 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                    backgroundImage: `url('https://images.pexels.com/photos/8515766/pexels-photo-8515766.jpeg?auto=compress&cs=tinysrgb&w=600&fm=webp')`,
                   }}
                 />
               </div>
@@ -480,7 +502,7 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                    backgroundImage: `url('https://images.pexels.com/photos/30270630/pexels-photo-30270630.jpeg?auto=compress&cs=tinysrgb&w=600&fm=webp')`,
                   }}
                 />
               </div>
@@ -488,7 +510,7 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('https://images.pexels.com/photos/27400770/pexels-photo-27400770.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                    backgroundImage: `url('https://images.pexels.com/photos/27400770/pexels-photo-27400770.jpeg?auto=compress&cs=tinysrgb&w=600&fm=webp')`,
                   }}
                 />
               </div>
@@ -496,7 +518,7 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1612927601601-6638404737ce?q=80&w=1600&auto=format&fit=crop')`,
+                    backgroundImage: `url('https://images.unsplash.com/photo-1612927601601-6638404737ce?fm=webp&q=80&w=600&auto=format&fit=crop')`,
                   }}
                 />
               </div>
@@ -504,7 +526,7 @@ export default function OurStoryClient({
                 <div
                   className="cimg"
                   style={{
-                    backgroundImage: `url('https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+                    backgroundImage: `url('https://images.pexels.com/photos/27969848/pexels-photo-27969848.jpeg?auto=compress&cs=tinysrgb&w=600&fm=webp')`,
                   }}
                 />
               </div>

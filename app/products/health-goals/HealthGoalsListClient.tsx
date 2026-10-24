@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/cartStore';
 import { formatPrice, cloudinaryImage } from '@/lib/format';
+import { cldSrcSet } from '@/lib/cloudinary';
 import { LeafFavicon, Sprout, Zap, Target } from '@/components/icons';
 import { renderNewsletterTitle } from '@/lib/newsletterBanner';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
@@ -495,9 +496,15 @@ export default function HealthGoalsListClient({
           <img
             src={cloudinaryImage(
               content.health_goals_hero_image_url ||
-                'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop',
-              1200
+                'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=webp&q=80&w=1080&auto=format&fit=crop',
+              960
             )}
+            srcSet={cldSrcSet(
+              content.health_goals_hero_image_url ||
+                'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=webp&q=80&w=1080&auto=format&fit=crop',
+              [480, 768, 960, 1280]
+            )}
+            sizes="(max-width: 768px) 100vw, 50vw"
             alt={content.health_goals_hero_image_url_alt?.trim() || 'Shop microgreens by health goal'}
             width={1200}
             height={900}
@@ -838,10 +845,11 @@ export default function HealthGoalsListClient({
         <div
           className="absolute inset-0 z-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url('${
+            backgroundImage: `url('${cloudinaryImage(
               content.trust_background_image ||
-              'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=jpg&q=85&w=1600&auto=format&fit=crop'
-            }')`,
+                'https://images.unsplash.com/photo-1540073280202-6e5c781befec?fm=webp&q=80&w=1200&auto=format&fit=crop',
+              1200
+            )}')`,
           }}
         />
         <div
