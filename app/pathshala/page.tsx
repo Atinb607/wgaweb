@@ -7,12 +7,17 @@ import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const content = await getContentMap();
+  const title = content.seo_title?.trim() || 'Pathshala · Microgreen Nutrition & Farming Guides';
+  const description =
+    content.seo_description?.trim() ||
+    'Explore Pathshala by Wild About Greens: science-backed articles on microgreen nutrition, sulforaphane benefits, indoor vertical farming and healthy living.';
+
   return buildPageMetadata({
-    title: 'Pathshala · Microgreen Nutrition & Farming Guides',
-    description:
-      'Explore Pathshala by Wild About Greens: science-backed articles on microgreen nutrition, sulforaphane benefits, indoor vertical farming and healthy living.',
+    title,
+    description,
     path: '/pathshala',
-    imageAlt: 'Pathshala · Microgreen Nutrition & Farming Guides',
+    imageAlt: title,
   });
 }
 

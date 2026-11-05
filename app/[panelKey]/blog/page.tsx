@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { adminFetch } from '@/lib/adminAuth';
 import ImageField from '@/components/admin/ImageField';
-import { Utensils, Pin } from '@/components/icons';
+import { Utensils, Pin, Edit3 } from '@/components/icons';
 
 interface Post {
   id: string;
@@ -51,6 +53,9 @@ const emptyPost = {
 };
 
 export default function AdminBlogPage() {
+  const params = useParams();
+  const currentKey = (params?.panelKey as string) || 'admin';
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [editing, setEditing] = useState<Post | null>(null);
   const [form, setForm] = useState(emptyPost);
@@ -656,18 +661,36 @@ export default function AdminBlogPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Blog &amp; Recipes</h1>
-          <p className="text-xs text-gray-500 mt-1">Manage articles and Recipe Khazana entries</p>
+          <h1 className="text-2xl font-bold text-gray-900">Pathshala &amp; Recipes</h1>
+          <p className="text-xs text-gray-500 mt-1">Manage articles, Recipe Khazana entries, and main page content/SEO</p>
         </div>
-        <button
-          onClick={() => {
-            setIsNew(true);
-            setForm(emptyPost);
-          }}
-          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 self-start sm:self-auto"
-        >
-          + New Post
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <Link
+            href={`/${currentKey}/content?tab=pathshala`}
+            className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
+            title="Edit Pathshala banner, title, subtitle & main page SEO"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Pathshala Main Page Content &amp; SEO</span>
+          </Link>
+          <Link
+            href={`/${currentKey}/content?tab=recipe`}
+            className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
+            title="Edit Recipe Khazana banner, title, subtitle & main page SEO"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Recipes Main Page Content &amp; SEO</span>
+          </Link>
+          <button
+            onClick={() => {
+              setIsNew(true);
+              setForm(emptyPost);
+            }}
+            className="px-4 py-2 bg-gray-900 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            + New Post
+          </button>
+        </div>
       </div>
 
       {/* Homepage Featured Recipes (Recipe Khazana) */}

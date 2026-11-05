@@ -7,12 +7,17 @@ import { buildBreadcrumbJsonLd, buildPageMetadata } from '@/lib/seo';
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const content = await getContentMap();
+  const title = content.seo_title?.trim() || 'Recipe Khazana · Fresh Microgreen Recipes';
+  const description =
+    content.seo_description?.trim() ||
+    'Discover easy, delicious chef-crafted recipes using fresh microgreens, from vibrant salads and smoothies to everyday Indian meals, sandwiches and wraps.';
+
   return buildPageMetadata({
-    title: 'Recipe Khazana · Fresh Microgreen Recipes',
-    description:
-      'Discover easy, delicious chef-crafted recipes using fresh microgreens, from vibrant salads and smoothies to everyday Indian meals, sandwiches and wraps.',
+    title,
+    description,
     path: '/recipes',
-    imageAlt: 'Recipe Khazana · Fresh Microgreen Recipes',
+    imageAlt: title,
   });
 }
 

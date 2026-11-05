@@ -239,10 +239,7 @@ export async function sendOrderConfirmation(
                     </span>
                   </td>
                   <td style="text-align: right; vertical-align: middle;">
-                    <span style="display: inline-block; background-color: #DCFCE7; color: #166534; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 9999px; border: 1px solid #86EFAC;">
-                      PAID
-                    </span>
-                    ${subscriptionNote ? `<div style="margin-top: 4px;">${subscriptionNote}</div>` : ''}
+                    ${subscriptionNote ? `<div>${subscriptionNote}</div>` : ''}
                   </td>
                 </tr>
               </table>
@@ -721,6 +718,28 @@ export async function sendNewsletterWelcome(
       subject,
       html: htmlContent,
     });
+
+    // Send a copy to subscriptions@wildaboutgreens.com with subscriber details
+    const notificationHtml = `
+      <div style="background-color: #F0FDF4; border: 1px solid #BBF7D0; padding: 12px 16px; margin-bottom: 20px; border-radius: 8px; font-family: sans-serif; font-size: 14px; color: #166534;">
+        <strong>New Newsletter Subscriber:</strong> <a href="mailto:${email}" style="color: #166534; font-weight: bold;">${email}</a>
+      </div>
+      ${htmlContent}
+    `;
+
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: 'subscriptions@wildaboutgreens.com',
+        replyTo: email,
+        ...({ reply_to: email } as Record<string, string>),
+        subject: `[New Subscriber: ${email}] ${subject}`,
+        html: notificationHtml,
+      });
+      console.log(`Copy of newsletter welcome email sent to subscriptions@wildaboutgreens.com for subscriber ${email}`);
+    } catch (notifErr) {
+      console.error(`Failed to send newsletter copy to subscriptions@wildaboutgreens.com for ${email}:`, notifErr);
+    }
 
     console.log(`Newsletter welcome email sent to ${email}`);
     return true;

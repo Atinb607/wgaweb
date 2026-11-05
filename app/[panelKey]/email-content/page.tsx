@@ -464,9 +464,6 @@ export default function AdminEmailContentPage() {
                           #{previewOrderData.sampleOrderNumber}
                         </span>
                       </div>
-                      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-300">
-                        PAID
-                      </span>
                     </div>
 
                     {/* Order Details Table */}
