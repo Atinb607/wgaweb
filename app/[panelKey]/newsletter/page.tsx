@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { adminFetch } from '@/lib/adminAuth';
 import { downloadCSV } from '@/lib/csvExport';
 import { DEFAULT_NEWSLETTER_BANNER, renderNewsletterTitle } from '@/lib/newsletterBanner';
-import { Download, Users, Palette, Search, Clipboard, Lightbulb, Save } from '@/components/icons';
+import { Download, Users, Palette, Search, Clipboard, Lightbulb, Save, Trash2 } from '@/components/icons';
 
 interface Subscriber {
   id: string;
@@ -34,6 +34,7 @@ export default function AdminNewsletterPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Banner customization state
   const [bannerForm, setBannerForm] = useState<BannerForm>(DEFAULT_NEWSLETTER_BANNER);
@@ -119,6 +120,29 @@ export default function AdminNewsletterPage() {
     ]);
 
     downloadCSV('wga-newsletter-subscribers.csv', [headers, ...rows]);
+  };
+
+  const handleDeleteSubscriber = async (id: string, email: string) => {
+    if (!confirm(`Are you sure you want to delete "${email}" from the subscriber list?`)) {
+      return;
+    }
+    setDeletingId(id);
+    try {
+      const res = await adminFetch(`/api/admin/newsletter?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setSubscribers((prev) => prev.filter((s) => s.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to delete subscriber.');
+      }
+    } catch (err) {
+      console.error('Failed to delete subscriber:', err);
+      alert('Error deleting subscriber. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleBannerSave = async (e: React.FormEvent) => {
@@ -317,12 +341,23 @@ export default function AdminNewsletterPage() {
                       </td>
 
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        <a
-                          href={`mailto:${sub.email}`}
-                          className="text-xs font-semibold text-emerald-800 hover:underline"
-                        >
-                          Email →
-                        </a>
+                        <div className="flex items-center justify-end gap-2">
+                          <a
+                            href={`mailto:${sub.email}`}
+                            className="text-xs font-semibold text-emerald-800 hover:underline px-2 py-1"
+                          >
+                            Email →
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSubscriber(sub.id, sub.email)}
+                            disabled={deletingId === sub.id}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                            title="Delete subscriber"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

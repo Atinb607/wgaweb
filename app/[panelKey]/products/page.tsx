@@ -50,21 +50,12 @@ function renderHighlightedStory(text: string) {
   });
 }
 
-function normalizeBadgeIcon(icon: string): string {
-  const norm = (icon || '').toLowerCase().trim();
-  if (norm === 'zap' || norm === 'bolt' || icon === '⚡') return 'zap';
-  if (norm === 'shield' || icon === '🛡️') return 'shield';
-  if (norm === 'droplet' || norm === 'water' || norm === 'drop' || icon === '💧') return 'droplet';
-  if (norm === 'scissors' || norm === 'cut' || icon === '✂️') return 'scissors';
-  return 'sprout';
-}
-
 function renderAdminBadgeIcon(icon: string) {
-  const norm = normalizeBadgeIcon(icon);
-  if (norm === 'zap') return <Zap className="w-3.5 h-3.5 text-[#1C3F2D]" />;
-  if (norm === 'shield') return <Shield className="w-3.5 h-3.5 text-[#1C3F2D]" />;
-  if (norm === 'droplet') return <Droplet className="w-3.5 h-3.5 text-[#1C3F2D]" />;
-  if (norm === 'scissors') return <Scissors className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  const norm = (icon || '').toLowerCase();
+  if (norm === 'zap' || norm === 'bolt' || icon === '⚡') return <Zap className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'shield' || icon === '🛡️') return <Shield className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'droplet' || norm === 'water' || icon === '💧') return <Droplet className="w-3.5 h-3.5 text-[#1C3F2D]" />;
+  if (norm === 'scissors' || norm === 'cut' || icon === '✂️') return <Scissors className="w-3.5 h-3.5 text-[#1C3F2D]" />;
   return <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />;
 }
 
@@ -193,6 +184,7 @@ interface Product {
   highlight_2?: string | null;
   is_bundle: boolean;
   is_active: boolean;
+  created_at?: string;
   variants?: Variant[];
   images?: ProductImage[];
   detail_highlight_badges?: HighlightBadge[] | null;
@@ -265,8 +257,8 @@ export default function AdminProductsPage() {
   const [newCatInput, setNewCatInput] = useState('');
   const [addingCat, setAddingCat] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [loadingProducts, setLoadingProducts] = useState(false);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const handleBadgeChange = (index: number, field: 'icon' | 'label', value: string) => {
     setBadges((prev) => {
@@ -360,15 +352,8 @@ export default function AdminProductsPage() {
   };
 
   const loadProducts = async () => {
-    setLoadingProducts(true);
-    try {
-      const res = await adminFetch('/api/admin/products');
-      if (res.ok) setProducts(await res.json());
-    } catch (err) {
-      console.error('Failed to load products:', err);
-    } finally {
-      setLoadingProducts(false);
-    }
+    const res = await adminFetch('/api/admin/products');
+    if (res.ok) setProducts(await res.json());
     loadCategories();
   };
 
@@ -701,10 +686,6 @@ export default function AdminProductsPage() {
           body: JSON.stringify(payload),
         });
         if (res.ok) {
-          const updated = await res.json();
-          setProducts((prev) =>
-            prev.map((p) => (p.id === editing.id ? { ...p, ...updated } : p))
-          );
           loadProducts();
           loadProduct(editing.id);
         }
@@ -714,43 +695,61 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Deactivate this product?')) return;
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, is_active: false } : p))
-    );
-    await adminFetch(`/api/admin/products/${id}`, { method: 'DELETE' });
-    setEditing(null);
-    loadProducts();
+  const handleDelete = async (id: string, forcePermanent = false) => {
+    const targetProduct = products.find((p) => p.id === id);
+    const prodName = targetProduct?.name || 'this product';
+
+    const confirmMsg = forcePermanent
+      ? `Permanently delete "${prodName}" from the store and database? This action cannot be undone.`
+      : `Deactivate "${prodName}"? It will be hidden from the storefront immediately.`;
+
+    if (!confirm(confirmMsg)) return;
+
+    setActionLoadingId(id);
+    try {
+      const url = forcePermanent
+        ? `/api/admin/products/${id}?permanent=true`
+        : `/api/admin/products/${id}`;
+      const res = await adminFetch(url, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        if (data.hasOrders) {
+          alert(`"${prodName}" has past order records, so it was safely deactivated and hidden from the storefront.`);
+        }
+        if (editing?.id === id) {
+          setEditing(null);
+        }
+        await loadProducts();
+      } else {
+        alert(data.error || 'Failed to remove product.');
+      }
+    } catch {
+      alert('Network error while updating product.');
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
-  const handleToggleProductStatus = async (id: string, currentActive: boolean) => {
-    const nextActive = !currentActive;
-    setTogglingId(id);
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, is_active: nextActive } : p))
-    );
+  const handleToggleProductStatus = async (p: Product) => {
+    const newStatus = !p.is_active;
+    setActionLoadingId(p.id);
     try {
-      const res = await adminFetch(`/api/admin/products/${id}`, {
+      const res = await adminFetch(`/api/admin/products/${p.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: nextActive }),
+        body: JSON.stringify({ is_active: newStatus }),
       });
-      if (!res.ok) {
-        setProducts((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, is_active: currentActive } : p))
-        );
-        alert('Failed to update product status');
+      if (res.ok) {
+        await loadProducts();
       } else {
-        loadProducts();
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to update product status.');
       }
-    } catch (err) {
-      console.error('Toggle product error:', err);
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, is_active: currentActive } : p))
-      );
+    } catch {
+      alert('Network error while updating status.');
     } finally {
-      setTogglingId(null);
+      setActionLoadingId(null);
     }
   };
 
@@ -860,13 +859,25 @@ export default function AdminProductsPage() {
                 <span>{saving ? 'Saving...' : (isNew ? 'Save & Create Product' : 'Save Changes')}</span>
               </button>
               {!isNew && editing && (
-                <button
-                  type="button"
-                  onClick={() => handleDelete(editing.id)}
-                  className="px-3 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 border border-red-200 transition-colors"
-                >
-                  Deactivate
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(editing.id, false)}
+                    disabled={actionLoadingId === editing.id}
+                    className="px-3 py-2 bg-amber-50 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-100 border border-amber-200 transition-colors disabled:opacity-50"
+                  >
+                    {editing.is_active ? 'Deactivate' : 'Keep Inactive'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(editing.id, true)}
+                    disabled={actionLoadingId === editing.id}
+                    className="px-3 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-50"
+                    title="Permanently remove product if it has no orders"
+                  >
+                    Delete Permanently
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1333,11 +1344,11 @@ export default function AdminProductsPage() {
                     Storefront Detail Page: Under Description
                   </span>
                   <h2 className="text-base sm:text-lg font-bold text-gray-900">
-                    Feature Badges
+                    Feature Badges &amp; Tags
                   </h2>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Up to 4 highlight badges shown directly beneath the description on the product page (e.g. Cut to Order, Zero Pesticides, Freshly Harvested).
+                  The 4 feature chips and search tags shown directly beneath the description on the product page.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1377,15 +1388,15 @@ export default function AdminProductsPage() {
                         {renderAdminBadgeIcon(b.icon)}
                       </div>
                       <select
-                        value={normalizeBadgeIcon(b.icon)}
+                        value={b.icon}
                         onChange={(e) => handleBadgeChange(idx, 'icon', e.target.value)}
-                        className="w-36 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-800 outline-none focus:ring-1 focus:ring-emerald-500 shrink-0"
+                        className="w-32 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-800 outline-none focus:ring-1 focus:ring-emerald-500 shrink-0"
                       >
-                        <option value="sprout">🌱 Living Greens</option>
+                        <option value="zap">⚡ Sulforaphane / Energy</option>
                         <option value="shield">🛡️ Zero Pesticides</option>
                         <option value="droplet">💧 Mineral RO Grown</option>
                         <option value="scissors">✂️ Cut to Order</option>
-                        <option value="zap">⚡ High Nutrition</option>
+                        <option value="sprout">🌱 Living Greens</option>
                       </select>
                       <input
                         type="text"
@@ -1407,16 +1418,16 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              {/* Search Keywords (Optional) */}
+              {/* Tags */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Search Keywords / Tags <span className="text-gray-400 font-normal">(Optional — internal search only, not displayed as chips on storefront)</span>
+                  Tags <span className="text-gray-400 font-normal">(Comma-separated — displayed with sprout icons on PDP)</span>
                 </label>
                 <input
                   value={tagString}
                   onChange={(e) => setTagString(e.target.value)}
-                  placeholder="e.g. salad greens, crunchy (optional keywords)"
-                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none text-gray-700 bg-gray-50/50"
+                  placeholder="e.g. microgreens, fresh greens, edible greens, spicy"
+                  className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 outline-none"
                 />
               </div>
 
@@ -1435,7 +1446,19 @@ export default function AdminProductsPage() {
                       <span>{badge.label || 'Badge Label'}</span>
                     </span>
                   ))}
-
+                  {tagString
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean)
+                    .map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E4DDC8] text-xs font-semibold text-[#122A1F] shadow-xs"
+                      >
+                        <Sprout className="w-3.5 h-3.5 text-[#1C3F2D]" />
+                        <span>{tag}</span>
+                      </span>
+                    ))}
                 </div>
               </div>
             </div>
@@ -2248,16 +2271,24 @@ export default function AdminProductsPage() {
     );
   }
 
-  const filteredTableProducts =
-    categoryFilter === 'all'
-      ? products
-      : products
-          .filter((p) => p.categories?.includes(categoryFilter))
-          .sort((a, b) => {
-            const ordA = a.category_orders?.[categoryFilter] ?? a.display_order ?? 9999;
-            const ordB = b.category_orders?.[categoryFilter] ?? b.display_order ?? 9999;
-            return ordA - ordB;
-          });
+  const filteredTableProducts = products
+    .filter((p) => {
+      if (statusFilter === 'active') return p.is_active;
+      if (statusFilter === 'inactive') return !p.is_active;
+      return true;
+    })
+    .filter((p) => {
+      if (categoryFilter === 'all') return true;
+      return p.categories?.includes(categoryFilter);
+    })
+    .sort((a, b) => {
+      if (categoryFilter !== 'all') {
+        const ordA = a.category_orders?.[categoryFilter] ?? a.display_order ?? 9999;
+        const ordB = b.category_orders?.[categoryFilter] ?? b.display_order ?? 9999;
+        return ordA - ordB;
+      }
+      return (a.display_order ?? 0) - (b.display_order ?? 0);
+    });
 
   // ── Product list view ──
   return (
@@ -2525,47 +2556,77 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Category filter tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none mb-3">
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1">
-          Filter:
-        </span>
-        <button
-          onClick={() => setCategoryFilter('all')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-            categoryFilter === 'all'
-              ? 'bg-gray-900 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          All Products ({products.length})
-        </button>
-        {categoriesList.map((cat) => {
-          const count = products.filter((p) => p.categories?.includes(cat.name)).length;
-          return (
-            <button
-              key={cat.name}
-              onClick={() => setCategoryFilter(cat.name)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                categoryFilter === cat.name
-                  ? 'bg-emerald-800 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <span className="capitalize">{cat.name.replace(/-/g, ' ')}</span> ({count})
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => loadProducts()}
-          disabled={loadingProducts}
-          title="Force refresh products list from server"
-          className="ml-auto px-3 py-1 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-        >
-          <span className={loadingProducts ? 'inline-block animate-spin' : ''}>↻</span>
-          <span>{loadingProducts ? 'Refreshing...' : 'Refresh'}</span>
-        </button>
+      {/* Status & Category filter tabs */}
+      <div className="flex flex-col gap-2.5 mb-3">
+        {/* Status filter tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1">
+            Status:
+          </span>
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              statusFilter === 'all'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All ({products.length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('active')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              statusFilter === 'active'
+                ? 'bg-emerald-800 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Active / Published ({products.filter((p) => p.is_active).length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('inactive')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              statusFilter === 'inactive'
+                ? 'bg-amber-800 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Inactive / Hidden ({products.filter((p) => !p.is_active).length})
+          </button>
+        </div>
+
+        {/* Category filter tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1">
+            Category:
+          </span>
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              categoryFilter === 'all'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All Categories
+          </button>
+          {categoriesList.map((cat) => {
+            const count = products.filter((p) => p.categories?.includes(cat.name)).length;
+            return (
+              <button
+                key={cat.name}
+                onClick={() => setCategoryFilter(cat.name)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                  categoryFilter === cat.name
+                    ? 'bg-emerald-800 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <span className="capitalize">{cat.name.replace(/-/g, ' ')}</span> ({count})
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border overflow-x-auto shadow-xs">
@@ -2576,6 +2637,7 @@ export default function AdminProductsPage() {
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Category &amp; Order</th>
               <th className="px-4 py-3">Health Goals</th>
+              <th className="px-4 py-3">Tags</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -2643,34 +2705,65 @@ export default function AdminProductsPage() {
                     )}
                   </div>
                 </td>
-
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    {p.tags && p.tags.length > 0 ? (
+                      p.tags.map((t) => (
+                        <span
+                          key={t}
+                          className="text-[10px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200"
+                        >
+                          {t}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-400">-</span>
+                    )}
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   <button
                     type="button"
-                    onClick={() => handleToggleProductStatus(p.id, p.is_active)}
-                    disabled={togglingId === p.id}
-                    title={p.is_active ? 'Click to deactivate product' : 'Click to activate product'}
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+                    onClick={() => handleToggleProductStatus(p)}
+                    disabled={actionLoadingId === p.id}
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
                       p.is_active
                         ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-300'
                     }`}
+                    title={p.is_active ? 'Click to hide/deactivate from storefront' : 'Click to publish on storefront'}
                   >
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        p.is_active ? 'bg-green-500' : 'bg-gray-400'
-                      }`}
-                    />
-                    <span>{togglingId === p.id ? 'Updating...' : p.is_active ? 'Active' : 'Inactive'}</span>
+                    <span className={`w-2 h-2 rounded-full ${p.is_active ? 'bg-green-600' : 'bg-gray-400'}`} />
+                    <span>{p.is_active ? 'Active' : 'Inactive'}</span>
                   </button>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => loadProduct(p.id)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => loadProduct(p.id)}
+                      className="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p.id, false)}
+                      disabled={actionLoadingId === p.id}
+                      className="text-amber-700 hover:text-amber-900 text-xs font-semibold px-2 py-1 rounded hover:bg-amber-50 transition-colors disabled:opacity-50"
+                      title={p.is_active ? 'Deactivate and hide from store' : 'Already deactivated'}
+                    >
+                      {p.is_active ? 'Deactivate' : 'Hidden'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p.id, true)}
+                      disabled={actionLoadingId === p.id}
+                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                      title="Permanently delete from database (if no orders exist)"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

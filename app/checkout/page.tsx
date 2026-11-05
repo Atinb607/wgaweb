@@ -13,7 +13,6 @@ import {
   isDeliverableCity,
 } from '@/lib/delivery';
 import { Truck, AlertTriangle, Sprout, Sparkles, Banknote, RotateCcw, WhatsApp } from '@/components/icons';
-import { SlideToConfirm } from '@/components/SlideToConfirm';
 import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 
 declare global {
@@ -59,7 +58,6 @@ export default function CheckoutPage() {
   const [codError, setCodError] = useState<string | null>(null);
   const [codSubmitting, setCodSubmitting] = useState(false);
   const codSubmittingRef = useRef(false);
-  const [sliderResetKey, setSliderResetKey] = useState(0);
 
   const [orderCompleted, setOrderCompleted] = useState(false);
 
@@ -270,12 +268,10 @@ export default function CheckoutPage() {
 
     if (!codAnswer.trim()) {
       setCodError('Please answer the math question first.');
-      setSliderResetKey((k) => k + 1);
       return;
     }
     if (!challenge) {
       setCodError('Verification challenge expired. Loading a fresh question...');
-      setSliderResetKey((k) => k + 1);
       fetchCodChallenge();
       return;
     }
@@ -293,7 +289,6 @@ export default function CheckoutPage() {
 
       if (!acquiredTurnstileToken) {
         setCodError('Verification was cancelled. Please complete the security check to place your order.');
-        setSliderResetKey((k) => k + 1);
         codSubmittingRef.current = false;
         setCodSubmitting(false);
         return;
@@ -330,7 +325,6 @@ export default function CheckoutPage() {
       if (!res.ok) {
         const errorMsg = data.error || 'Verification failed. Please try again.';
         setCodError(errorMsg);
-        setSliderResetKey((k) => k + 1);
         resetTurnstile();
 
         // Only wipe answer and re-fetch math challenge if it was actually a math captcha / expired error
@@ -395,7 +389,6 @@ export default function CheckoutPage() {
       );
     } catch {
       setCodError('Failed to connect to the server. Please check your internet connection.');
-      setSliderResetKey((k) => k + 1);
       resetTurnstile();
       codSubmittingRef.current = false;
       setCodSubmitting(false);
@@ -966,7 +959,7 @@ export default function CheckoutPage() {
                               </span>
                             </div>
                             <p className="text-xs text-[#5C6B60] leading-relaxed">
-                              Slide to confirm your order now. Pay in cash directly upon doorstep arrival.
+                              Confirm your order now. Pay in cash directly upon doorstep arrival.
                             </p>
                           </div>
                         </div>
@@ -1368,21 +1361,31 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 <p className="text-[11px] text-gray-500 text-center">
-                  Answer the question to unlock the slide-to-confirm slider.
+                  Answer the question to confirm your COD order.
                 </p>
               </div>
 
-              {/* Slide to Confirm iPhone Style */}
+              {/* Confirm COD Order Button */}
               <div className="pt-2">
-                <SlideToConfirm
-                  onConfirm={handleCodConfirm}
+                <button
+                  type="button"
+                  onClick={handleCodConfirm}
                   disabled={!codAnswer.trim() || codSubmitting || loadingChallenge}
-                  loading={codSubmitting}
-                  resetTrigger={sliderResetKey}
-                  idleText="Slide to confirm COD order →"
-                  disabledText="Type answer above to unlock slider"
-                  successText="Placing Order..."
-                />
+                  className="w-full py-4 px-6 bg-[#1C3F2D] hover:bg-[#122A1F] text-white rounded-xl font-bold text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {codSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Placing Order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Banknote className="w-5 h-5 shrink-0" />
+                      <span>Confirm COD Order</span>
+                      <span>→</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

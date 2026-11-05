@@ -1182,6 +1182,20 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       defaultValue: 'Explore delicious and nutritious recipes crafted with fresh microgreens.',
       description: 'Optional short introductory subtitle displayed centered below the heading.',
     },
+    {
+      key: 'seo_title',
+      label: 'SEO Title (Meta Title)',
+      type: 'text',
+      defaultValue: 'Recipe Khazana · Fresh Microgreen Recipes',
+      description: 'Custom browser tab and search engine meta title for the main Recipes page.',
+    },
+    {
+      key: 'seo_description',
+      label: 'SEO Description (Meta Description)',
+      type: 'textarea',
+      defaultValue: 'Discover easy, delicious chef-crafted recipes using fresh microgreens, from vibrant salads and smoothies to everyday Indian meals, sandwiches and wraps.',
+      description: 'Custom search engine summary snippet for the main Recipes page.',
+    },
   ],
   'recipe': [
     {
@@ -1204,6 +1218,20 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       type: 'textarea',
       defaultValue: 'Explore delicious and nutritious recipes crafted with fresh microgreens.',
       description: 'Optional short introductory subtitle displayed centered below the heading.',
+    },
+    {
+      key: 'seo_title',
+      label: 'SEO Title (Meta Title)',
+      type: 'text',
+      defaultValue: 'Recipe Khazana · Fresh Microgreen Recipes',
+      description: 'Custom browser tab and search engine meta title for the main Recipes page.',
+    },
+    {
+      key: 'seo_description',
+      label: 'SEO Description (Meta Description)',
+      type: 'textarea',
+      defaultValue: 'Discover easy, delicious chef-crafted recipes using fresh microgreens, from vibrant salads and smoothies to everyday Indian meals, sandwiches and wraps.',
+      description: 'Custom search engine summary snippet for the main Recipes page.',
     },
   ],
   'recipe-khazana': [
@@ -1228,6 +1256,20 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       defaultValue: 'Explore delicious and nutritious recipes crafted with fresh microgreens.',
       description: 'Optional short introductory subtitle displayed centered below the heading.',
     },
+    {
+      key: 'seo_title',
+      label: 'SEO Title (Meta Title)',
+      type: 'text',
+      defaultValue: 'Recipe Khazana · Fresh Microgreen Recipes',
+      description: 'Custom browser tab and search engine meta title for the main Recipes page.',
+    },
+    {
+      key: 'seo_description',
+      label: 'SEO Description (Meta Description)',
+      type: 'textarea',
+      defaultValue: 'Discover easy, delicious chef-crafted recipes using fresh microgreens, from vibrant salads and smoothies to everyday Indian meals, sandwiches and wraps.',
+      description: 'Custom search engine summary snippet for the main Recipes page.',
+    },
   ],
   'pathshala': [
     {
@@ -1251,6 +1293,20 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       defaultValue: 'Nutritional deep dives, cellular antioxidant science, and insights from our vertical indoor farm.',
       description: 'Optional short introductory subtitle displayed centered below the heading.',
     },
+    {
+      key: 'seo_title',
+      label: 'SEO Title (Meta Title)',
+      type: 'text',
+      defaultValue: 'Pathshala · Microgreen Nutrition & Farming Guides',
+      description: 'Custom browser tab and search engine meta title for the main Pathshala page.',
+    },
+    {
+      key: 'seo_description',
+      label: 'SEO Description (Meta Description)',
+      type: 'textarea',
+      defaultValue: 'Explore Pathshala by Wild About Greens: science-backed articles on microgreen nutrition, sulforaphane benefits, indoor vertical farming and healthy living.',
+      description: 'Custom search engine summary snippet for the main Pathshala page.',
+    },
   ],
   'blog': [
     {
@@ -1273,6 +1329,20 @@ export const CONTENT_REGISTRY: Record<string, ContentFieldDef[]> = {
       type: 'textarea',
       defaultValue: 'Nutritional deep dives, cellular antioxidant science, and insights from our vertical indoor farm.',
       description: 'Optional short introductory subtitle displayed centered below the heading.',
+    },
+    {
+      key: 'seo_title',
+      label: 'SEO Title (Meta Title)',
+      type: 'text',
+      defaultValue: 'Pathshala · Microgreen Nutrition & Farming Guides',
+      description: 'Custom browser tab and search engine meta title for the main Pathshala page.',
+    },
+    {
+      key: 'seo_description',
+      label: 'SEO Description (Meta Description)',
+      type: 'textarea',
+      defaultValue: 'Explore Pathshala by Wild About Greens: science-backed articles on microgreen nutrition, sulforaphane benefits, indoor vertical farming and healthy living.',
+      description: 'Custom search engine summary snippet for the main Pathshala page.',
     },
   ],
   'cart-drawer': [
