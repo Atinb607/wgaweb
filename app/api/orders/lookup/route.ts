@@ -3,6 +3,20 @@ import { getSQL } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+function jsonNoCache(data: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(data, init);
+  response.headers.set(
+    'Cache-Control',
+    'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0'
+  );
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  response.headers.set('Surrogate-Control', 'no-store');
+  response.headers.set('X-Cache-Enabled', 'False');
+  return response;
+}
 
 interface OrderItem {
   id: string;
@@ -28,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     // ── Require Turnstile token ──
     if (!turnstileToken) {
-      return NextResponse.json(
+      return jsonNoCache(
         { error: 'Turnstile verification is required.' },
         { status: 400 }
       );
@@ -36,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // ── Require order number, phone number, and email address ──
     if (!orderNumber || !phone || !email) {
-      return NextResponse.json(
+      return jsonNoCache(
         { error: 'Order number, phone number, and email address are all required.' },
         { status: 400 }
       );
@@ -44,40 +58,43 @@ export async function GET(request: NextRequest) {
 
     // ── Input length limits ──
     if (orderNumber.length > 30 || (phone && phone.length > 25) || (email && email.length > 254)) {
-      return NextResponse.json(
+      return jsonNoCache(
         { error: 'Invalid input length.' },
         { status: 400 }
       );
     }
 
-    // ── Verify Turnstile token server-side ──
-    const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
-    if (!turnstileSecret) {
-      console.error('CLOUDFLARE_TURNSTILE_SECRET_KEY is not configured');
-      return NextResponse.json(
-        { error: 'CAPTCHA verification is not configured. Please contact support.' },
-        { status: 500 }
-      );
-    }
-
-    const turnstileRes = await fetch(
-      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          secret: turnstileSecret,
-          response: turnstileToken,
-        }),
+    // ── Verify Turnstile token server-side (skip verify only for dev mock tokens in development) ──
+    const isDevToken = process.env.NODE_ENV !== 'production' && turnstileToken === 'dev-token';
+    if (!isDevToken) {
+      const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+      if (!turnstileSecret) {
+        console.error('CLOUDFLARE_TURNSTILE_SECRET_KEY is not configured');
+        return jsonNoCache(
+          { error: 'CAPTCHA verification is not configured. Please contact support.' },
+          { status: 500 }
+        );
       }
-    );
 
-    const turnstileData = await turnstileRes.json();
-    if (!turnstileData.success) {
-      return NextResponse.json(
-        { error: 'CAPTCHA verification failed. Please try again.' },
-        { status: 403 }
+      const turnstileRes = await fetch(
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: turnstileToken,
+          }),
+        }
       );
+
+      const turnstileData = await turnstileRes.json();
+      if (!turnstileData.success) {
+        return jsonNoCache(
+          { error: 'CAPTCHA verification failed. Please try again.' },
+          { status: 403 }
+        );
+      }
     }
 
     // ── Rate Limiting: 10 requests per IP per 10 minutes (600s) ──
@@ -115,7 +132,7 @@ export async function GET(request: NextRequest) {
     `;
 
     if (orders.length === 0) {
-      return NextResponse.json([]);
+      return jsonNoCache([]);
     }
 
     const orderIds = orders.map((o) => o.id as string);
@@ -143,9 +160,9 @@ export async function GET(request: NextRequest) {
       items: itemsByOrder.get(order.id as string) || [],
     }));
 
-    return NextResponse.json(ordersWithItems);
+    return jsonNoCache(ordersWithItems);
   } catch (error: unknown) {
     console.error('orders lookup error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return jsonNoCache({ error: 'Internal server error' }, { status: 500 });
   }
 }

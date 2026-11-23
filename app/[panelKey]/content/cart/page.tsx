@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 
-export default function CartContentRedirect({
+export default async function CartContentRedirect({
   params,
 }: {
-  params: { panelKey: string };
+  params: Promise<{ panelKey: string }> | { panelKey: string };
 }) {
-  redirect(`/${params.panelKey}/content?tab=cart-drawer`);
+  const resolvedParams = await Promise.resolve(params);
+  redirect(`/${resolvedParams?.panelKey || 'admin'}/content?tab=cart-drawer`);
 }

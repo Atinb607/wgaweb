@@ -1,13 +1,11 @@
 import type { Metadata } from 'next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import './globals.css';
-import dynamic from 'next/dynamic';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import CartDrawer from '@/components/ClientCartDrawer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { fontVariables } from '@/lib/fonts';
-
-const CartDrawer = dynamic(() => import('@/components/CartDrawer'), { ssr: false });
 import {
   absoluteUrl,
   cloudinaryOgImage,

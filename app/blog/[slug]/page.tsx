@@ -3,13 +3,18 @@ import { getSQL } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BlogPostRedirect({ params }: { params: { slug: string } }) {
+export default async function BlogPostRedirect({
+  params,
+}: {
+  params: Promise<{ slug: string }> | { slug: string };
+}) {
   try {
+    const { slug } = await Promise.resolve(params);
     const sql = getSQL();
     const posts = await sql`
       SELECT post_type
       FROM blog_posts
-      WHERE slug = ${params.slug} AND is_published = true
+      WHERE slug = ${slug} AND is_published = true
       LIMIT 1
     `;
 
@@ -19,9 +24,9 @@ export default async function BlogPostRedirect({ params }: { params: { slug: str
 
     const postType = (posts[0] as { post_type: string }).post_type;
     if (postType === 'recipe') {
-      permanentRedirect(`/recipes/${params.slug}`);
+      permanentRedirect(`/recipes/${slug}`);
     } else {
-      permanentRedirect(`/pathshala/${params.slug}`);
+      permanentRedirect(`/pathshala/${slug}`);
     }
   } catch (err) {
     console.error('Error redirecting blog post:', err);

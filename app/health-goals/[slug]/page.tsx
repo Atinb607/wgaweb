@@ -5,11 +5,12 @@ import { getHealthGoalBySlug } from '@/lib/healthGoals';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }> | { slug: string };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const goal = getHealthGoalBySlug(params.slug);
+  const { slug } = await Promise.resolve(params);
+  const goal = getHealthGoalBySlug(slug);
   if (!goal) {
     return {
       title: 'Health Goals · Wild About Greens',
@@ -34,7 +35,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function HealthGoalPage({ params }: PageProps) {
-  const goal = getHealthGoalBySlug(params.slug);
-  const targetSlug = goal ? goal.slug : params.slug;
+  const { slug } = await Promise.resolve(params);
+  const goal = getHealthGoalBySlug(slug);
+  const targetSlug = goal ? goal.slug : slug;
   redirect(`/products/health-goals?goal=${encodeURIComponent(targetSlug)}`);
 }

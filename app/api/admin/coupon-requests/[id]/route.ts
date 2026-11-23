@@ -8,11 +8,11 @@ const VALID_STATUSES = ['new', 'sent', 'dismissed'] as const;
 // PUT /api/admin/coupon-requests/[id]: update status ('sent' | 'dismissed' | 'new') and set handled_at
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json().catch(() => ({}));
     const status = typeof body.status === 'string' ? body.status.trim().toLowerCase() : '';
 
@@ -51,11 +51,11 @@ export async function PUT(
 // DELETE /api/admin/coupon-requests/[id]: permanently remove a coupon request
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const deleted = await sql`
       DELETE FROM coupon_requests

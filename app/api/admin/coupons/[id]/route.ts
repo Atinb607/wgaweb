@@ -8,11 +8,11 @@ const ALLOWED_STATUSES = ['active', 'disabled', 'void'] as const;
 // PUT /api/admin/coupons/[id]: update status (active <-> disabled, or -> void permanently)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json().catch(() => ({}));
 
     // Reject attempts to edit code or percent_off after creation

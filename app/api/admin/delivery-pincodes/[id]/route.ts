@@ -6,11 +6,11 @@ export const dynamic = 'force-dynamic';
 // PUT /api/admin/delivery-pincodes/[id]: update a free delivery pincode
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const { pincode, area_name, city, notes, is_active, is_free_delivery } = body;
 
@@ -64,11 +64,11 @@ export async function PUT(
 // DELETE /api/admin/delivery-pincodes/[id]: delete a free delivery pincode
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const result = await sql`
       DELETE FROM delivery_pincodes

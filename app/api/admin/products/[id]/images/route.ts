@@ -6,11 +6,11 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id: productId } = params;
+    const { id: productId } = await Promise.resolve(params);
     const body = await request.json();
 
     const { image_url, display_order, cloudinary_public_id, alt_text } = body;

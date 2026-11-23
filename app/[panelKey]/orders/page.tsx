@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
 import { downloadCSV } from '@/lib/csvExport';
-import { Banknote, X, Subscription, Download, Search } from '@/components/icons';
+import { Banknote, X, Subscription, Download, Search, Save, Check } from '@/components/icons';
 
 interface Order {
   id: string;
@@ -43,15 +43,15 @@ interface OrderDetail extends Order {
 }
 
 const statusColors: Record<string, string> = {
-  paid: 'bg-green-50 text-green-700',
-  pending: 'bg-yellow-50 text-yellow-700',
+  paid: 'bg-green-50 text-green-700 border-green-200',
+  pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   cod_pending: 'bg-amber-100 text-amber-900 border border-amber-300 font-medium',
-  failed: 'bg-red-50 text-red-700',
-  unfulfilled: 'bg-yellow-50 text-yellow-700',
-  fulfilled: 'bg-blue-50 text-blue-700',
-  shipped: 'bg-purple-50 text-purple-700',
-  delivered: 'bg-green-50 text-green-700',
-  cancelled: 'bg-red-50 text-red-700',
+  failed: 'bg-red-50 text-red-700 border-red-200',
+  unfulfilled: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  fulfilled: 'bg-blue-50 text-blue-700 border-blue-200',
+  shipped: 'bg-purple-50 text-purple-700 border-purple-200',
+  delivered: 'bg-green-50 text-green-700 border-green-200',
+  cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
 export default function AdminOrdersPage() {
@@ -60,8 +60,16 @@ export default function AdminOrdersPage() {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [fulfillmentFilter, setFulfillmentFilter] = useState('');
   const [detail, setDetail] = useState<OrderDetail | null>(null);
+  const [selectedFulfillment, setSelectedFulfillment] = useState('unfulfilled');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   const loadOrders = useCallback(async () => {
     const params = new URLSearchParams();
@@ -77,23 +85,64 @@ export default function AdminOrdersPage() {
 
   const openDetail = async (id: string) => {
     const res = await adminFetch(`/api/admin/orders/${id}`);
-    if (res.ok) setDetail(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setDetail(data);
+      setSelectedFulfillment(data.fulfillment_status || 'unfulfilled');
+    }
   };
 
   const updateFulfillment = async (status: string) => {
     if (!detail) return;
     setSaving(true);
-    const res = await adminFetch(`/api/admin/orders/${detail.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fulfillment_status: status }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setDetail({ ...detail, fulfillment_status: updated.fulfillment_status });
-      loadOrders();
+    try {
+      const res = await adminFetch(`/api/admin/orders/${detail.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfillment_status: status }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setDetail({ ...detail, fulfillment_status: updated.fulfillment_status });
+        setSelectedFulfillment(updated.fulfillment_status);
+        setOrders((prev) =>
+          prev.map((o) => (o.id === detail.id ? { ...o, fulfillment_status: updated.fulfillment_status } : o))
+        );
+        showToast(`Fulfillment status saved as "${updated.fulfillment_status}" for order #${detail.order_number || detail.id.slice(0, 8)}`);
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.error || 'Failed to update fulfillment status');
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  };
+
+  const updateInlineFulfillment = async (orderId: string, status: string, orderNumber: string) => {
+    setUpdatingOrderId(orderId);
+    // Optimistic update in table
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, fulfillment_status: status } : o))
+    );
+    try {
+      const res = await adminFetch(`/api/admin/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfillment_status: status }),
+      });
+      if (res.ok) {
+        showToast(`Order #${orderNumber || orderId.slice(0, 8)} fulfillment set to "${status}"`);
+      } else {
+        const err = await res.json().catch(() => null);
+        showToast(err?.error || 'Failed to update status');
+        loadOrders();
+      }
+    } catch {
+      showToast('Network error while updating fulfillment status');
+      loadOrders();
+    } finally {
+      setUpdatingOrderId(null);
+    }
   };
 
   const markCashCollected = async () => {
@@ -164,7 +213,7 @@ export default function AdminOrdersPage() {
           </div>
           {detail.order_number && (
             <a
-              href={`/track-order?order_number=${encodeURIComponent(detail.order_number)}&phone=${encodeURIComponent(detail.customer_phone)}`}
+              href={`/track-order?order_number=${encodeURIComponent(detail.order_number)}&phone=${encodeURIComponent(detail.customer_phone)}&email=${encodeURIComponent(detail.customer_email || '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-semibold text-white bg-[#1C3F2D] hover:bg-[#122A1F] px-4 py-2 rounded-lg transition-all shadow-xs flex items-center gap-1.5"
@@ -259,10 +308,10 @@ export default function AdminOrdersPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm font-medium text-gray-700">Fulfillment Status:</span>
+              <span className="text-sm font-semibold text-gray-700">Fulfillment Status:</span>
               <select
-                value={detail.fulfillment_status}
-                onChange={(e) => updateFulfillment(e.target.value)}
+                value={selectedFulfillment}
+                onChange={(e) => setSelectedFulfillment(e.target.value)}
                 disabled={saving}
                 className="px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-[#1C3F2D] outline-none"
               >
@@ -272,7 +321,23 @@ export default function AdminOrdersPage() {
                 <option value="delivered">Delivered (Doorstep)</option>
                 <option value="cancelled">Cancelled</option>
               </select>
-              {saving && <span className="text-xs text-gray-400">Saving update...</span>}
+
+              <button
+                type="button"
+                onClick={() => updateFulfillment(selectedFulfillment)}
+                disabled={saving || selectedFulfillment === detail.fulfillment_status}
+                className="px-4 py-2 bg-[#1C3F2D] hover:bg-[#122A1F] disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Saving...' : 'Save Fulfillment Status'}</span>
+              </button>
+
+              {selectedFulfillment === detail.fulfillment_status && (
+                <span className="text-xs text-emerald-700 font-semibold inline-flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Saved</span>
+                </span>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
@@ -410,6 +475,15 @@ export default function AdminOrdersPage() {
         </button>
       </div>
 
+      {toastMessage && (
+        <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between shadow-sm animate-fadeIn">
+          <span className="font-semibold">{toastMessage}</span>
+          <button onClick={() => setToastMessage(null)} className="text-emerald-700 font-bold ml-4">
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex-1 relative">
@@ -510,14 +584,26 @@ export default function AdminOrdersPage() {
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      statusColors[o.fulfillment_status] || 'bg-gray-100'
-                    }`}
-                  >
-                    {o.fulfillment_status}
-                  </span>
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={o.fulfillment_status}
+                      disabled={updatingOrderId === o.id}
+                      onChange={(e) => updateInlineFulfillment(o.id, e.target.value, o.order_number || '')}
+                      className={`text-xs font-semibold px-2 py-1 rounded-md border outline-none cursor-pointer transition-colors ${
+                        statusColors[o.fulfillment_status] || 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <option value="unfulfilled">Unfulfilled</option>
+                      <option value="fulfilled">Fulfilled</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                    {updatingOrderId === o.id && (
+                      <span className="text-[10px] text-amber-600 font-medium animate-pulse">Saving...</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
                   <div>

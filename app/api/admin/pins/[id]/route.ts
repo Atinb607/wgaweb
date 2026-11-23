@@ -5,11 +5,11 @@ import { revalidateContentPins } from '@/lib/revalidate';
 // PUT /api/admin/pins/[id]: update a pin
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const { group_key, icon, title, description, display_order, is_active, image_url, link_url } = body;
 
@@ -44,11 +44,11 @@ export async function PUT(
 // DELETE /api/admin/pins/[id]: delete a pin
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const result = await sql`
       DELETE FROM content_pins

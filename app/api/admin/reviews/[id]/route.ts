@@ -6,11 +6,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const reviews = await sql`
       SELECT r.*, p.name AS product_name
@@ -34,11 +34,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
 
     const {
@@ -98,11 +98,11 @@ export async function PUT(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const result = await sql`
       DELETE FROM product_reviews

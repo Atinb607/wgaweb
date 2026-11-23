@@ -7,11 +7,11 @@ const VALID_FULFILLMENT_STATUSES = ['unfulfilled', 'fulfilled', 'shipped', 'deli
 // GET /api/admin/orders/[id]: full order detail with line items + product names
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const orders = await sql`
       SELECT * FROM orders WHERE id = ${id} LIMIT 1
@@ -44,11 +44,11 @@ export async function GET(
 // PUT /api/admin/orders/[id]: update fulfillment_status or execute actions
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const { action, fulfillment_status, payment_status } = body;
 

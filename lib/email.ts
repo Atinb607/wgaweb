@@ -385,8 +385,8 @@ export async function sendInquiryNotification(
   inquiry: InquiryForEmail
 ): Promise<boolean> {
   const fromEmail = getFromEmail();
-  // Send to the notification recipient (NOTIFY_EMAIL), falling back to FROM_EMAIL or default
-  const toEmail = process.env.NOTIFY_EMAIL || process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  // Send inquiry notifications to support@wildaboutgreens.com (configurable via INQUIRY_NOTIFY_EMAIL)
+  const toEmail = process.env.INQUIRY_NOTIFY_EMAIL || 'support@wildaboutgreens.com';
 
   const resend = getResend();
   if (!resend) {
@@ -398,9 +398,9 @@ export async function sendInquiryNotification(
     await resend.emails.send({
       from: fromEmail,
       to: toEmail,
-      replyTo: 'info@wildaboutgreens.com',
-      ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
-      subject: `New Bulk Inquiry: ${inquiry.business_name}`,
+      replyTo: inquiry.email || 'support@wildaboutgreens.com',
+      ...({ reply_to: inquiry.email || 'support@wildaboutgreens.com' } as Record<string, string>),
+      subject: `New Customer Inquiry: ${inquiry.contact_name} (${inquiry.business_name})`,
       html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -482,7 +482,8 @@ export async function sendBulkOrderNotification(
   req: BulkOrderForEmail
 ): Promise<boolean> {
   const fromEmail = getFromEmail();
-  const toEmail = process.env.NOTIFY_EMAIL || process.env.FROM_EMAIL || 'info@wildaboutgreens.com';
+  // Bulk order inquiries routed directly to orders@wildaboutgreens.com (configurable via BULK_ORDER_EMAIL)
+  const toEmail = process.env.BULK_ORDER_EMAIL || 'orders@wildaboutgreens.com';
 
   const resend = getResend();
   if (!resend) {
@@ -494,8 +495,8 @@ export async function sendBulkOrderNotification(
     await resend.emails.send({
       from: fromEmail,
       to: toEmail,
-      replyTo: 'info@wildaboutgreens.com',
-      ...({ reply_to: 'info@wildaboutgreens.com' } as Record<string, string>),
+      replyTo: req.customer_email || 'orders@wildaboutgreens.com',
+      ...({ reply_to: req.customer_email || 'orders@wildaboutgreens.com' } as Record<string, string>),
       subject: `New Bulk Order Request: ${req.ticket_number} (${req.trays_count} Trays)`,
       html: `
         <!DOCTYPE html>

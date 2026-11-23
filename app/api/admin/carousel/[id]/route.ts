@@ -7,11 +7,11 @@ import { revalidateCarousel } from '@/lib/revalidate';
 // PUT /api/admin/carousel/[id]: update a slide
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const { image_url, link_url, display_order, is_active, carousel_key, cloudinary_public_id, alt_text } = body;
 
@@ -58,11 +58,11 @@ export async function PUT(
 // DELETE /api/admin/carousel/[id]: delete a slide
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const result = await sql`
       DELETE FROM carousel_slides

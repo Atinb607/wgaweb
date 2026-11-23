@@ -91,8 +91,13 @@ export default function BulkOrderClient({ initialProducts = [] }: BulkOrderClien
   }, [turnstileReady, siteKey]);
 
   useEffect(() => {
-    renderTurnstile();
-  }, [renderTurnstile]);
+    if (!submitted) {
+      const timer = setTimeout(() => {
+        renderTurnstile();
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+  }, [submitted, renderTurnstile]);
 
   const toggleProduct = (prod: string) => {
     setSelectedProducts((prev) =>

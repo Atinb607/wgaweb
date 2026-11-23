@@ -71,9 +71,10 @@ const getArticle = cache(async (slug: string): Promise<ArticlePost | null> => {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }> | { slug: string };
 }): Promise<Metadata> {
-  const post = await getArticle(params.slug);
+  const { slug } = await Promise.resolve(params);
+  const post = await getArticle(slug);
   if (!post) {
     return {
       title: 'Article Not Found',
@@ -102,8 +103,13 @@ export async function generateMetadata({
 
 const DEFAULT_ARTICLE_BANNER = 'https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=2000&q=85';
 
-export default async function PathshalaDetailPage({ params }: { params: { slug: string } }) {
-  const post = await getArticle(params.slug);
+export default async function PathshalaDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }> | { slug: string };
+}) {
+  const { slug } = await Promise.resolve(params);
+  const post = await getArticle(slug);
   if (!post) {
     notFound();
   }

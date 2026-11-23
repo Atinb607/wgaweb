@@ -4,8 +4,8 @@ import { isCanonicalHost, siteUrl } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
-export default function robots(): MetadataRoute.Robots {
-  const headersList = headers();
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const headersList = await headers();
   const requestHost =
     headersList.get('x-forwarded-host') ||
     headersList.get('host') ||

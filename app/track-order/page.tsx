@@ -274,8 +274,8 @@ function TrackOrderContent() {
     renderTurnstile();
   }, [renderTurnstile]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError(null);
 
     const cleanOrderNumber = orderNumber.trim().toUpperCase();
@@ -306,8 +306,15 @@ function TrackOrderContent() {
         phone: cleanPhone,
         email: cleanEmail,
         turnstileToken: turnstileToken || 'dev-token',
+        _t: Date.now().toString(),
       });
-      const res = await fetch(`/api/orders/lookup?${query.toString()}`);
+      const res = await fetch(`/api/orders/lookup?${query.toString()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
+      });
       const data = await res.json();
 
       if (!res.ok) {
@@ -521,10 +528,11 @@ function TrackOrderContent() {
               ) : (
                 <div className="space-y-8">
                   {orders.map((order) => {
+                    const statusKey = (order.fulfillment_status || 'unfulfilled').toLowerCase().trim();
                     const statusConfig =
-                      fulfillmentBadgeStyles[order.fulfillment_status] || fulfillmentBadgeStyles.unfulfilled;
-                    const activeStepIndex = getActiveStepIndex(order.fulfillment_status);
-                    const isCancelled = order.fulfillment_status === 'cancelled';
+                      fulfillmentBadgeStyles[statusKey] || fulfillmentBadgeStyles.unfulfilled;
+                    const activeStepIndex = getActiveStepIndex(statusKey);
+                    const isCancelled = statusKey === 'cancelled';
 
                     return (
                       <div
@@ -573,12 +581,34 @@ function TrackOrderContent() {
                               <p className="font-bold text-[#1C3F2D]">{formatPrice(order.total_paise)}</p>
                             </div>
 
-                            <div>
+                            <div className="flex items-center gap-2">
                               <span
                                 className={`text-xs font-semibold px-3 py-1 rounded-full border inline-block ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
                               >
                                 {statusConfig.label}
                               </span>
+                              <button
+                                type="button"
+                                onClick={() => handleSubmit()}
+                                disabled={loading}
+                                className="text-xs text-[#1C3F2D] hover:text-[#122A1F] border border-[#E4DDC8] hover:border-[#1C3F2D] bg-white px-2.5 py-1 rounded-full flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                                title="Refresh status"
+                              >
+                                <svg
+                                  className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`}
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                  />
+                                </svg>
+                                <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -604,8 +634,8 @@ function TrackOrderContent() {
 
                               <div className="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-2 relative z-10">
                                 {TIMELINE_STEPS.map((step, idx) => {
-                                  const isCompleted = idx < activeStepIndex || order.fulfillment_status === 'delivered';
-                                  const isCurrent = idx === activeStepIndex && order.fulfillment_status !== 'delivered';
+                                  const isCompleted = idx < activeStepIndex || statusKey === 'delivered';
+                                  const isCurrent = idx === activeStepIndex && statusKey !== 'delivered';
 
                                   return (
                                     <div

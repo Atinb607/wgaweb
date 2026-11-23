@@ -4,11 +4,11 @@ import { getSQL } from '@/lib/db';
 // GET /api/blog/[slug]: public: single published post
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> | { slug: string } }
 ) {
   try {
     const sql = getSQL();
-    const { slug } = params;
+    const { slug } = await Promise.resolve(params);
 
     const posts = await sql`
       SELECT * FROM blog_posts

@@ -7,11 +7,11 @@ export const revalidate = 0;
 // GET /api/content/[page]: returns all content_blocks for a page as { key: value }
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { page: string } }
+  { params }: { params: Promise<{ page: string }> | { page: string } }
 ) {
   try {
     const sql = getSQL();
-    const { page } = params;
+    const { page } = await Promise.resolve(params);
 
     const blocks = await sql`
       SELECT key, value

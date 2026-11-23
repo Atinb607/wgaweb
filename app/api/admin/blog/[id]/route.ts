@@ -7,11 +7,11 @@ export const dynamic = 'force-dynamic';
 // PUT /api/admin/blog/[id]: update a post
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const {
       slug,
@@ -183,11 +183,11 @@ export async function PUT(
 // DELETE /api/admin/blog/[id]: hard delete a post
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const result = await sql`
       DELETE FROM blog_posts
@@ -210,11 +210,11 @@ export async function DELETE(
 // GET /api/admin/blog/[id]: get a single post for editing
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     const result = await sql`
       SELECT * FROM blog_posts

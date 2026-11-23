@@ -2,10 +2,11 @@ import { permanentRedirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default function RecipeDetailLegacyRedirect({
+export default async function RecipeDetailLegacyRedirect({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }> | { slug: string };
 }) {
-  permanentRedirect(`/recipes/${params.slug}`);
+  const { slug } = await Promise.resolve(params);
+  permanentRedirect(`/recipes/${slug}`);
 }

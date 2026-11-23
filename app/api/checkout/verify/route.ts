@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { getSQL } from '@/lib/db';
 import { sendOrderConfirmation } from '@/lib/email';
 import { decrementStock } from '@/lib/stock';
+import { cleanRazorpayKey } from '@/lib/razorpay';
 
 interface VerifyBody {
   razorpay_order_id: string;
@@ -27,15 +28,23 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Verify signature ──
+    const secret = cleanRazorpayKey(process.env.RAZORPAY_KEY_SECRET);
+    if (!secret) {
+      console.error('[verify] RAZORPAY_KEY_SECRET is missing or not configured');
+      return NextResponse.json({ error: 'Payment gateway configuration error on server' }, { status: 500 });
+    }
+
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+      .createHmac('sha256', secret)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(expectedSignature),
-      Buffer.from(razorpay_signature)
-    );
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf-8');
+    const signatureBuffer = Buffer.from(razorpay_signature, 'utf-8');
+
+    const isValid =
+      expectedBuffer.length === signatureBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
 
     if (!isValid) {
       // Mark the order as failed (but never downgrade a successful payment)

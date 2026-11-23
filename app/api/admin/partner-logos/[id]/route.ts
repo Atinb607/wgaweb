@@ -7,11 +7,11 @@ export const dynamic = 'force-dynamic';
 // PUT /api/admin/partner-logos/[id]: update a partner logo
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const { name, logo_url, website_url, display_order, is_active } = body;
 
@@ -44,11 +44,11 @@ export async function PUT(
 // DELETE /api/admin/partner-logos/[id]: delete a partner logo
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const sql = getSQL();
-    const { id } = params;
+    const { id } = await Promise.resolve(params);
 
     await sql`
       DELETE FROM partner_logos

@@ -327,8 +327,13 @@ async function getHatTrickVariant(): Promise<HatTrickVariantData | null> {
   }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const product = await getProduct(params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }> | { slug: string };
+}): Promise<Metadata> {
+  const { slug } = await Promise.resolve(params);
+  const product = await getProduct(slug);
   if (!product) {
     return {
       title: 'Product Not Found',
@@ -359,12 +364,17 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   });
 }
 
-export default async function ProductDetailPage({ params }: { params: { slug: string } }) {
-  const product = await getProduct(params.slug);
+export default async function ProductDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }> | { slug: string };
+}) {
+  const { slug } = await Promise.resolve(params);
+  const product = await getProduct(slug);
   if (!product) notFound();
 
   const [allOtherProducts, content, reviews, whyChoosePins, hatTrickVariant] = await Promise.all([
-    getInventoryProducts(params.slug),
+    getInventoryProducts(slug),
     getContentMap(),
     getProductReviews(product.id),
     getWhyChoosePins(),

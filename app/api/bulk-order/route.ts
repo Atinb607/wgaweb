@@ -17,8 +17,8 @@ function generateTicketNumber(): string {
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit: 5 submissions per 10 minutes per IP
-    const rateLimited = await checkRateLimit(request, 'bulk-order', 5, 600);
+    // Rate limit: 20 submissions per 10 minutes per IP
+    const rateLimited = await checkRateLimit(request, 'bulk-order', 20, 600);
     if (rateLimited) return rateLimited;
 
     const body = await request.json();

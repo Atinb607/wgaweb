@@ -22,20 +22,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DynamicPanelLayout({
+export default async function DynamicPanelLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { panelKey: string };
+  params: Promise<{ panelKey: string }> | { panelKey: string };
 }) {
+  const resolvedParams = await Promise.resolve(params);
+  const panelKey = resolvedParams?.panelKey;
   const secretSlug = process.env.ADMIN_PANEL_SLUG;
 
   // If ADMIN_PANEL_SLUG is not configured or does not match exactly,
   // return a standard 404 with no indication that an admin panel exists.
-  if (!secretSlug || params.panelKey !== secretSlug) {
+  if (!secretSlug || panelKey !== secretSlug) {
     notFound();
   }
 
-  return <AdminLayoutClient panelKey={params.panelKey}>{children}</AdminLayoutClient>;
+  return <AdminLayoutClient panelKey={panelKey}>{children}</AdminLayoutClient>;
 }

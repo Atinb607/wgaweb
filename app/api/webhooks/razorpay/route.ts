@@ -14,16 +14,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
     }
 
+    const webhookSecret = (process.env.RAZORPAY_WEBHOOK_SECRET || '').trim();
+    if (!webhookSecret) {
+      console.warn('[webhook] RAZORPAY_WEBHOOK_SECRET is not configured on server.');
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    }
+
     // ── Verify webhook signature ──
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET!)
+      .createHmac('sha256', webhookSecret)
       .update(rawBody)
       .digest('hex');
 
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(expectedSignature),
-      Buffer.from(signature)
-    );
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf-8');
+    const signatureBuffer = Buffer.from(signature, 'utf-8');
+
+    const isValid =
+      expectedBuffer.length === signatureBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
 
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -32,16 +40,17 @@ export async function POST(request: NextRequest) {
     // ── Process webhook event ──
     const event = JSON.parse(rawBody);
 
-    if (event.event === 'payment.captured') {
+    if (event.event === 'payment.captured' || event.event === 'order.paid') {
       const payment = event.payload?.payment?.entity;
-      const razorpayOrderId = payment?.order_id;
-      const razorpayPaymentId = payment?.id;
+      const order = event.payload?.order?.entity;
+      const razorpayOrderId = payment?.order_id || order?.id;
+      const razorpayPaymentId = payment?.id || null;
 
       if (razorpayOrderId) {
         const updated = await sql`
           UPDATE orders
           SET payment_status = 'paid',
-              razorpay_payment_id = ${razorpayPaymentId}
+              razorpay_payment_id = COALESCE(${razorpayPaymentId}, razorpay_payment_id)
           WHERE razorpay_order_id = ${razorpayOrderId}
             AND payment_status = 'pending'
           RETURNING id

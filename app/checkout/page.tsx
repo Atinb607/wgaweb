@@ -17,8 +17,36 @@ import { useInvisibleTurnstile } from '@/lib/useTurnstile';
 
 declare global {
   interface Window {
-    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+    Razorpay?: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (event: string, handler: (response: { error?: { description?: string; reason?: string } }) => void) => void;
+    };
   }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && Boolean(window.Razorpay)) {
+      resolve(true);
+      return;
+    }
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      if (typeof window !== 'undefined' && Boolean(window.Razorpay)) {
+        resolve(true);
+      } else {
+        existing.addEventListener('load', () => resolve(true), { once: true });
+        existing.addEventListener('error', () => resolve(false), { once: true });
+      }
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 }
 
 export default function CheckoutPage() {
@@ -397,6 +425,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading || codSubmitting) return;
     setError(null);
 
     // Client-side validation
@@ -471,9 +500,22 @@ export default function CheckoutPage() {
       }
 
       // Open Razorpay checkout
-      const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-      if (!rzpKey || !razorpayLoaded) {
-        setError('Payment system is not ready. Please refresh and try again.');
+      const rzpKey =
+        data.keyId ||
+        data.key ||
+        data.razorpayKeyId ||
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+
+      let isScriptReady = razorpayLoaded || (typeof window !== 'undefined' && Boolean(window.Razorpay));
+      if (!isScriptReady) {
+        isScriptReady = await loadRazorpayScript();
+        if (isScriptReady) {
+          setRazorpayLoaded(true);
+        }
+      }
+
+      if (!rzpKey || !isScriptReady || !window.Razorpay) {
+        setError('Payment system is not ready. Please refresh the page and try again, or select Cash on Delivery.');
         setLoading(false);
         return;
       }
@@ -485,6 +527,9 @@ export default function CheckoutPage() {
         currency: data.currency || 'INR',
         name: 'Wild About Greens',
         description: 'Fresh Microgreens Order',
+        theme: {
+          color: '#1C3F2D',
+        },
         prefill: {
           name: form.name.trim(),
           contact: form.phone.trim(),
@@ -541,11 +586,13 @@ export default function CheckoutPage() {
                 `/order-confirmation?orderNumber=${encodeURIComponent(confirmNumber)}&email=${encodeURIComponent(customerEmail)}`
               );
             } else {
-              setError('Payment verification failed. If you were charged, please contact us.');
+              const paymentRef = response.razorpay_payment_id ? ` (Payment ID: ${response.razorpay_payment_id})` : '';
+              setError(`Payment verification failed${paymentRef}. If your account was debited, please contact us.`);
               setLoading(false);
             }
           } catch {
-            setError('Payment verification failed. If you were charged, please contact us.');
+            const paymentRef = response.razorpay_payment_id ? ` (Payment ID: ${response.razorpay_payment_id})` : '';
+            setError(`Payment completed${paymentRef}, but connection timed out. Please contact us to confirm your order.`);
             setLoading(false);
           }
         },
@@ -555,6 +602,13 @@ export default function CheckoutPage() {
             setLoading(false);
           },
         },
+      });
+
+      rzp.on('payment.failed', (response: { error?: { description?: string; reason?: string } }) => {
+        console.error('Razorpay payment failed:', response);
+        const reason = response.error?.description || response.error?.reason || 'Payment failed. Please try another card or UPI option.';
+        setError(reason);
+        setLoading(false);
       });
 
       rzp.open();

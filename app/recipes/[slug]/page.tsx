@@ -78,9 +78,10 @@ const getRecipe = cache(async (slug: string): Promise<RecipePost | null> => {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }> | { slug: string };
 }): Promise<Metadata> {
-  const post = await getRecipe(params.slug);
+  const { slug } = await Promise.resolve(params);
+  const post = await getRecipe(slug);
   if (!post) {
     return {
       title: 'Recipe Not Found',
@@ -109,8 +110,13 @@ export async function generateMetadata({
 
 const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=2000&q=85';
 
-export default async function RecipeDetailPage({ params }: { params: { slug: string } }) {
-  const post = await getRecipe(params.slug);
+export default async function RecipeDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }> | { slug: string };
+}) {
+  const { slug } = await Promise.resolve(params);
+  const post = await getRecipe(slug);
   if (!post) {
     notFound();
   }

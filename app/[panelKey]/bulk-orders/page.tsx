@@ -130,15 +130,27 @@ export default function AdminBulkOrdersPage() {
       return;
     }
     try {
-      const res = await adminFetch(`/api/admin/bulk-orders/${id}`, {
+      let res = await adminFetch(`/api/admin/bulk-orders/${id}`, {
         method: 'DELETE',
       });
+      // Fallback to PUT action=delete in case HTTP DELETE is restricted by host/proxy
+      if (!res.ok) {
+        res = await adminFetch(`/api/admin/bulk-orders/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete' }),
+        });
+      }
+
       if (res.ok) {
         setRequests((prev) => prev.filter((r) => r.id !== id));
-        showFeedback(`Request ${ticketNumber} deleted`);
+        showFeedback(`Request ${ticketNumber} deleted successfully`);
+      } else {
+        const data = await res.json().catch(() => null);
+        showFeedback(data?.error || `Failed to delete request (HTTP ${res.status})`);
       }
     } catch {
-      showFeedback('Failed to delete request');
+      showFeedback('Failed to delete request. Please check connection.');
     }
   };
 

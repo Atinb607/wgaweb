@@ -8,11 +8,11 @@ export const revalidate = 0;
 // GET /api/admin/content/[page]: read all blocks for a page (with full metadata)
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { page: string } }
+  { params }: { params: Promise<{ page: string }> | { page: string } }
 ) {
   try {
     const sql = getSQL();
-    const { page } = params;
+    const { page } = await Promise.resolve(params);
 
     const blocks = await sql`
       SELECT id, page, key, value_type, value, updated_at
@@ -36,11 +36,11 @@ export async function GET(
 // Body: { blocks: [{ key, value, value_type? }] }
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { page: string } }
+  { params }: { params: Promise<{ page: string }> | { page: string } }
 ) {
   try {
     const sql = getSQL();
-    const { page } = params;
+    const { page } = await Promise.resolve(params);
     const { blocks } = await request.json();
 
     if (!Array.isArray(blocks)) {
