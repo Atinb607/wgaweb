@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
-import { getRazorpay, cleanRazorpayKey } from '@/lib/razorpay';
+import { getRazorpay, getRazorpayKeyId } from '@/lib/razorpay';
 import { checkRateLimit } from '@/lib/rateLimit';
 import {
   validateCheckoutPayload,
@@ -148,6 +148,8 @@ export async function POST(request: NextRequest) {
 
     console.log('[create-order] Generated razorpay_order_id:', razorpayOrder.id, 'order_number:', orderNumber!);
 
+    const keyId = getRazorpayKeyId();
+
     return NextResponse.json({
       orderId: orderId!,
       order_id: orderId!,
@@ -155,8 +157,8 @@ export async function POST(request: NextRequest) {
       order_number: orderNumber!,
       razorpayOrderId: razorpayOrder.id,
       razorpay_order_id: razorpayOrder.id,
-      keyId: cleanRazorpayKey(process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID),
-      key: cleanRazorpayKey(process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID),
+      keyId,
+      key: keyId,
       subtotalPaise,
       deliveryFeePaise,
       deliveryCalc,

@@ -1,4 +1,4 @@
-import { getSQL } from '@/lib/db';
+import { getUncachedSQL } from '@/lib/db';
 
 /**
  * Atomically decrement stock for all items in a paid or COD order.
@@ -8,7 +8,7 @@ import { getSQL } from '@/lib/db';
  * Returns true if stock was decremented, false if already done or order not eligible.
  */
 export async function decrementStock(orderId: string): Promise<boolean> {
-  const sql = getSQL();
+  const sql = getUncachedSQL();
 
   // Atomically claim the decrement: only one caller wins this UPDATE
   const claimed = await sql`
@@ -53,7 +53,7 @@ export async function decrementStock(orderId: string): Promise<boolean> {
  * Returns true if stock was restored, false otherwise.
  */
 export async function restoreStock(orderId: string): Promise<boolean> {
-  const sql = getSQL();
+  const sql = getUncachedSQL();
 
   // Atomically claim the restoration
   const claimed = await sql`

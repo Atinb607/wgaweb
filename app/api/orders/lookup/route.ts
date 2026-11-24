@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { getUncachedSQL } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 function jsonNoCache(data: unknown, init?: ResponseInit) {
   const response = NextResponse.json(data, init);
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
       return rateLimitError;
     }
 
-    const sql = getSQL();
+    const sql = getUncachedSQL();
 
     // Normalize phone (extract digits, take last 10 digits for Indian numbers)
     const phoneDigits = phone ? phone.replace(/\D/g, '') : '';

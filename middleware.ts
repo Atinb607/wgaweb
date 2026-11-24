@@ -14,7 +14,7 @@ const securityHeaders: Record<string, string> = {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://challenges.cloudflare.com https://www.googletagmanager.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://images.pexels.com https://*.pexels.com https://www.google-analytics.com https://www.googletagmanager.com",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://images.pexels.com https://*.pexels.com https://*.razorpay.com https://www.google-analytics.com https://www.googletagmanager.com",
     "media-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://*.unsplash.com https://images.pexels.com https://*.pexels.com",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' https://api.razorpay.com https://*.razorpay.com https://challenges.cloudflare.com https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
@@ -43,9 +43,15 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest): Nex
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
 
-  // Defeat caching on all admin panel pages and admin API endpoints (especially on SiteGround / Nginx)
+  // Defeat caching on all admin panel, admin API, and dynamic checkout/pincode APIs (especially on SiteGround / Nginx)
   const pathname = request.nextUrl.pathname;
-  if (pathname.startsWith('/api/admin/') || isAdminPath(pathname)) {
+  if (
+    pathname.startsWith('/api/admin/') ||
+    isAdminPath(pathname) ||
+    pathname === '/checkout' ||
+    pathname.startsWith('/api/checkout/') ||
+    pathname === '/api/delivery-pincodes'
+  ) {
     for (const [key, value] of Object.entries(ADMIN_NO_CACHE_HEADERS)) {
       response.headers.set(key, value);
     }

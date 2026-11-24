@@ -1,4 +1,4 @@
-import { getSQL } from './db';
+import { getUncachedSQL } from './db';
 import { FREE_DELIVERY_PINCODES } from './delivery';
 
 /**
@@ -7,7 +7,7 @@ import { FREE_DELIVERY_PINCODES } from './delivery';
  */
 export async function ensureDeliveryPincodesTable(): Promise<void> {
   try {
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     await sql`
       CREATE TABLE IF NOT EXISTS delivery_pincodes (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -53,11 +53,12 @@ interface PincodeDbRow {
  */
 export async function getFreeDeliveryPincodesFromDb(): Promise<Set<string>> {
   try {
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const rows = (await sql`
       SELECT pincode
       FROM delivery_pincodes
       WHERE is_active = true
+        AND COALESCE(is_free_delivery, true) = true
     `) as unknown as PincodeDbRow[];
 
     if (rows) {

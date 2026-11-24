@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { getUncachedSQL } from '@/lib/db';
 import { FREE_DELIVERY_PINCODES } from '@/lib/delivery';
 import { ensureDeliveryPincodesTable } from '@/lib/deliveryServer';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 interface PincodeRow {
   pincode: string;
@@ -15,18 +17,19 @@ interface PincodeRow {
 export async function GET() {
   try {
     await ensureDeliveryPincodesTable();
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const rows = (await sql`
       SELECT pincode, area_name, city, is_free_delivery
       FROM delivery_pincodes
       WHERE is_active = true
+        AND COALESCE(is_free_delivery, true) = true
       ORDER BY pincode ASC
     `) as unknown as PincodeRow[];
 
     if (rows && rows.length > 0) {
       const freePincodes = rows.map((r) => String(r.pincode).trim());
 
-      return NextResponse.json({
+      return adminJsonResponse({
         freePincodes,
         pincodes: freePincodes,
         items: rows,
@@ -39,7 +42,7 @@ export async function GET() {
   // Fallback to defaults
   const defaults = Array.from(FREE_DELIVERY_PINCODES);
 
-  return NextResponse.json({
+  return adminJsonResponse({
     freePincodes: defaults,
     pincodes: defaults,
     items: defaults.map((pin) => ({

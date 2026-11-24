@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { getUncachedSQL } from '@/lib/db';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 // PUT /api/admin/delivery-pincodes/[id]: update a free delivery pincode
 export async function PUT(
@@ -9,7 +12,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const { id } = await Promise.resolve(params);
     const body = await request.json();
     const { pincode, area_name, city, notes, is_active, is_free_delivery } = body;
@@ -17,7 +20,7 @@ export async function PUT(
     const cleanPin = pincode !== undefined ? String(pincode).trim() : undefined;
 
     if (cleanPin !== undefined && !/^\d{6}$/.test(cleanPin)) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { error: 'Pincode must be a valid 6-digit postal code.' },
         { status: 400 }
       );
@@ -28,7 +31,7 @@ export async function PUT(
         SELECT id FROM delivery_pincodes WHERE pincode = ${cleanPin} AND id != ${id}
       `;
       if (conflict.length > 0) {
-        return NextResponse.json(
+        return adminJsonResponse(
           { error: `Pincode ${cleanPin} is already registered under another entry.` },
           { status: 409 }
         );
@@ -50,14 +53,14 @@ export async function PUT(
     `;
 
     if (result.length === 0) {
-      return NextResponse.json({ error: 'Delivery pincode not found.' }, { status: 404 });
+      return adminJsonResponse({ error: 'Delivery pincode not found.' }, { status: 404 });
     }
 
-    return NextResponse.json(result[0]);
+    return adminJsonResponse(result[0]);
   } catch (error: unknown) {
     console.error('admin update delivery pincode error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -67,7 +70,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const { id } = await Promise.resolve(params);
 
     const result = await sql`
@@ -77,13 +80,13 @@ export async function DELETE(
     `;
 
     if (result.length === 0) {
-      return NextResponse.json({ error: 'Delivery pincode not found.' }, { status: 404 });
+      return adminJsonResponse({ error: 'Delivery pincode not found.' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, deleted: result[0] });
+    return adminJsonResponse({ success: true, deleted: result[0] });
   } catch (error: unknown) {
     console.error('admin delete delivery pincode error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }

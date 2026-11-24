@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { CLOUDINARY_ASSETS } from '@/lib/publicImages';
-import { getSQL } from '@/lib/db';
+import { getSQL, getUncachedSQL } from '@/lib/db';
 
 let _resend: Resend | null = null;
 
@@ -47,6 +47,8 @@ interface OrderForEmail {
   discount_paise?: number;
   purchase_type: string;
   subscription_frequency: string | null;
+  payment_method?: string;
+  payment_status?: string;
 }
 
 interface OrderItemForEmail {
@@ -64,7 +66,7 @@ interface OrderItemForEmail {
 export async function sendOrderConfirmation(
   orderId: string
 ): Promise<boolean> {
-  const sql = getSQL();
+  const sql = getUncachedSQL();
 
   // Atomically check and set the email_sent flag to prevent duplicates
   const updated = await sql`
@@ -75,7 +77,8 @@ export async function sendOrderConfirmation(
       AND payment_status IN ('paid', 'cod_pending')
     RETURNING id, order_number, customer_name, customer_email, customer_phone,
               delivery_address, delivery_pincode, subtotal_paise, delivery_fee_paise,
-              total_paise, coupon_code, discount_paise, purchase_type, subscription_frequency, created_at
+              total_paise, coupon_code, discount_paise, purchase_type, subscription_frequency,
+              payment_method, payment_status, created_at
   `;
 
   if (updated.length === 0) {
@@ -340,6 +343,38 @@ export async function sendOrderConfirmation(
     });
 
     console.log(`Order ${orderId}: confirmation email sent successfully to ${order.customer_email}`);
+
+    // Send a copy of the order confirmation to Orders@rootsanalysis.com
+    const orderCopyRecipient =
+      process.env.ORDER_CONFIRMATION_COPY_EMAIL?.trim() || 'Orders@rootsanalysis.com';
+    const paymentSummary =
+      order.payment_method === 'cod'
+        ? `Cash on Delivery (${order.payment_status || 'cod_pending'})`
+        : `Online Payment (${order.payment_status || 'paid'})`;
+
+    const copyHtml = `
+      <div style="max-width: 600px; margin: 0 auto 14px; background-color: #F0FDF4; border: 1px solid #BBF7D0; padding: 14px 18px; border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #151F19; line-height: 1.5;">
+        <strong>Order Confirmation Copy (#${order.order_number})</strong><br />
+        Customer: <strong>${order.customer_name}</strong> (${order.customer_email}) • Phone: ${order.customer_phone}<br />
+        Payment: <strong>${paymentSummary}</strong> • Total: <strong>${totalFormatted}</strong>
+      </div>
+      ${htmlContent}
+    `;
+
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: orderCopyRecipient,
+        replyTo: order.customer_email,
+        ...({ reply_to: order.customer_email } as Record<string, string>),
+        subject: `[Order Copy #${order.order_number}] ${subject}`,
+        html: copyHtml,
+      });
+      console.log(`Order ${orderId}: confirmation copy sent to ${orderCopyRecipient}`);
+    } catch (copyErr) {
+      console.error(`Order ${orderId}: failed to send confirmation copy to ${orderCopyRecipient}`, copyErr);
+    }
+
     return true;
   } catch (error) {
     console.error(`Order ${orderId}: failed to send confirmation email`, error);

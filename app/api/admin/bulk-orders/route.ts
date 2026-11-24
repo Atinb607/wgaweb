@@ -1,14 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { getUncachedSQL } from '@/lib/db';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 const VALID_STATUSES = ['new', 'contacted', 'in_progress', 'fulfilled', 'cancelled'];
 
 // GET /api/admin/bulk-orders: list bulk order requests, optionally filtered by status & search
 export async function GET(request: NextRequest) {
   try {
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status')?.trim().toLowerCase();
     const query = searchParams.get('q')?.trim().toLowerCase();
@@ -83,10 +86,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(requests);
+    return adminJsonResponse(requests);
   } catch (error: unknown) {
     console.error('admin get bulk orders error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }

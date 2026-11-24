@@ -1,25 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { getUncachedSQL } from '@/lib/db';
 import { ensureDeliveryPincodesTable } from '@/lib/deliveryServer';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 // GET /api/admin/delivery-pincodes: list all pincodes
 export async function GET() {
   try {
     await ensureDeliveryPincodesTable();
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const pincodes = await sql`
       SELECT id, pincode, area_name, city, notes, is_active, is_free_delivery, created_at, updated_at
       FROM delivery_pincodes
       ORDER BY pincode ASC
     `;
 
-    return NextResponse.json({ pincodes });
+    return adminJsonResponse({ pincodes });
   } catch (error: unknown) {
     console.error('admin fetch delivery pincodes error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }
 
@@ -27,18 +30,18 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await ensureDeliveryPincodesTable();
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const body = await request.json();
     const { pincode, area_name, city, notes, is_active, is_free_delivery } = body;
 
     const cleanPin = pincode ? String(pincode).trim() : '';
 
     if (!cleanPin) {
-      return NextResponse.json({ error: 'Pincode is required.' }, { status: 400 });
+      return adminJsonResponse({ error: 'Pincode is required.' }, { status: 400 });
     }
 
     if (!/^\d{6}$/.test(cleanPin)) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { error: 'Pincode must be a valid 6-digit postal code (e.g. 140306).' },
         { status: 400 }
       );
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
     `;
 
     if (existing.length > 0) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { error: `Pincode ${cleanPin} is already registered in the free delivery pincodes list.` },
         { status: 409 }
       );
@@ -69,10 +72,10 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
-    return NextResponse.json(result[0], { status: 201 });
+    return adminJsonResponse(result[0], { status: 201 });
   } catch (error: unknown) {
     console.error('admin create delivery pincode error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }

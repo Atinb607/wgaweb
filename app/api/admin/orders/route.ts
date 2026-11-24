@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { getUncachedSQL } from '@/lib/db';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 // GET /api/admin/orders: list orders with optional filters
 export async function GET(request: NextRequest) {
   try {
-    const sql = getSQL();
+    const sql = getUncachedSQL();
     const { searchParams } = new URL(request.url);
     const paymentStatus = searchParams.get('payment_status');
     const fulfillmentStatus = searchParams.get('fulfillment_status');
@@ -64,12 +67,12 @@ export async function GET(request: NextRequest) {
         items: itemsByOrder.get(order.id as string) || [],
       }));
 
-      return NextResponse.json(result);
+      return adminJsonResponse(result);
     }
 
-    return NextResponse.json(orders);
+    return adminJsonResponse(orders);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }

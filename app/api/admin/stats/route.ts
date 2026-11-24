@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
-import { getSQL } from '@/lib/db';
+import { getUncachedSQL } from '@/lib/db';
+import { adminJsonResponse } from '@/lib/adminResponse';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 // GET /api/admin/stats: dashboard summary in a single call
 export async function GET() {
   try {
-    const sql = getSQL();
+    const sql = getUncachedSQL();
 
     // ── Orders today ──
     const todayOrders = await sql`
@@ -87,7 +89,7 @@ export async function GET() {
     // to warrant TTL-based reservation logic. This is a deliberate scope decision,
     // not an oversight.
 
-    return NextResponse.json({
+    return adminJsonResponse({
       orders_today_count: todayOrders[0]?.count ?? 0,
       orders_today_revenue_paise: Number(todayOrders[0]?.revenue_paise ?? 0),
       pending_fulfillment_count: pendingFulfillment[0]?.count ?? 0,
@@ -100,6 +102,6 @@ export async function GET() {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminJsonResponse({ error: message }, { status: 500 });
   }
 }

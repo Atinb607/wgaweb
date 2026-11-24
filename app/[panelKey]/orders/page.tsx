@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/adminAuth';
 import { formatPrice } from '@/lib/format';
 import { downloadCSV } from '@/lib/csvExport';
-import { Banknote, X, Subscription, Download, Search, Save, Check } from '@/components/icons';
+import { Banknote, X, Subscription, Download, Search, Save, Check, RotateCcw, Trash2 } from '@/components/icons';
 
 interface Order {
   id: string;
@@ -65,6 +65,9 @@ export default function AdminOrdersPage() {
   const [copied, setCopied] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -72,16 +75,44 @@ export default function AdminOrdersPage() {
   };
 
   const loadOrders = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (paymentFilter) params.set('payment_status', paymentFilter);
-    if (fulfillmentFilter) params.set('fulfillment_status', fulfillmentFilter);
-    const res = await adminFetch(`/api/admin/orders?${params}`);
-    if (res.ok) setOrders(await res.json());
+    setRefreshing(true);
+    setLoadError(null);
+    try {
+      const params = new URLSearchParams();
+      if (paymentFilter) params.set('payment_status', paymentFilter);
+      if (fulfillmentFilter) params.set('fulfillment_status', fulfillmentFilter);
+      const qs = params.toString();
+      const res = await adminFetch(qs ? `/api/admin/orders?${qs}` : '/api/admin/orders');
+      if (res.ok) {
+        setOrders(await res.json());
+      } else {
+        const err = await res.json().catch(() => null);
+        setLoadError(err?.error || `Failed to load orders (HTTP ${res.status})`);
+      }
+    } catch {
+      setLoadError('Network error while loading orders.');
+    } finally {
+      setRefreshing(false);
+    }
   }, [paymentFilter, fulfillmentFilter]);
 
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible' && !detail && !updatingOrderId && !deletingOrderId) {
+        loadOrders();
+      }
+    };
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+    return () => {
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+    };
+  }, [loadOrders, detail, updatingOrderId, deletingOrderId]);
 
   const openDetail = async (id: string) => {
     const res = await adminFetch(`/api/admin/orders/${id}`);
@@ -176,6 +207,38 @@ export default function AdminOrdersPage() {
       loadOrders();
     }
     setSaving(false);
+  };
+
+  const deleteOrder = async (orderId: string, orderNumber: string | null) => {
+    const label = orderNumber ? `#${orderNumber}` : orderId.slice(0, 8);
+    if (
+      !confirm(
+        `Delete order ${label}? This will permanently delete the order and restore any decremented stock. This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingOrderId(orderId);
+    try {
+      const res = await adminFetch(`/api/admin/orders/${orderId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        if (detail?.id === orderId) {
+          setDetail(null);
+        }
+        showToast(`Order ${label} deleted permanently.`);
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.error || 'Failed to delete order');
+      }
+    } catch {
+      alert('Network error while deleting order');
+    } finally {
+      setDeletingOrderId(null);
+    }
   };
 
   if (detail) {
@@ -357,13 +420,23 @@ export default function AdminOrdersPage() {
                 <button
                   type="button"
                   onClick={cancelOrder}
-                  disabled={saving}
+                  disabled={saving || deletingOrderId === detail.id}
                   className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 border border-rose-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                   <span>Cancel / Refused</span>
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => deleteOrder(detail.id, detail.order_number)}
+                disabled={saving || deletingOrderId === detail.id}
+                className="px-3.5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deletingOrderId === detail.id ? 'Deleting...' : 'Delete Order'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -464,16 +537,41 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleExportCSV}
-          disabled={filteredOrders.length === 0}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export to CSV</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={loadOrders}
+            disabled={refreshing}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-gray-50 disabled:opacity-60 text-gray-700 border border-gray-300 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            disabled={filteredOrders.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export to CSV</span>
+          </button>
+        </div>
       </div>
+
+      {loadError && (
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-sm flex items-center justify-between shadow-sm">
+          <span className="font-medium">{loadError}</span>
+          <button
+            type="button"
+            onClick={loadOrders}
+            className="text-rose-700 font-bold ml-4 underline cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {toastMessage && (
         <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between shadow-sm animate-fadeIn">
@@ -621,8 +719,25 @@ export default function AdminOrdersPage() {
                     })}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-emerald-700 font-semibold text-xs hover:underline">
-                  View →
+                <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => openDetail(o.id)}
+                      className="text-emerald-700 font-semibold text-xs hover:underline cursor-pointer"
+                    >
+                      View →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteOrder(o.id, o.order_number)}
+                      disabled={deletingOrderId === o.id}
+                      title={`Delete order ${o.order_number || o.id.slice(0, 8)}`}
+                      className="p-1.5 rounded-md text-rose-600 hover:text-rose-800 hover:bg-rose-50 disabled:opacity-40 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

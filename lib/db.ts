@@ -1,6 +1,16 @@
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 
 let _sql: NeonQueryFunction<false, false> | null = null;
+let _uncachedSql: NeonQueryFunction<false, false> | null = null;
+
+function requireDatabaseUrl(): string {
+  if (!process.env.DATABASE_URL) {
+    throw new Error(
+      'DATABASE_URL is not set. Copy .env.local.example to .env.local and fill in your Neon connection string.'
+    );
+  }
+  return process.env.DATABASE_URL;
+}
 
 /**
  * Returns the Neon SQL tagged-template query function.
@@ -13,12 +23,20 @@ let _sql: NeonQueryFunction<false, false> | null = null;
  */
 export function getSQL(): NeonQueryFunction<false, false> {
   if (!_sql) {
-    if (!process.env.DATABASE_URL) {
-      throw new Error(
-        'DATABASE_URL is not set. Copy .env.local.example to .env.local and fill in your Neon connection string.'
-      );
-    }
-    _sql = neon(process.env.DATABASE_URL);
+    _sql = neon(requireDatabaseUrl());
   }
   return _sql;
+}
+
+/**
+ * Returns a Neon SQL query function with `cache: 'no-store'` on the underlying
+ * fetch call so dynamic admin and tracking endpoints never serve cached queries.
+ */
+export function getUncachedSQL(): NeonQueryFunction<false, false> {
+  if (!_uncachedSql) {
+    _uncachedSql = neon(requireDatabaseUrl(), {
+      fetchOptions: { cache: 'no-store' },
+    });
+  }
+  return _uncachedSql;
 }

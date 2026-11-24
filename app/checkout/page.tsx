@@ -24,29 +24,46 @@ declare global {
   }
 }
 
+const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
+let razorpayScriptPromise: Promise<boolean> | null = null;
+
 function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window !== 'undefined' && Boolean(window.Razorpay)) {
-      resolve(true);
-      return;
-    }
-    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if (window.Razorpay) return Promise.resolve(true);
+  if (razorpayScriptPromise) return razorpayScriptPromise;
+
+  razorpayScriptPromise = new Promise((resolve) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${RAZORPAY_SCRIPT_SRC}"]`
+    );
     if (existing) {
-      if (typeof window !== 'undefined' && Boolean(window.Razorpay)) {
-        resolve(true);
-      } else {
-        existing.addEventListener('load', () => resolve(true), { once: true });
-        existing.addEventListener('error', () => resolve(false), { once: true });
-      }
-      return;
+      // Remove any previous failed/orphaned tag before retrying
+      existing.remove();
     }
+
     const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.src = RAZORPAY_SCRIPT_SRC;
     script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      if (!ok) {
+        razorpayScriptPromise = null;
+        script.remove();
+      }
+      resolve(ok);
+    };
+
+    const timeoutId = window.setTimeout(() => finish(Boolean(window.Razorpay)), 12000);
+    script.onload = () => finish(Boolean(window.Razorpay));
+    script.onerror = () => finish(false);
     document.body.appendChild(script);
   });
+
+  return razorpayScriptPromise;
 }
 
 export default function CheckoutPage() {
@@ -69,7 +86,6 @@ export default function CheckoutPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   // ── Payment Method State ──
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
@@ -103,16 +119,9 @@ export default function CheckoutPage() {
     reset: resetTurnstile,
   } = useInvisibleTurnstile();
 
-  // Load Razorpay Checkout.js
+  // Preload Razorpay Checkout.js
   useEffect(() => {
-    if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
-      setRazorpayLoaded(true);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => setRazorpayLoaded(true);
-    document.body.appendChild(script);
+    void loadRazorpayScript();
   }, []);
 
   // Check COD status dynamically from server
@@ -145,19 +154,44 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/delivery-pincodes')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active || !data) return;
-        if (Array.isArray(data.freePincodes)) {
-          setFreePincodes(new Set(data.freePincodes));
-        } else if (Array.isArray(data.pincodes)) {
-          setFreePincodes(new Set(data.pincodes));
-        }
+    const loadFreePincodes = () => {
+      fetch(`/api/delivery-pincodes?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          'X-Cache-Enabled': 'False',
+        },
       })
-      .catch(() => {});
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!active || !data) return;
+          const list = Array.isArray(data.freePincodes)
+            ? data.freePincodes
+            : Array.isArray(data.pincodes)
+            ? data.pincodes
+            : null;
+          if (list) {
+            setFreePincodes(
+              new Set(list.map((p: unknown) => String(p ?? '').trim()).filter(Boolean))
+            );
+          }
+        })
+        .catch(() => {});
+    };
+
+    loadFreePincodes();
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadFreePincodes();
+      }
+    };
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
     return () => {
       active = false;
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
     };
   }, []);
 
@@ -501,21 +535,24 @@ export default function CheckoutPage() {
 
       // Open Razorpay checkout
       const rzpKey =
-        data.keyId ||
-        data.key ||
-        data.razorpayKeyId ||
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        (typeof data.keyId === 'string' && data.keyId.trim()) ||
+        (typeof data.key === 'string' && data.key.trim()) ||
+        (typeof data.razorpayKeyId === 'string' && data.razorpayKeyId.trim()) ||
+        (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '').trim();
 
-      let isScriptReady = razorpayLoaded || (typeof window !== 'undefined' && Boolean(window.Razorpay));
-      if (!isScriptReady) {
-        isScriptReady = await loadRazorpayScript();
-        if (isScriptReady) {
-          setRazorpayLoaded(true);
-        }
+      if (!rzpKey) {
+        setError('Payment gateway is not configured on the server. Please contact us or select Cash on Delivery.');
+        setLoading(false);
+        return;
       }
 
-      if (!rzpKey || !isScriptReady || !window.Razorpay) {
-        setError('Payment system is not ready. Please refresh the page and try again, or select Cash on Delivery.');
+      let isScriptReady = typeof window !== 'undefined' && Boolean(window.Razorpay);
+      if (!isScriptReady) {
+        isScriptReady = await loadRazorpayScript();
+      }
+
+      if (!isScriptReady || !window.Razorpay) {
+        setError('Unable to load Razorpay checkout. Please check your connection or disable any script blocker and try again, or select Cash on Delivery.');
         setLoading(false);
         return;
       }
