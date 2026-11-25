@@ -176,6 +176,7 @@ function TrackOrderContent() {
   const [turnstileReady, setTurnstileReady] = useState(false);
   const turnstileWidgetId = useRef<string | null>(null);
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -294,6 +295,7 @@ function TrackOrderContent() {
 
     if (siteKey && !turnstileToken) {
       setError('Please complete the verification check.');
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -381,7 +383,7 @@ function TrackOrderContent() {
 
           {/* Lookup Form Card */}
           <div className="max-w-xl mx-auto bg-white rounded-3xl border border-[#E4DDC8] shadow-[0_12px_40px_rgba(21,31,25,0.06)] p-6 sm:p-10 mb-12">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label
                   htmlFor="orderNumber"

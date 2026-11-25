@@ -43,14 +43,16 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest): Nex
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
 
-  // Defeat caching on all admin panel, admin API, and dynamic checkout/pincode APIs (especially on SiteGround / Nginx)
+  // Defeat caching on all admin panel, admin API, and dynamic checkout/tracking/pincode APIs (especially on SiteGround / Nginx)
   const pathname = request.nextUrl.pathname;
   if (
     pathname.startsWith('/api/admin/') ||
     isAdminPath(pathname) ||
     pathname === '/checkout' ||
     pathname.startsWith('/api/checkout/') ||
-    pathname === '/api/delivery-pincodes'
+    pathname === '/api/delivery-pincodes' ||
+    pathname === '/track-order' ||
+    pathname === '/api/orders/lookup'
   ) {
     for (const [key, value] of Object.entries(ADMIN_NO_CACHE_HEADERS)) {
       response.headers.set(key, value);
